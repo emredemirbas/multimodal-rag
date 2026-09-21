@@ -1,0 +1,17 @@
+[
+  {
+    "timestamp_seconds": 7.0,
+    "ocr_text": "GET /health 200 OK",
+    "description": "OpenAPI documentation showing the health endpoint"
+  },
+  {
+    "timestamp_seconds": 7.5,
+    "ocr_text": "GET /health 200 OK",
+    "description": "OpenAPI documentation showing the health endpoint"
+  },
+  {
+    "timestamp_seconds": 18.0,
+    "ocr_text": "class HealthResponse(BaseModel)",
+    "description": "Editor displaying a Pydantic response model"
+  }
+]

@@ -24,7 +24,7 @@ Long-form video tutorials are useful but passive. Learners often cannot:
 
 ## Initial user
 
-Proposed first persona:
+Confirmed MVP persona:
 
 - an intermediate Python learner;
 - studying backend/API development independently;
@@ -113,4 +113,3 @@ Learning measures:
 - ability to complete a novel transfer task;
 - reduction in hints required across attempts;
 - time to independent successful submission.
-

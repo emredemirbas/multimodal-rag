@@ -22,6 +22,10 @@
 
 **Duration:** 1 week
 
+**Implementation status (2026-09-21):** Complete as a transcript-first validation
+slice. Evidence and known limitations are recorded in `docs/sprint0/`; accepted
+architecture decisions are in `docs/adrs/`.
+
 Deliver:
 
 - confirmed persona and domain;
@@ -222,4 +226,3 @@ Exit:
 - critical failures are observable and recoverable;
 - funnel data reveals where users abandon the workflow;
 - known limitations are visible to users.
-

@@ -1,0 +1,13 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:06.000
+Create a FastAPI application and define routes with decorators.
+
+00:00:06.000 --> 00:00:11.000
+The GET endpoint at slash health returns a JSON status for service health checks.
+
+00:00:11.000 --> 00:00:16.000
+Run the application with Uvicorn and open the automatic API documentation.
+
+00:00:16.000 --> 00:00:22.000
+Pydantic response models validate and document the returned data.
