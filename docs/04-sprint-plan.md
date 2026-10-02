@@ -53,7 +53,7 @@ Backend tests include real PostgreSQL API isolation and Sprint 0 migration
 upgrade checks. The complete Compose stack builds and becomes healthy; its
 application lifecycle smoke check passes. The CI workflow includes the same
 stack check; the first hosted run failed at the removed MinIO image pull. The
-Sprint 2 source-build correction is locally verified, awaiting a push. See
+Sprint 2 source-build correction passed hosted CI for `d0ba720`. See
 `docs/sprint1/validation-record.md`.
 
 Deliver:
@@ -80,7 +80,7 @@ Exit:
 and locally validated, including actual Celery process-death recovery, PostgreSQL,
 Redis, MinIO, source UI and deletion. See `docs/sprint2/validation-record.md`.
 Binary media remains disabled pending the decisions in `07-open-decisions.md`;
-hosted CI and live YouTube-provider checks are not claimed as passed.
+Hosted CI passed for `d0ba720`; live YouTube-provider checks are not claimed as passed.
 
 Deliver:
 
@@ -101,6 +101,13 @@ Exit:
 ## Sprint 3 — Project-scoped RAG and chat
 
 **Duration:** 2 weeks
+
+**Implementation status (2026-10-02):** Local offline-baseline infrastructure is
+implemented: source-filtered RRF/reranking, persisted SSE conversations, stable
+timestamp evidence inspection and synthetic regression labels. Managed-provider
+selection, independent dataset review and the agreed Alpha 1 quality threshold
+remain open; this is not full provider-backed Alpha 1 approval. See
+`docs/sprint3/implementation-plan.md` and `docs/sprint3/validation-record.md`.
 
 Deliver:
 

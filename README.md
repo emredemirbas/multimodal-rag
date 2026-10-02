@@ -18,7 +18,10 @@ Sprint 2 adds bounded SRT/VTT uploads, retained artifacts, Celery ingestion,
 transactional outbox delivery, timestamped/versioned chunks, processing progress,
 retry/cancel/reprocess controls and tracked source/project file cleanup. Optional
 official YouTube video/playlist metadata never downloads audiovisual content.
-Persisted streaming chat remains Sprint 3 scope. Binary media/ASR stays disabled.
+Sprint 3 adds a labelled offline extractive chat baseline with persisted SSE
+delivery, source filters, hybrid rank fusion/reranking and inspectable stable
+timestamp citations. Managed-provider choice and independently reviewed Alpha 1
+quality remain open. Binary media/ASR stays disabled.
 
 ## Read first
 
@@ -32,9 +35,10 @@ Persisted streaming chat remains Sprint 3 scope. Binary media/ASR stays disabled
 8. [`docs/08-testing-and-evaluation.md`](docs/08-testing-and-evaluation.md)
 
 Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
-validation evidence is recorded in [`docs/sprint2/validation-record.md`](docs/sprint2/validation-record.md).
-Local validation passed; the first hosted CI failed on the removed MinIO image.
-The replacement source build is verified locally, not yet in a new hosted run.
+validation evidence is recorded in [`docs/sprint3/validation-record.md`](docs/sprint3/validation-record.md).
+Sprint 2 hosted CI passed for `d0ba720` after replacing the removed MinIO image.
+Current Sprint 3 changes are locally validated but have not been pushed or
+verified in hosted CI.
 
 ## Run locally
 
@@ -83,6 +87,13 @@ Reprocessing preserves the last usable generation until replacement succeeds.
 Deletion immediately removes records, then displays tracked file cleanup status.
 `YOUTUBE_API_KEY` is optional, server-side, and needed only for metadata imports;
 leave it empty to use uploads without external credentials or provider calls.
+
+Use **Chat with tutorial evidence** to ask a self-contained question, optionally
+filter to one indexed source, and inspect each citation. History survives reloads.
+Stopping delivery may leave a saved answer: reload history or resend the unchanged
+question to replay it without another logical turn. No LLM is connected yet;
+answers are quoted transcript excerpts, not a general-purpose conversational tutor.
+Deleting a source also removes saved turns quoting that source.
 
 Stop the stack without deleting data:
 
@@ -156,6 +167,7 @@ source .env
 set +a
 python3 scripts/smoke_sprint1.py
 python3 scripts/smoke_sprint2.py
+python3 scripts/smoke_sprint3.py
 ```
 
 Smoke checks verify project lifecycle plus actual queued upload/indexing,
@@ -163,6 +175,17 @@ reprocessing, safe failure/retry, citations and complete artifact cleanup of the
 own temporary projects. The process-death integration test owns an isolated DB
 schema, Redis key prefix and Celery process; it never kills the normal worker or
 flushes shared Redis. CI runs these against its ephemeral Compose stack.
+
+Record synthetic retrieval measurements from the repository root:
+
+```bash
+PYTHONPATH=backend python3 scripts/evaluate_rag.py
+# With local PostgreSQL credentials exported:
+PYTHONPATH=backend python3 scripts/evaluate_rag.py --postgres
+```
+
+The 19-question synthetic set is a regression check, not an independent,
+provider-backed model-quality benchmark or Alpha 1 approval.
 
 The deterministic Sprint 0 proof remains available without Docker or model
 credentials:
@@ -200,7 +223,15 @@ Deprecated Sprint 0 validation compatibility endpoint (development/test only;
 the product UI uses queued uploads):
 
 - `POST /api/v1/projects/{project_id}/sources/transcripts`
-- `POST /api/v1/projects/{project_id}/questions`
+
+Chat and evidence (PostgreSQL required):
+
+- `POST /api/v1/projects/{project_id}/conversations` (title and idempotency key)
+- `GET /api/v1/projects/{project_id}/conversations`
+- `GET /api/v1/projects/{project_id}/conversations/{conversation_id}`
+- `POST /api/v1/projects/{project_id}/conversations/{conversation_id}/messages` (question, source IDs, key; SSE)
+- `GET /api/v1/projects/{project_id}/evidence/{segment_id}`
+- `POST /api/v1/projects/{project_id}/questions` (stateless JSON answer, optional source IDs)
 
 Operational endpoints:
 

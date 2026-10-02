@@ -15,7 +15,8 @@ worker crashes, and project deletion must not duplicate or resurrect artifacts.
 Sprint 1 local validation passed, including real PostgreSQL, migration upgrades,
 image builds, and the live application smoke check. Its first hosted CI run
 failed at the old MinIO registry pull after the first push. The source-built
-local/CI replacement is verified locally; its next hosted run awaits a push.
+local/CI replacement is verified locally and hosted run 36996316293 passed after
+the owner's push of `d0ba720` on 2026-10-02.
 
 ## Scope and assumptions
 

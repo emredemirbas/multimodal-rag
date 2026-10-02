@@ -2,8 +2,9 @@
 
 Date: 2026-10-02
 
-Status: Transcript-first scope implemented and locally validated. No corrected
-GitHub-hosted CI run or live YouTube provider request has been verified yet.
+Status: Transcript-first scope implemented and locally validated. The corrected
+GitHub-hosted CI run subsequently passed for `d0ba720` on 2026-10-02. No live
+YouTube provider request has been verified.
 
 ## Delivered scope
 
@@ -150,7 +151,10 @@ development/test; the new UI uses only asynchronous ingestion.
 - MinIO's old registry pull caused the
   [first hosted CI failure](https://github.com/emredemirbas/multimodal-rag/actions/runs/36986898019).
   The pinned official source build works locally and CI now includes the
-  real-worker probe, but a corrected hosted run has not been triggered.
+  real-worker probe. The corrected
+  [hosted run](https://github.com/emredemirbas/multimodal-rag/actions/runs/36996316293)
+  passed after the owner's push of `d0ba720`. This does not cover later Sprint 3
+  workspace changes.
 - No commit or push was performed as part of this implementation handoff.
 
 See [ADR 0012](../adrs/0012-durable-transcript-ingestion.md) for the recovery,

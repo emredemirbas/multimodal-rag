@@ -60,6 +60,7 @@ class Store(Protocol):
         query_text: str,
         query_embedding: list[float],
         limit: int,
+        source_ids: list[UUID] | None = None,
     ) -> list[RetrievalHit]: ...
     def save_retrieval_run(self, run: RetrievalRun) -> None: ...
 
@@ -296,18 +297,33 @@ class InMemoryStore:
         query_text: str,
         query_embedding: list[float],
         limit: int,
+        source_ids: list[UUID] | None = None,
     ) -> list[RetrievalHit]:
+        from .providers import content_tokens
+        from .retrieval import CANDIDATES_PER_CHANNEL, fuse_and_rerank
         self.get_project(tenant_id, project_id)
+        for source_id in source_ids or []:
+            self.get_source(tenant_id, project_id, source_id)
         matches: list[RetrievalHit] = []
         for segment in self._segments:
             if segment.tenant_id != tenant_id or segment.project_id != project_id:
                 continue
+            if source_ids and segment.source_id not in source_ids:
+                continue
             source = self._sources[(tenant_id, project_id, segment.source_id)]
+            if source.status != "ready":
+                continue
             score = cosine_similarity(query_embedding, segment.embedding)
             matches.append(
                 RetrievalHit(segment=segment, source_filename=source.filename, score=score)
             )
-        return sorted(matches, key=lambda hit: hit.score, reverse=True)[:limit]
+        terms = content_tokens(query_text)
+        lexical = sorted(
+            [hit for hit in matches if terms & content_tokens(hit.segment.text)],
+            key=lambda hit: (-len(terms & content_tokens(hit.segment.text)), str(hit.segment.id)),
+        )[:CANDIDATES_PER_CHANNEL]
+        semantic = sorted(matches, key=lambda hit: (-hit.score, str(hit.segment.id)))[:CANDIDATES_PER_CHANNEL]
+        return fuse_and_rerank(query_text, [lexical, semantic], limit)
 
     def save_retrieval_run(self, run: RetrievalRun) -> None:
         self.get_project(run.tenant_id, run.project_id)

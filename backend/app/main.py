@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, File, Form, Query, Request, Response, Secu
 from starlette.concurrency import run_in_threadpool
 import psycopg
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -46,10 +46,13 @@ from .artifacts.storage import ArtifactStore, S3ArtifactStore
 from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration, Registration, SourceCommand, SourceError, SourceList
 from .sources.repository import SourceRepository
 from .sources.upload_limit import UploadLimitMiddleware
+from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
+from .chat.repository import ChatRepository
+from .chat.delivery import deliver
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.3.0"
+API_VERSION = "0.4.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -122,6 +125,7 @@ def create_app(
         )
         application.state.metrics = metrics
         application.state.sources = None
+        application.state.chat = ChatRepository(active_store, metrics) if isinstance(active_store, PostgresStore) else None
         if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
             application.state.sources = SourceRepository(active_store, artifacts or S3ArtifactStore(active_settings), active_settings)
         yield
@@ -240,6 +244,11 @@ def create_app(
 
     def actor(request: Request, principal: AuthenticatedPrincipal) -> UUID:
         return request.app.state.store.bootstrap_principal(principal)
+
+    def chat(request: Request) -> ChatRepository:
+        if request.app.state.chat is None:
+            raise SourceError("chat_not_configured", "Persisted conversations require PostgreSQL.", 503)
+        return request.app.state.chat
 
     @app.get("/health/live")
     async def health_live() -> dict[str, str]:
@@ -421,7 +430,35 @@ def create_app(
         request: Request,
         principal: CurrentPrincipal,
     ) -> QuestionResponse:
-        return service(request).ask(principal, project_id, body.question)
+        return service(request).ask(principal, project_id, body.question, body.source_ids)
+
+    @app.post("/api/v1/projects/{project_id}/conversations", response_model=Conversation, status_code=201)
+    def create_conversation(project_id: UUID, body: ConversationCreate, request: Request, principal: CurrentPrincipal):
+        return chat(request).create(principal.tenant_id, project_id, actor(request, principal), body)
+
+    @app.get("/api/v1/projects/{project_id}/conversations", response_model=ConversationList)
+    def list_conversations(project_id: UUID, request: Request, principal: CurrentPrincipal):
+        return chat(request).list(principal.tenant_id, project_id, actor(request, principal))
+
+    @app.get("/api/v1/projects/{project_id}/conversations/{conversation_id}", response_model=History)
+    def conversation_history(project_id: UUID, conversation_id: UUID, request: Request, principal: CurrentPrincipal):
+        return chat(request).history(principal.tenant_id, project_id, actor(request, principal), conversation_id)
+
+    @app.post("/api/v1/projects/{project_id}/conversations/{conversation_id}/messages", response_class=StreamingResponse,
+              responses={200: {"content": {"text/event-stream": {}}}})
+    def post_message(project_id: UUID, conversation_id: UUID, body: MessageRequest, request: Request, principal: CurrentPrincipal):
+        repository = chat(request)
+        actor_id = actor(request, principal)
+        turn = repository.replay(principal.tenant_id, project_id, actor_id, conversation_id, body)
+        if turn is None:
+            response, run = service(request).prepare_answer(principal, project_id, body.question, body.source_ids)
+            turn = repository.record(principal.tenant_id, project_id, actor_id, conversation_id, body, response, run)
+        return StreamingResponse(deliver(repository, principal.tenant_id, project_id, actor_id, conversation_id, turn),
+                                 media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+
+    @app.get("/api/v1/projects/{project_id}/evidence/{segment_id}", response_model=EvidenceView)
+    def inspect_evidence(project_id: UUID, segment_id: UUID, request: Request, principal: CurrentPrincipal):
+        return chat(request).evidence(principal.tenant_id, project_id, actor(request, principal), segment_id)
 
     return app
 

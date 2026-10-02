@@ -130,4 +130,7 @@ for commit `2d6d06c` failed in the image/stack job: the old MinIO registry image
 returned `unauthorized`. Backend, PostgreSQL and frontend prerequisite jobs had
 completed before that job ran. Sprint 2 replaces the removed image with a pinned
 official source build. Updated image startup and both application smoke checks
-pass locally; the corrected hosted run has not been triggered/passed yet.
+pass locally. The corrected [hosted run](https://github.com/emredemirbas/multimodal-rag/actions/runs/36996316293)
+subsequently completed successfully for commit `d0ba720` on 2026-10-02, including
+all prerequisite jobs, image builds, application smoke checks and real-worker
+recovery. This verifies Sprint 2, not later unpushed Sprint 3 changes.

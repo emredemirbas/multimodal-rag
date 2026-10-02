@@ -107,6 +107,7 @@ class EvidenceSegment(BaseModel):
     text: str
     embedding: list[float]
     processing_version: str = "sprint0-v1"
+    generation: int = 1
     frame_id: UUID | None = None
 
 
@@ -130,6 +131,7 @@ class SourceIngested(BaseModel):
 
 class QuestionRequest(BaseModel):
     question: str = Field(min_length=2, max_length=2_000)
+    source_ids: list[UUID] = Field(default_factory=list, max_length=20)
 
     @field_validator("question")
     @classmethod
@@ -149,6 +151,8 @@ class Citation(BaseModel):
     modality: str
     frame_id: UUID | None = None
     score: float
+    processing_version: str = "sprint0-v1"
+    generation: int = 1
 
 
 class QuestionResponse(BaseModel):
@@ -181,4 +185,7 @@ class RetrievalRun(BaseModel):
     cited_segment_ids: list[UUID]
     candidate_count: int
     latency_ms: int
+    retrieval_version: str = "hybrid-rrf-v1"
+    reranker_version: str = "identifier-overlap-v1"
+    prompt_version: str = "quoted-evidence-v1"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

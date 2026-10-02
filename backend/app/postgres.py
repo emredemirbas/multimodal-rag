@@ -479,15 +479,21 @@ class PostgresStore:
         query_text: str,
         query_embedding: list[float],
         limit: int,
+        source_ids: list[UUID] | None = None,
     ) -> list[RetrievalHit]:
+        from .providers import content_tokens
+        from .retrieval import CANDIDATES_PER_CHANNEL, fuse_and_rerank
         self.get_project(tenant_id, project_id)
+        for source_id in source_ids or []:
+            self.get_source(tenant_id, project_id, source_id)
         vector = self._vector_literal(query_embedding)
+        lexical_query = " | ".join(sorted(content_tokens(query_text))[:40])
         with self._connect() as connection:
             rows = connection.execute(
                 """
-                WITH candidates AS (
+                WITH candidates AS MATERIALIZED (
                     SELECT cs.*, s.filename,
-                           websearch_to_tsquery('simple', %s) AS query,
+                           to_tsquery('simple', %s) AS query,
                            GREATEST(0.0, 1.0 - (cs.embedding <=> %s::vector)) AS semantic
                     FROM content_segments cs
                     JOIN sources s
@@ -498,21 +504,25 @@ class PostgresStore:
                       AND s.deleted_at IS NULL
                       AND s.active_generation IS NOT NULL
                       AND cs.generation = s.active_generation
+                      AND (%s::uuid[] IS NULL OR cs.source_id = ANY(%s::uuid[]))
+                ), lexical AS (
+                    SELECT id, ts_rank_cd(search_document, query) AS score, 'lexical' AS channel
+                    FROM candidates WHERE search_document @@ query
+                    ORDER BY score DESC, id LIMIT %s
+                ), semantic AS (
+                    SELECT id, semantic AS score, 'semantic' AS channel FROM candidates
+                    ORDER BY semantic DESC, id LIMIT %s
+                ), ranks AS (
+                    SELECT * FROM lexical UNION ALL SELECT * FROM semantic
                 )
-                SELECT *,
-                       (
-                         CASE WHEN search_document @@ query THEN 0.55 ELSE 0.0 END
-                         + 0.15 * ts_rank_cd(search_document, query)
-                         + 0.45 * semantic
-                       ) AS score
-                FROM candidates
-                ORDER BY score DESC, start_ms ASC
-                LIMIT %s
+                SELECT c.*, r.score, r.channel FROM ranks r JOIN candidates c ON c.id=r.id
+                ORDER BY r.channel, r.score DESC, c.id
                 """,
-                (query_text, vector, tenant_id, project_id, limit),
+                (lexical_query, vector, tenant_id, project_id, source_ids or None, source_ids or None,
+                 CANDIDATES_PER_CHANNEL, CANDIDATES_PER_CHANNEL),
             ).fetchall()
 
-        hits: list[RetrievalHit] = []
+        channels: dict[str, list[RetrievalHit]] = {"lexical": [], "semantic": []}
         for row in rows:
             segment = EvidenceSegment(
                 id=row["id"],
@@ -525,46 +535,34 @@ class PostgresStore:
                 text=row["text"],
                 embedding=self._parse_vector(row["embedding"]),
                 processing_version=row["processing_version"],
+                generation=row["generation"],
                 frame_id=row["frame_id"],
             )
-            hits.append(
+            channels[row["channel"]].append(
                 RetrievalHit(
                     segment=segment,
                     source_filename=row["filename"],
                     score=float(row["score"]),
                 )
             )
-        return hits
+        return fuse_and_rerank(query_text, list(channels.values()), limit)
 
     def save_retrieval_run(self, run: RetrievalRun) -> None:
         self.get_project(run.tenant_id, run.project_id)
         with self._connect() as connection:
-            connection.execute(
-                """
-                INSERT INTO retrieval_runs (
-                    id, tenant_id, project_id,
-                    embedding_provider, embedding_model,
-                    answer_provider, answer_model,
-                    query_sha256, retrieved_segment_ids, cited_segment_ids,
-                    candidate_count, latency_ms, created_at
-                ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s
-                )
-                """,
-                (
-                    run.id,
-                    run.tenant_id,
-                    run.project_id,
-                    run.embedding_provider,
-                    run.embedding_model,
-                    run.answer_provider,
-                    run.answer_model,
-                    run.query_sha256,
-                    run.retrieved_segment_ids,
-                    run.cited_segment_ids,
-                    run.candidate_count,
-                    run.latency_ms,
-                    run.created_at,
-                ),
-            )
+            self.insert_retrieval_run(connection, run)
+
+    @staticmethod
+    def insert_retrieval_run(connection, run: RetrievalRun) -> None:
+        connection.execute(
+            """INSERT INTO retrieval_runs (
+                id, tenant_id, project_id, embedding_provider, embedding_model,
+                answer_provider, answer_model, query_sha256, retrieved_segment_ids,
+                cited_segment_ids, candidate_count, latency_ms, created_at,
+                retrieval_version, reranker_version, prompt_version
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (run.id, run.tenant_id, run.project_id, run.embedding_provider, run.embedding_model,
+             run.answer_provider, run.answer_model, run.query_sha256, run.retrieved_segment_ids,
+             run.cited_segment_ids, run.candidate_count, run.latency_ms, run.created_at,
+             run.retrieval_version, run.reranker_version, run.prompt_version),
+        )

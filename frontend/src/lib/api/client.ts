@@ -51,6 +51,26 @@ function configuration(): ApiConfiguration {
   return { baseUrl, token };
 }
 
+export async function requestEventStream(path: string, body: string, signal: AbortSignal): Promise<Response> {
+  const { baseUrl, token } = configuration();
+  let response: Response;
+  try {
+    response = await fetch(new URL(path.replace(/^\//, ""), baseUrl), {
+      method: "POST", body, cache: "no-store", credentials: "omit",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json", "Accept": "text/event-stream", "X-Request-ID": crypto.randomUUID() },
+      signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]),
+    });
+  } catch {
+    throw new ApiError({ status: 503, code: "stream_unavailable" });
+  }
+  if (!response.ok) throw await apiErrorFromResponse(response);
+  if (!response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) {
+    await response.body?.cancel();
+    throw new ApiError({ status: 502, code: "invalid_api_response" });
+  }
+  return response;
+}
+
 export async function requestJson(
   path: string,
   init: Omit<RequestInit, "cache" | "credentials"> = {},

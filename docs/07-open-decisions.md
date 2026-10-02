@@ -69,6 +69,18 @@ Sprint 2 implements explicit permitted-transcript retention for retries and
 complete source/project deletion (ADR 0012). ASR, original binary input retention
 and limits remain open and their capability remains disabled.
 
+## Decide before the provider-backed Alpha 1 release
+
+| Decision | Proposed default | Status |
+|---|---|---|
+| Managed answer/embedding provider and models | Provider-neutral managed APIs, with approved retention/region/spend policy | Open; owner preference requested during Sprint 3 |
+| Reviewed RAG dataset and release threshold | Owner-reviewed representative tutorials and supported/unsupported/adversarial questions | Open; local synthetic regression is not release approval |
+
+Sprint 3's local infrastructure uses the existing deterministic embedding and
+extractive answer provider (ADR 0013). No model key or paid request is required.
+Its streaming interface delivers validated persisted answers; remote incremental
+generation, contextual follow-ups and provider-backed quality are not implied.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

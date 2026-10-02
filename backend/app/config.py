@@ -40,6 +40,8 @@ class Settings:
     youtube_api_key: str = ""
 
     def __post_init__(self) -> None:
+        if not 1 <= self.retrieval_limit <= 4:
+            raise ValueError("RETRIEVAL_LIMIT must be between 1 and 4")
         if not 1 <= self.upload_limit_bytes <= 2_000_000:
             raise ValueError("UPLOAD_LIMIT_BYTES must be between 1 and 2000000")
         if self.job_lease_seconds < 180:

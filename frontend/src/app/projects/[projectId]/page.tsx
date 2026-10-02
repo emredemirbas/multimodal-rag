@@ -8,6 +8,9 @@ import { ApiErrorState, Notice } from "@/components/ui/api-state";
 import { getProject } from "@/lib/api/client";
 import { listSources } from "@/lib/api/sources";
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
+import { ChatWorkspace } from "@/components/chat/chat-workspace";
+import { getHistory, listConversations } from "@/lib/api/chat";
+import type { Conversation, History } from "@/lib/api/chat-contracts";
 import type { SourceItem } from "@/lib/api/source-contracts";
 import type { Project } from "@/lib/api/contracts";
 import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
@@ -65,6 +68,13 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   }
 
   const notice = detailNotice(query.notice);
+  let conversations: Conversation[] = [];
+  let history: History | null = null;
+  let chatError = "";
+  try {
+    conversations = await listConversations(project.id);
+    if (conversations[0]) history = await getHistory(project.id, conversations[0].id);
+  } catch (error) { chatError = publicErrorMessage(error); }
   let sources: SourceItem[] = [];
   let sourceError = "";
   try {
@@ -101,6 +111,12 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       </header>
 
       <div className="detail-grid">
+        <section className="panel panel--wide" aria-labelledby="chat-heading">
+          <p className="eyebrow">Ask and inspect</p>
+          <h2 id="chat-heading">Chat with tutorial evidence</h2>
+          <ChatWorkspace projectId={project.id} sources={sources} initialConversations={conversations} initialHistory={history}
+            archived={project.status === "archived"} initialError={chatError} />
+        </section>
         <section className="panel panel--wide" aria-labelledby="workspace-heading">
           <p className="eyebrow">Learning material</p>
           <h2 id="workspace-heading">Source management</h2>

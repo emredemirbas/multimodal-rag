@@ -175,9 +175,23 @@ class TutorialService:
         principal: AuthenticatedPrincipal,
         project_id: UUID,
         question: str,
+        source_ids: list[UUID] | None = None,
     ) -> QuestionResponse:
+        response, run = self.prepare_answer(principal, project_id, question, source_ids)
+        self.store.save_retrieval_run(run)
+        return response
+
+    def prepare_answer(
+        self, principal: AuthenticatedPrincipal, project_id: UUID, question: str,
+        source_ids: list[UUID] | None = None,
+    ) -> tuple[QuestionResponse, RetrievalRun]:
+        from .retrieval import RETRIEVAL_VERSION
+        from .sources.contracts import SourceError
         self._actor_user_id(principal)
         tenant_id = principal.tenant_id
+        self.store.get_project(tenant_id, project_id)
+        for source_id in source_ids or []:
+            self.store.get_source(tenant_id, project_id, source_id)
         started = perf_counter()
         embedding = self.embedding_provider.embed(question)
         hits = self.store.search(
@@ -186,12 +200,17 @@ class TutorialService:
             question,
             embedding,
             self.retrieval_limit,
+            source_ids,
         )
-        answer, abstained, cited_hits = self.answer_provider.answer(question, hits)
-
+        retrieved = {hit.segment.id: hit.model_copy(deep=True) for hit in hits}
+        answer, abstained, cited_hits = self.answer_provider.answer(question, [hit.model_copy(deep=True) for hit in hits])
+        if (len(answer) > 12_000 or not answer.strip() or (abstained and cited_hits) or (not abstained and not cited_hits)
+                or len(cited_hits) > 4 or len({hit.segment.id for hit in cited_hits}) != len(cited_hits)):
+            raise SourceError("invalid_model_answer", "The answer could not be validated.", 503)
         for hit in cited_hits:
-            if hit.segment.tenant_id != tenant_id or hit.segment.project_id != project_id:
-                raise RuntimeError("citation failed project ownership validation")
+            if (hit.segment.tenant_id != tenant_id or hit.segment.project_id != project_id or
+                    hit.segment.id not in retrieved or retrieved[hit.segment.id] != hit):
+                raise SourceError("invalid_citation", "The answer evidence could not be validated.", 503)
 
         latency_ms = round((perf_counter() - started) * 1_000)
         run = RetrievalRun(
@@ -207,7 +226,6 @@ class TutorialService:
             candidate_count=len(hits),
             latency_ms=latency_ms,
         )
-        self.store.save_retrieval_run(run)
         citations = [
             Citation(
                 segment_id=hit.segment.id,
@@ -218,6 +236,8 @@ class TutorialService:
                 modality=hit.segment.modality,
                 frame_id=hit.segment.frame_id,
                 score=round(hit.score, 6),
+                processing_version=hit.segment.processing_version,
+                generation=hit.segment.generation,
             )
             for hit in cited_hits
         ]
@@ -228,9 +248,9 @@ class TutorialService:
             retrieval_run_id=run.id,
             provider=self.answer_provider.name,
             model=self.answer_provider.model,
-            processing_version="sprint0-v1",
+            processing_version=RETRIEVAL_VERSION,
             latency_ms=latency_ms,
-        )
+        ), run
 
     def get_source(
         self,

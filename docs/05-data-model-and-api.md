@@ -65,6 +65,12 @@ Do not store an embedding without the model identifier and dimension/version met
 - `message_citations`
 - `generation_runs`
 
+The local Sprint 3 schema uses immutable `chat_turns` for paired user/assistant
+messages and model usage, alongside `conversations` and authoritative
+`message_citations`. Retrieval runs retain prompt/retrieval/reranker versions.
+Source deletion removes turns containing that source's derived answer text;
+project deletion cascades all chat data (ADR 0013).
+
 Citations should reference stable segment/evidence IDs. Store rendered labels separately from the authoritative relationship.
 
 ### Curriculum
@@ -171,6 +177,15 @@ generation participates in retrieval. Durable cleanup records survive cascades.
 - `POST /projects/{project_id}/conversations/{conversation_id}/messages`
 - `GET /projects/{project_id}/conversations/{conversation_id}/stream`
 - `POST /projects/{project_id}/citations/{citation_id}/feedback`
+
+Implemented local contract: conversation creation requires a title (defaulted)
+and idempotency key. Lists/history are bounded. POST `.../messages` accepts a
+self-contained question, optional source IDs and idempotency key, and returns
+SSE `start`/`delta`/`complete` after durable validation/commit. GET history provides
+recovery; a separate GET stream and citation-feedback command remain outlines,
+not implemented endpoints. `GET /projects/{project_id}/evidence/{segment_id}`
+returns scoped stable text, timestamps, source and processing generation.
+The stateless JSON `/questions` API also accepts optional source IDs.
 
 ### Assignments
 

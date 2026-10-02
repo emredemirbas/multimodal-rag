@@ -107,6 +107,7 @@ jobs:
         run: |
           python3 scripts/smoke_sprint1.py
           python3 scripts/smoke_sprint2.py
+          python3 scripts/smoke_sprint3.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -117,6 +118,10 @@ jobs:
           PYTHONPATH: backend
           TEST_REAL_WORKER: "1"
         run: python -m pytest backend -m integration --tb=short
+      - name: Record synthetic retrieval regression measurements
+        env:
+          PYTHONPATH: backend
+        run: python scripts/evaluate_rag.py --postgres
       - name: Collect service logs on failure
         if: failure()
         run: docker compose logs --tail=100

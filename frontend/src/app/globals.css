@@ -624,3 +624,9 @@ h3 {
     transition-duration: 0.01ms !important;
   }
 }
+:where(textarea) { width: 100%; font: inherit; padding: .7rem; border: 1px solid var(--border); border-radius: .5rem; resize: vertical; }
+.chat-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.chat-turns { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.chat-turn { border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; }
+.evidence-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.citation-link { display: inline-block; min-height: 2.75rem; padding: .3rem 0; }

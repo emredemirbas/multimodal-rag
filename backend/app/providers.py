@@ -14,6 +14,8 @@ STOP_WORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
     "how", "in", "is", "it", "of", "on", "or", "that", "the", "this",
     "to", "was", "what", "when", "where", "which", "with",
+    "do", "does", "did", "can", "could", "would", "should", "please", "explain",
+    "tell", "me", "about", "tutorial", "use", "using",
 }
 
 
@@ -64,7 +66,7 @@ class DeterministicHashEmbeddingProvider:
 @dataclass(frozen=True)
 class EvidenceExtractiveAnswerProvider:
     name: str = "local-deterministic"
-    model: str = "evidence-extractive-v1"
+    model: str = "evidence-extractive-v2"
 
     def answer(
         self,
@@ -72,9 +74,8 @@ class EvidenceExtractiveAnswerProvider:
         hits: Sequence[RetrievalHit],
     ) -> tuple[str, bool, list[RetrievalHit]]:
         question_terms = content_tokens(question)
-        grounded = [
-            hit for hit in hits if question_terms & content_tokens(hit.segment.text)
-        ]
+        grounded = [hit for hit in hits if question_terms and
+                    len(question_terms & content_tokens(hit.segment.text)) / len(question_terms) >= 0.5]
         if not grounded:
             return (
                 "I could not find support for that question in this project's tutorial evidence.",
@@ -83,5 +84,6 @@ class EvidenceExtractiveAnswerProvider:
             )
 
         cited = grounded[:2]
-        evidence = " ".join(hit.segment.text for hit in cited)
-        return f"The tutorial evidence says: {evidence}", False, cited
+        # Evidence is data, never an instruction or a tool request.
+        evidence = "\n\n".join(f'[{index}] “{hit.segment.text}”' for index, hit in enumerate(cited, 1))
+        return f"Quoted tutorial evidence (extractive baseline):\n\n{evidence}", False, cited
