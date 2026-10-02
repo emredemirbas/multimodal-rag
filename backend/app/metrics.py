@@ -10,6 +10,7 @@ class Metrics:
         self._lock = Lock()
 
     def observe_request(self, method: str, route: str, status: int) -> None:
+        method = method if method in {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"} else "OTHER"
         route_label = route or "unmatched"
         with self._lock:
             self._counts[(f"{method} {route_label}", str(status))] += 1

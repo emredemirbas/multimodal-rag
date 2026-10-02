@@ -51,9 +51,10 @@ function configuration(): ApiConfiguration {
   return { baseUrl, token };
 }
 
-async function requestJson(
+export async function requestJson(
   path: string,
   init: Omit<RequestInit, "cache" | "credentials"> = {},
+  onHeaders?: (headers: Headers) => void,
 ): Promise<unknown> {
   const { baseUrl, token } = configuration();
   const controller = new AbortController();
@@ -62,7 +63,7 @@ async function requestJson(
   headers.set("Accept", "application/json");
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("X-Request-ID", crypto.randomUUID());
-  if (init.body !== undefined) {
+  if (init.body !== undefined && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -78,6 +79,7 @@ async function requestJson(
     if (!response.ok) {
       throw await apiErrorFromResponse(response);
     }
+    onHeaders?.(response.headers);
     if (response.status === 204) {
       return null;
     }
@@ -218,8 +220,10 @@ export async function restoreProject(projectId: string): Promise<Project> {
   }
 }
 
-export async function deleteProject(projectId: string): Promise<void> {
+export async function deleteProject(projectId: string): Promise<string | null> {
+  let cleanupId: string | null = null;
   await requestJson(`/api/v1/projects/${encodeURIComponent(projectId)}`, {
     method: "DELETE",
-  });
+  }, (headers) => { cleanupId = headers.get("x-cleanup-id"); });
+  return cleanupId;
 }

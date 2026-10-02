@@ -79,7 +79,7 @@ function DeleteProjectDialog({ projectId, projectTitle }: Omit<ProjectLifecycleC
         <div className="confirmation-dialog__content">
           <h2 id="delete-project-title">Delete “{projectTitle}”?</h2>
           <p>
-            This permanently removes the project and its current data. This action cannot be undone.
+            This permanently removes project records immediately and schedules retained file cleanup. This action cannot be undone.
           </p>
           <form action={action} className="stack">
             <input type="hidden" name="projectId" value={projectId} />

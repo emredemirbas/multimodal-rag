@@ -6,6 +6,9 @@ import { ProjectLifecycleControls } from "@/components/projects/project-lifecycl
 import { ProjectRenameForm } from "@/components/projects/project-rename-form";
 import { ApiErrorState, Notice } from "@/components/ui/api-state";
 import { getProject } from "@/lib/api/client";
+import { listSources } from "@/lib/api/sources";
+import { SourcesWorkspace } from "@/components/sources/sources-workspace";
+import type { SourceItem } from "@/lib/api/source-contracts";
 import type { Project } from "@/lib/api/contracts";
 import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
 
@@ -62,6 +65,13 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   }
 
   const notice = detailNotice(query.notice);
+  let sources: SourceItem[] = [];
+  let sourceError = "";
+  try {
+    sources = await listSources(project.id);
+  } catch (error) {
+    sourceError = publicErrorMessage(error);
+  }
 
   return (
     <div className="stack stack--large">
@@ -91,15 +101,10 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       </header>
 
       <div className="detail-grid">
-        <section className="panel" aria-labelledby="workspace-heading">
+        <section className="panel panel--wide" aria-labelledby="workspace-heading">
           <p className="eyebrow">Learning material</p>
-          <h2 id="workspace-heading">Workspace</h2>
-          <div className="state-panel state-panel--compact">
-            <h3>No source management yet</h3>
-            <p>
-              Transcript processing arrives in Sprint 2. Citation-backed chat follows in Sprint 3.
-            </p>
-          </div>
+          <h2 id="workspace-heading">Source management</h2>
+          <SourcesWorkspace projectId={project.id} initialSources={sources} archived={project.status === "archived"} initialError={sourceError} />
         </section>
 
         <section className="panel" aria-labelledby="settings-heading">

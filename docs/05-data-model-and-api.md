@@ -149,9 +149,19 @@ Use `/api/v1`. Exact payloads should be generated from Pydantic models and expos
 - `GET /projects/{project_id}/sources/{source_id}`
 - `POST /projects/{project_id}/sources/{source_id}/retry`
 - `POST /projects/{project_id}/sources/{source_id}/cancel`
+- `POST /projects/{project_id}/sources/{source_id}/reprocess`
 - `DELETE /projects/{project_id}/sources/{source_id}`
 - `GET /projects/{project_id}/jobs/{job_id}`
 - `GET /projects/{project_id}/events` for SSE progress
+
+Implemented transcript-first contract (ADR 0012): upload/metadata registration
+and processing commands return `202` with source/job IDs. Progress uses an
+authenticated five-second polling boundary; SSE is not yet implemented. Source
+deletion returns a `202` cleanup ticket. Project deletion keeps `204` and returns
+`X-Cleanup-ID`/`Location`. `GET /projects/{project_id}/cleanup/{cleanup_id}` remains
+authorized after project deletion; `POST` to its `/retry` command restarts failed
+cleanup. Old processing versions retain immutable evidence; only the active
+generation participates in retrieval. Durable cleanup records survive cascades.
 
 ### Chat
 

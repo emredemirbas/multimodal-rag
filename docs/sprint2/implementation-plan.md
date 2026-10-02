@@ -2,7 +2,8 @@
 
 Date: 2026-10-02
 
-Status: Planning milestone complete; implementation has not started.
+Status: Implemented and locally validated. See `validation-record.md` for
+test evidence, current limits and deployment/provider limitations.
 
 ## Outcome
 
@@ -13,7 +14,8 @@ worker crashes, and project deletion must not duplicate or resurrect artifacts.
 
 Sprint 1 local validation passed, including real PostgreSQL, migration upgrades,
 image builds, and the live application smoke check. Its first hosted CI run
-remains pending the first push; that limitation is recorded separately.
+failed at the old MinIO registry pull after the first push. The source-built
+local/CI replacement is verified locally; its next hosted run awaits a push.
 
 ## Scope and assumptions
 

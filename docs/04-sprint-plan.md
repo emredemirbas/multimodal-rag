@@ -52,7 +52,8 @@ Exit:
 Backend tests include real PostgreSQL API isolation and Sprint 0 migration
 upgrade checks. The complete Compose stack builds and becomes healthy; its
 application lifecycle smoke check passes. The CI workflow includes the same
-stack check, but its first hosted run is pending the first push. See
+stack check; the first hosted run failed at the removed MinIO image pull. The
+Sprint 2 source-build correction is locally verified, awaiting a push. See
 `docs/sprint1/validation-record.md`.
 
 Deliver:
@@ -75,9 +76,11 @@ Exit:
 
 **Duration:** 2 weeks
 
-**Planning status (2026-10-02):** Ready for implementation in ordered vertical
-slices; see `docs/sprint2/implementation-plan.md`. No Sprint 2 runtime features
-are claimed as shipped by this planning milestone.
+**Implementation status (2026-10-02):** Transcript-first scope is implemented
+and locally validated, including actual Celery process-death recovery, PostgreSQL,
+Redis, MinIO, source UI and deletion. See `docs/sprint2/validation-record.md`.
+Binary media remains disabled pending the decisions in `07-open-decisions.md`;
+hosted CI and live YouTube-provider checks are not claimed as passed.
 
 Deliver:
 

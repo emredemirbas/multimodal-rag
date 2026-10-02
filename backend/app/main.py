@@ -7,7 +7,9 @@ from time import perf_counter
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import Depends, FastAPI, Query, Request, Response, Security
+from fastapi import Depends, FastAPI, File, Form, Query, Request, Response, Security, UploadFile
+from starlette.concurrency import run_in_threadpool
+import psycopg
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -23,6 +25,7 @@ from .config import Settings
 from .metrics import Metrics
 from .models import (
     AuthenticatedPrincipal,
+    AuthorizationMode,
     Project,
     ProjectCreate,
     ProjectList,
@@ -39,10 +42,14 @@ from .providers import DeterministicHashEmbeddingProvider, EvidenceExtractiveAns
 from .service import TutorialService
 from .store import InMemoryStore, ProjectNotFoundError, Store
 from .transcripts import TranscriptParseError
+from .artifacts.storage import ArtifactStore, S3ArtifactStore
+from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration, Registration, SourceCommand, SourceError, SourceList
+from .sources.repository import SourceRepository
+from .sources.upload_limit import UploadLimitMiddleware
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.2.0"
+API_VERSION = "0.3.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -94,6 +101,7 @@ def create_app(
     settings: Settings | None = None,
     store: Store | None = None,
     authenticator: Authenticator | None = None,
+    artifacts: ArtifactStore | None = None,
 ) -> FastAPI:
     active_settings = settings or Settings.from_env()
     configure_logging(active_settings.log_level)
@@ -113,14 +121,18 @@ def create_app(
             retrieval_limit=active_settings.retrieval_limit,
         )
         application.state.metrics = metrics
+        application.state.sources = None
+        if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
+            application.state.sources = SourceRepository(active_store, artifacts or S3ArtifactStore(active_settings), active_settings)
         yield
 
     app = FastAPI(
         title="Multimodal Tutorial Workspace",
         version=API_VERSION,
-        description="Sprint 1 authenticated project foundation API",
+        description="Authenticated project and asynchronous transcript ingestion API",
         lifespan=lifespan,
     )
+    app.add_middleware(UploadLimitMiddleware, limit=active_settings.upload_limit_bytes + 16_384)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -129,19 +141,19 @@ def create_app(
         try:
             response = await call_next(request)
         except Exception:
-            LOGGER.exception(
+            LOGGER.error(
                 json.dumps(
                     {
                         "event": "request_failed",
                         "request_id": request_id,
                         "method": request.method,
-                        "path": request.url.path,
+                        "code": "request_unavailable",
                     }
                 )
             )
             raise
         route = request.scope.get("route")
-        route_path = getattr(route, "path", request.url.path)
+        route_path = getattr(route, "path", "unmatched")
         metrics.observe_request(request.method, route_path, response.status_code)
         response.headers["X-Request-ID"] = request_id
         LOGGER.info(
@@ -157,6 +169,14 @@ def create_app(
             )
         )
         return response
+
+    @app.exception_handler(SourceError)
+    async def source_error_handler(_: Request, exc: SourceError):
+        return JSONResponse(status_code=exc.status, content={"code": exc.code, "detail": exc.detail})
+
+    @app.exception_handler(psycopg.Error)
+    async def database_query_error_handler(_: Request, __: psycopg.Error):
+        return JSONResponse(status_code=503, content={"code": "database_unavailable", "detail": "The database is temporarily unavailable."})
 
     @app.exception_handler(AuthenticationError)
     async def authentication_handler(_: Request, exc: AuthenticationError):
@@ -212,6 +232,15 @@ def create_app(
     def service(request: Request) -> TutorialService:
         return request.app.state.service
 
+    def sources(request: Request) -> SourceRepository:
+        repository = request.app.state.sources
+        if repository is None:
+            raise SourceError("ingestion_not_configured", "Transcript ingestion requires PostgreSQL and configured object storage.", 503)
+        return repository
+
+    def actor(request: Request, principal: AuthenticatedPrincipal) -> UUID:
+        return request.app.state.store.bootstrap_principal(principal)
+
     @app.get("/health/live")
     async def health_live() -> dict[str, str]:
         return {"status": "ok", "version": API_VERSION}
@@ -227,9 +256,10 @@ def create_app(
         return {"status": "ok", "version": API_VERSION}
 
     @app.get("/metrics", include_in_schema=False)
-    async def prometheus_metrics(request: Request) -> Response:
+    def prometheus_metrics(request: Request) -> Response:
+        processing = request.app.state.sources.render_metrics() if request.app.state.sources is not None else ""
         return Response(
-            request.app.state.metrics.render(),
+            request.app.state.metrics.render() + processing,
             media_type="text/plain; version=0.0.4",
         )
 
@@ -288,13 +318,73 @@ def create_app(
         request: Request,
         principal: CurrentPrincipal,
     ) -> Response:
-        service(request).delete_project(principal, project_id)
-        return Response(status_code=204)
+        cleanup_id = service(request).delete_project(principal, project_id)
+        headers = {} if cleanup_id is None else {"X-Cleanup-ID": str(cleanup_id), "Location": f"/api/v1/projects/{project_id}/cleanup/{cleanup_id}"}
+        return Response(status_code=204, headers=headers)
+
+    @app.post("/api/v1/projects/{project_id}/sources/uploads", response_model=Registration, status_code=202)
+    async def upload_transcript(
+        project_id: UUID, request: Request, principal: CurrentPrincipal,
+        file: Annotated[UploadFile, File()],
+        authorization_mode: Annotated[AuthorizationMode, Form()],
+        idempotency_key: Annotated[str, Form(min_length=8, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")],
+    ) -> Registration:
+        repository = sources(request)
+        allowed_types = {"text/plain", "text/vtt", "application/x-subrip", "application/octet-stream"}
+        if file.content_type not in allowed_types:
+            raise SourceError("unsupported_file", "Upload a text SRT/VTT transcript.")
+        try:
+            content = await file.read(active_settings.upload_limit_bytes + 1)
+            actor_id = await run_in_threadpool(actor, request, principal)
+            return await run_in_threadpool(repository.register, principal.tenant_id, project_id, actor_id,
+                                          filename=file.filename or "", content=content, rights=authorization_mode, idempotency_key=idempotency_key)
+        finally:
+            await file.close()
+
+    @app.get("/api/v1/projects/{project_id}/sources", response_model=SourceList)
+    def list_sources(project_id: UUID, request: Request, principal: CurrentPrincipal) -> SourceList:
+        actor(request, principal)
+        return sources(request).list_sources(principal.tenant_id, project_id)
+
+    @app.post("/api/v1/projects/{project_id}/sources", response_model=Registration, status_code=202)
+    def register_metadata(project_id: UUID, body: MetadataRegistration, request: Request, principal: CurrentPrincipal) -> Registration:
+        return sources(request).register_metadata(principal.tenant_id, project_id, actor(request, principal),
+                                                 url=body.url, rights=body.authorization_mode, idempotency_key=body.idempotency_key)
+
+    @app.get("/api/v1/projects/{project_id}/jobs/{job_id}", response_model=Job)
+    def get_job(project_id: UUID, job_id: UUID, request: Request, principal: CurrentPrincipal) -> Job:
+        actor(request, principal)
+        return sources(request).get_job(principal.tenant_id, project_id, job_id)
+
+    @app.post("/api/v1/projects/{project_id}/sources/{source_id}/{command}", response_model=Registration, status_code=202)
+    def source_command(project_id: UUID, source_id: UUID, command: str, body: SourceCommand, request: Request, principal: CurrentPrincipal) -> Registration:
+        if command not in {"retry", "cancel", "reprocess"}:
+            raise ProjectNotFoundError("command not found")
+        return sources(request).command(principal.tenant_id, project_id, source_id, actor(request, principal), command, body.idempotency_key)
+
+    @app.delete("/api/v1/projects/{project_id}/sources/{source_id}", response_model=Cleanup, status_code=202)
+    def delete_source(project_id: UUID, source_id: UUID, request: Request, principal: CurrentPrincipal) -> Cleanup:
+        return sources(request).delete_source(principal.tenant_id, project_id, source_id, actor(request, principal))
+
+    @app.get("/api/v1/projects/{project_id}/cleanup/{cleanup_id}", response_model=Cleanup)
+    def cleanup_status(project_id: UUID, cleanup_id: UUID, request: Request, principal: CurrentPrincipal) -> Cleanup:
+        return sources(request).get_cleanup(principal.tenant_id, project_id, cleanup_id, actor(request, principal))
+
+    @app.post("/api/v1/projects/{project_id}/cleanup/{cleanup_id}/retry", response_model=Cleanup)
+    def retry_cleanup(project_id: UUID, cleanup_id: UUID, request: Request, principal: CurrentPrincipal) -> Cleanup:
+        repository = sources(request)
+        actor_id = actor(request, principal)
+        current = repository.get_cleanup(principal.tenant_id, project_id, cleanup_id, actor_id)
+        if current.status == "failed":
+            with repository.store._connect() as connection:
+                connection.execute("UPDATE artifact_cleanup SET status='pending',attempt_count=0,available_at=now(),failure_code=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s AND actor_user_id=%s AND status='failed'", (principal.tenant_id, project_id, cleanup_id, actor_id))
+        return repository.get_cleanup(principal.tenant_id, project_id, cleanup_id, actor_id)
 
     @app.post(
         "/api/v1/projects/{project_id}/sources/transcripts",
         response_model=SourceIngested,
         status_code=201,
+        deprecated=True,
     )
     def ingest_transcript(
         project_id: UUID,
@@ -302,11 +392,13 @@ def create_app(
         request: Request,
         principal: CurrentPrincipal,
     ) -> SourceIngested:
+        if active_settings.environment.strip().lower() not in {"development", "test"}:
+            raise SourceError("validation_endpoint_unavailable", "Use the asynchronous transcript upload endpoint.", 503)
         return service(request).ingest_transcript(principal, project_id, body)
 
     @app.get(
         "/api/v1/projects/{project_id}/sources/{source_id}",
-        response_model=Source,
+        response_model=ManagedSource,
     )
     def get_source(
         project_id: UUID,
@@ -314,6 +406,9 @@ def create_app(
         request: Request,
         principal: CurrentPrincipal,
     ) -> Source:
+        if request.app.state.sources is not None:
+            actor(request, principal)
+            return sources(request).get_source(principal.tenant_id, project_id, source_id)
         return service(request).get_source(principal, project_id, source_id)
 
     @app.post(

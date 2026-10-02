@@ -9,6 +9,12 @@ x-api-environment: &api-environment
   DATABASE_URL: postgresql://${POSTGRES_USER:-tutorial}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-tutorial}
   EMBEDDING_DIMENSIONS: "64"
   LOG_LEVEL: INFO
+  S3_ENDPOINT: http://minio:9000
+  S3_BUCKET: tutorial-artifacts
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tutorial}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+  CELERY_BROKER_URL: redis://redis:6379/0
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
 
 x-api-image: &api-image
   build:
@@ -38,12 +44,69 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  ingestion-worker:
+    build:
+      context: ./backend
+      target: ingestion-worker
+    environment:
+      <<: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.jobs.worker:celery_app inspect ping --timeout=3 -d ingestion@$$HOSTNAME | grep -q pong"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  scheduler:
+    <<: *api-image
+    command: ["python", "-m", "app.jobs.scheduler"]
+    environment:
+      <<: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,time; assert time.time()-os.stat('/tmp/ingestion-scheduler-heartbeat').st_mtime < 90"]
+      interval: 20s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777
@@ -110,7 +173,8 @@ services:
     restart: unless-stopped
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    build:
+      context: ./infra/minio
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tutorial}
@@ -120,6 +184,9 @@ services:
       - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio-data:/data
+    depends_on:
+      minio-permissions:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:9000/minio/health/live >/dev/null || exit 1"]
       interval: 10s
@@ -127,6 +194,26 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  minio-permissions:
+    build:
+      context: ./infra/minio
+    user: "0:0"
+    entrypoint: ["/bin/chown", "-R", "1000:1000", "/data"]
+    volumes:
+      - minio-data:/data
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
 
 volumes:
   postgres-data:

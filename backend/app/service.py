@@ -96,9 +96,9 @@ class TutorialService:
 
     def delete_project(
         self, principal: AuthenticatedPrincipal, project_id: UUID
-    ) -> None:
+    ) -> UUID | None:
         actor_user_id = self._actor_user_id(principal)
-        self.store.delete_project(principal.tenant_id, project_id, actor_user_id)
+        return self.store.delete_project(principal.tenant_id, project_id, actor_user_id)
 
     def ingest_transcript(
         self,

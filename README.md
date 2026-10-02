@@ -14,8 +14,11 @@ foundation around it:
   Compose services;
 - backend, PostgreSQL integration, frontend, and image-build CI jobs.
 
-Transcript job orchestration remains Sprint 2 scope. Persisted streaming chat
-remains Sprint 3 scope.
+Sprint 2 adds bounded SRT/VTT uploads, retained artifacts, Celery ingestion,
+transactional outbox delivery, timestamped/versioned chunks, processing progress,
+retry/cancel/reprocess controls and tracked source/project file cleanup. Optional
+official YouTube video/playlist metadata never downloads audiovisual content.
+Persisted streaming chat remains Sprint 3 scope. Binary media/ASR stays disabled.
 
 ## Read first
 
@@ -29,11 +32,11 @@ remains Sprint 3 scope.
 8. [`docs/08-testing-and-evaluation.md`](docs/08-testing-and-evaluation.md)
 
 Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
-validation evidence is recorded under [`docs/sprint1/`](docs/sprint1/).
-The 2026-10-02 host validation passed; the next implementation milestone is
-described in [`docs/sprint2/implementation-plan.md`](docs/sprint2/implementation-plan.md).
+validation evidence is recorded in [`docs/sprint2/validation-record.md`](docs/sprint2/validation-record.md).
+Local validation passed; the first hosted CI failed on the removed MinIO image.
+The replacement source build is verified locally, not yet in a new hosted run.
 
-## Run Sprint 1 locally
+## Run locally
 
 Create the ignored local configuration once:
 
@@ -66,6 +69,21 @@ Local services:
 The `migrate` service runs pending SQL migrations before the API starts. Service
 ports bind to `127.0.0.1` by default.
 
+`ingestion-worker` processes uploads; `scheduler` dispatches the transactional
+outbox, recovers abandoned jobs and cleans artifacts. Existing passwords and
+volumes are reused. MinIO is built from pinned official source because its old
+registry image is unavailable; the first build can take a few minutes. A one-shot
+initializer assigns only its data volume to the non-root MinIO user. This archived
+CE build is for local tests, not a production storage recommendation (ADR 0012).
+
+In a project, choose an SRT/VTT file (UTF-8, at most 2 MB), select your rights
+statement and click **Process transcript**. Work continues if you leave the page.
+Retry uses the retained input; correcting malformed content requires a new upload.
+Reprocessing preserves the last usable generation until replacement succeeds.
+Deletion immediately removes records, then displays tracked file cleanup status.
+`YOUTUBE_API_KEY` is optional, server-side, and needed only for metadata imports;
+leave it empty to use uploads without external credentials or provider calls.
+
 Stop the stack without deleting data:
 
 ```bash
@@ -96,7 +114,7 @@ A trusted identity-gateway adapter is also available for later deployment
 integration. Its trust and networking requirements are documented in
 [`ADR 0011`](docs/adrs/0011-sprint1-identity-adapters.md).
 
-## Test Sprint 1
+## Test
 
 Backend unit, API, authentication, lifecycle, and isolation tests:
 
@@ -116,7 +134,7 @@ cd backend
 set -a
 source ../.env
 set +a
-PYTHONPATH=. pytest -m integration
+TEST_REAL_WORKER=1 PYTHONPATH=. pytest -m integration --tb=short
 ```
 
 Frontend checks:
@@ -137,11 +155,14 @@ set -a
 source .env
 set +a
 python3 scripts/smoke_sprint1.py
+python3 scripts/smoke_sprint2.py
 ```
 
-The smoke check verifies health, authentication, frontend rendering, project
-lifecycle, a cited answer, and deletion of its own test data. CI runs the same
-check against its ephemeral Compose stack.
+Smoke checks verify project lifecycle plus actual queued upload/indexing,
+reprocessing, safe failure/retry, citations and complete artifact cleanup of their
+own temporary projects. The process-death integration test owns an isolated DB
+schema, Redis key prefix and Celery process; it never kills the normal worker or
+flushes shared Redis. CI runs these against its ephemeral Compose stack.
 
 The deterministic Sprint 0 proof remains available without Docker or model
 credentials:
@@ -151,7 +172,7 @@ cd backend
 PYTHONPATH=. python3 -m app.demo
 ```
 
-## Sprint 1 API
+## API
 
 Project lifecycle:
 
@@ -163,10 +184,22 @@ Project lifecycle:
 - `POST /api/v1/projects/{project_id}/restore`
 - `DELETE /api/v1/projects/{project_id}`
 
-Retained Sprint 0 validation endpoints:
+Source ingestion and recovery:
+
+- `POST /api/v1/projects/{project_id}/sources/uploads` (multipart file, rights, idempotency key)
+- `POST /api/v1/projects/{project_id}/sources` (allowlisted YouTube metadata only)
+- `GET /api/v1/projects/{project_id}/sources`
+- `GET /api/v1/projects/{project_id}/sources/{source_id}`
+- `GET /api/v1/projects/{project_id}/jobs/{job_id}`
+- `POST /api/v1/projects/{project_id}/sources/{source_id}/retry|cancel|reprocess`
+- `DELETE /api/v1/projects/{project_id}/sources/{source_id}` (`202` cleanup ticket)
+- `GET /api/v1/projects/{project_id}/cleanup/{cleanup_id}`
+- `POST /api/v1/projects/{project_id}/cleanup/{cleanup_id}/retry`
+
+Deprecated Sprint 0 validation compatibility endpoint (development/test only;
+the product UI uses queued uploads):
 
 - `POST /api/v1/projects/{project_id}/sources/transcripts`
-- `GET /api/v1/projects/{project_id}/sources/{source_id}`
 - `POST /api/v1/projects/{project_id}/questions`
 
 Operational endpoints:
@@ -198,7 +231,7 @@ shape.
 - Frontend: Next.js / React / TypeScript
 - API: FastAPI / Python / Pydantic
 - Database: PostgreSQL, pgvector, and PostgreSQL full-text search
-- Background work: Celery and Redis beginning in Sprint 2
+- Background work: Celery / Redis with PostgreSQL state, outbox and fenced leases
 - Object storage: S3-compatible storage; MinIO locally
 - Packaging: Docker and Docker Compose
 - Untrusted code: a dedicated hardened runner in Sprint 6, not the API or normal

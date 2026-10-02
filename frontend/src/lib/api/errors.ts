@@ -50,6 +50,21 @@ export function publicErrorMessage(error: unknown): string {
     return "Something went wrong. Please try again.";
   }
 
+  const sourceErrors: Record<string, string> = {
+    upload_too_large: "Choose a non-empty transcript file of at most 2 MB.",
+    unsupported_file: "Only text .srt and .vtt files are supported. Audio/video processing is not yet available.",
+    invalid_encoding: "Save the transcript as UTF-8, then upload it again.",
+    rights_required: "Select the ownership, authorization or license statement that applies to this source.",
+    provider_not_configured: "YouTube metadata requires a server-side Data API key. You can upload transcripts without a key.",
+    unsupported_url: "Enter a supported HTTPS YouTube video or playlist URL.",
+    invalid_state: "Processing state changed. Refresh the sources and try again.",
+    idempotency_conflict: "This request key was used for different input. Select the file again to start a new upload.",
+    project_archived: "Restore the project before adding sources.",
+    source_limit: "This project has reached its current limit of 200 sources.",
+    retry_limit: "Retry limit reached. Correct the problem and upload a new source.",
+  };
+  if (sourceErrors[error.code]) return sourceErrors[error.code];
+
   if (error.status === 401 || error.status === 403) {
     return "Your session could not be verified. Please refresh and try again.";
   }

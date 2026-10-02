@@ -3,7 +3,8 @@
 Date: 2026-09-21
 
 Status: Implemented; local Docker/PostgreSQL validation passed on 2026-10-02.
-The first hosted CI run remains pending until these changes are pushed.
+The first hosted CI run failed at the old MinIO registry pull. Sprint 2 replaces
+that local/CI dependency with a pinned source build; its next hosted run awaits a push.
 
 ## Outcome
 

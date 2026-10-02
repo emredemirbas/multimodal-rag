@@ -100,11 +100,23 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build deployable development images
-        run: docker compose build api frontend
+        run: docker compose build api frontend ingestion-worker scheduler minio minio-permissions
       - name: Start the complete development stack
         run: docker compose up -d --wait --wait-timeout 120
       - name: Exercise the Compose application
-        run: python3 scripts/smoke_sprint1.py
+        run: |
+          python3 scripts/smoke_sprint1.py
+          python3 scripts/smoke_sprint2.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install integration dependencies
+        run: python -m pip install -e './backend[dev]'
+      - name: Verify actual worker crash recovery and MinIO cleanup
+        env:
+          PYTHONPATH: backend
+          TEST_REAL_WORKER: "1"
+        run: python -m pytest backend -m integration --tb=short
       - name: Collect service logs on failure
         if: failure()
         run: docker compose logs --tail=100

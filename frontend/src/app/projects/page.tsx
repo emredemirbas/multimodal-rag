@@ -7,6 +7,8 @@ import { ApiErrorState, Notice } from "@/components/ui/api-state";
 import { listProjects } from "@/lib/api/client";
 import type { Project, ProjectListStatus } from "@/lib/api/contracts";
 import { errorReference, publicErrorMessage } from "@/lib/api/errors";
+import { UUID_PATTERN } from "@/lib/api/source-contracts";
+import { CleanupStatus } from "@/components/sources/cleanup-status";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,12 +21,14 @@ interface ProjectsPageProps {
   searchParams: Promise<{
     status?: string | string[];
     notice?: string | string[];
+    cleanup?: string;
+    cleanupProject?: string;
   }>;
 }
 
 const NOTICE_MESSAGES: Record<string, string> = {
   archived: "Project archived. You can restore it at any time.",
-  deleted: "Project deleted.",
+  deleted: "Project records deleted. Retained file cleanup is tracked separately.",
 };
 
 function projectStatus(value: string | string[] | undefined): ProjectListStatus {
@@ -73,6 +77,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
           </div>
         </div>
         {notice ? <Notice>{notice}</Notice> : null}
+        {typeof query.cleanup === "string" && typeof query.cleanupProject === "string" && UUID_PATTERN.test(query.cleanup) && UUID_PATTERN.test(query.cleanupProject)
+          ? <CleanupStatus initialTicket={{ id: query.cleanup, project_id: query.cleanupProject, status: "pending" }} /> : null}
         <ProjectStatusFilter selected={status} />
         {content}
       </section>

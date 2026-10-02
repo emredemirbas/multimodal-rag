@@ -337,9 +337,20 @@ class PostgresStore:
 
     def delete_project(
         self, tenant_id: str, project_id: UUID, actor_user_id: UUID
-    ) -> None:
+    ) -> UUID:
+        cleanup_id = uuid4()
         with self._connect() as connection:
             self._require_membership(connection, tenant_id, actor_user_id)
+            project = connection.execute(
+                "SELECT id FROM projects WHERE tenant_id=%s AND id=%s AND deleted_at IS NULL FOR UPDATE",
+                (tenant_id, project_id),
+            ).fetchone()
+            if project is None:
+                raise ProjectNotFoundError("project not found")
+            connection.execute(
+                "INSERT INTO artifact_cleanup (id,tenant_id,project_id,actor_user_id,object_prefix) VALUES (%s,%s,%s,%s,%s)",
+                (cleanup_id, tenant_id, project_id, actor_user_id, f"{tenant_id}/{project_id}/"),
+            )
             deleted = connection.execute(
                 """
                 DELETE FROM projects
@@ -357,6 +368,7 @@ class PostgresStore:
                 actor_user_id=actor_user_id,
                 action="project.deleted",
             )
+        return cleanup_id
 
     def get_source_by_idempotency_key(
         self, tenant_id: str, project_id: UUID, idempotency_key: str
@@ -403,8 +415,8 @@ class PostgresStore:
                 INSERT INTO sources (
                     id, tenant_id, project_id, filename, authorization_mode,
                     status, processing_version, segment_count, frame_count,
-                    idempotency_key, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    idempotency_key, created_at, active_generation
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
                 """,
                 (
                     saved.id,
@@ -483,6 +495,9 @@ class PostgresStore:
                      AND s.project_id = cs.project_id
                      AND s.id = cs.source_id
                     WHERE cs.tenant_id = %s AND cs.project_id = %s
+                      AND s.deleted_at IS NULL
+                      AND s.active_generation IS NOT NULL
+                      AND cs.generation = s.active_generation
                 )
                 SELECT *,
                        (

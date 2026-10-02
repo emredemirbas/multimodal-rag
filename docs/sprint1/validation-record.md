@@ -104,7 +104,7 @@ and [16.3.8 release](https://github.com/vercel/next.js/releases/tag/v16.3.8).
 
 CI now builds the images, starts the complete stack, runs the same smoke check,
 collects failure logs, and cleans up its own ephemeral volumes. The first
-GitHub-hosted execution remains pending a push; local success is not presented
+GitHub-hosted execution initially awaited a push; local success was not presented
 as evidence of a remote CI run.
 
 Reproduce from the repository root:
@@ -121,5 +121,13 @@ cd backend
 PYTHONPATH=. .venv/bin/python -m pytest --tb=short
 ```
 
-Local Sprint 1 validation is complete. Sprint 2 planning can proceed; the hosted
-CI result must still be recorded after the first push.
+Local Sprint 1 validation is complete.
+
+## First hosted CI result
+
+The [first run](https://github.com/emredemirbas/multimodal-rag/actions/runs/36986898019)
+for commit `2d6d06c` failed in the image/stack job: the old MinIO registry image
+returned `unauthorized`. Backend, PostgreSQL and frontend prerequisite jobs had
+completed before that job ran. Sprint 2 replaces the removed image with a pinned
+official source build. Updated image startup and both application smoke checks
+pass locally; the corrected hosted run has not been triggered/passed yet.

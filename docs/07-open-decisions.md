@@ -65,6 +65,10 @@ The implementation order and current assumptions are recorded in
 `docs/sprint2/implementation-plan.md`. No ASR vendor or original-media retention
 permission is implied by the subtitle-upload milestone.
 
+Sprint 2 implements explicit permitted-transcript retention for retries and
+complete source/project deletion (ADR 0012). ASR, original binary input retention
+and limits remain open and their capability remains disabled.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |
@@ -94,6 +98,7 @@ Questions to answer:
 | Project cap | 20 videos or 10 total hours | Proposed |
 | Beta size | 20–50 invited users | Proposed |
 | Availability | Best-effort beta; no formal SLA | Proposed |
+| Production object storage | Maintained managed S3-compatible service, not the archived local MinIO CE build | Open before beta |
 | Data export/deletion | Self-service request with observable completion | Proposed |
 | Collaboration | Deferred | Proposed |
 | GitHub integration | Deferred until file upload is stable | Proposed |

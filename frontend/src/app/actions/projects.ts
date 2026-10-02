@@ -147,12 +147,13 @@ export async function deleteProjectAction(
     return invalidProject(previous);
   }
 
+  let cleanupId: string | null;
   try {
-    await deleteProjectRequest(projectId);
+    cleanupId = await deleteProjectRequest(projectId);
   } catch (error) {
     return failure(previous, error);
   }
 
   revalidatePath("/projects");
-  redirect("/projects?notice=deleted");
+  redirect(cleanupId ? `/projects?notice=deleted&cleanup=${encodeURIComponent(cleanupId)}&cleanupProject=${projectId}` : "/projects?notice=deleted");
 }

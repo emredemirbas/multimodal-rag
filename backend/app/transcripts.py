@@ -10,7 +10,13 @@ TIMING_RE = re.compile(
     r"(?P<start>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})\s*-->\s*"
     r"(?P<end>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})"
 )
-TAG_RE = re.compile(r"<[^>]+>")
+# Strip known subtitle/HTML presentation tags, not code such as Foo<T> or x < y > z.
+# Unrecognized text remains untrusted evidence and is always escaped by renderers.
+TAG_RE = re.compile(
+    r"</?(?:b|i|u|c(?:\.[\w-]+)*|v|lang|span|em|strong|p|br|s|code|pre|ruby|rt|"
+    r"script|style|img|svg|div|h[1-6])(?:\s[^<>]*)?>|<\d{1,2}:\d{2}(?::\d{2})?\.\d{3}>",
+    re.IGNORECASE,
+)
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
 
 
@@ -41,7 +47,12 @@ def timestamp_to_ms(value: str) -> int:
 
 def clean_cue_text(lines: list[str]) -> str:
     text = " ".join(line.strip() for line in lines if line.strip())
-    return " ".join(unescape(TAG_RE.sub("", text)).split())
+    def strip_presentation(match: re.Match) -> str:
+        # An opening tag immediately after an identifier may be a generic type.
+        if not match.group().startswith("</") and match.start() and text[match.start()-1].isalnum():
+            return match.group()
+        return ""
+    return " ".join(unescape(TAG_RE.sub(strip_presentation, text)).split())
 
 
 def parse_transcript(content: str) -> list[TranscriptCue]:

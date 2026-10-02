@@ -30,8 +30,20 @@ class Settings:
     development_auth_subject: str = "local-user"
     development_auth_tenant: str = "local"
     trusted_proxy_secret: str = ""
+    s3_endpoint: str = "http://minio:9000"
+    s3_bucket: str = "tutorial-artifacts"
+    s3_access_key: str = ""
+    s3_secret_key: str = ""
+    broker_url: str = "redis://redis:6379/0"
+    upload_limit_bytes: int = 2_000_000
+    job_lease_seconds: int = 180
+    youtube_api_key: str = ""
 
     def __post_init__(self) -> None:
+        if not 1 <= self.upload_limit_bytes <= 2_000_000:
+            raise ValueError("UPLOAD_LIMIT_BYTES must be between 1 and 2000000")
+        if self.job_lease_seconds < 180:
+            raise ValueError("job lease must exceed the 120-second task hard limit")
         environment = self.environment.strip().lower()
         auth_mode = self.auth_mode.strip().lower()
         if auth_mode == "development":
@@ -73,4 +85,12 @@ class Settings:
             ),
             development_auth_tenant=os.getenv("AUTH_DEVELOPMENT_TENANT", "local"),
             trusted_proxy_secret=os.getenv("AUTH_TRUSTED_PROXY_SECRET", ""),
+            s3_endpoint=os.getenv("S3_ENDPOINT", "http://minio:9000"),
+            s3_bucket=os.getenv("S3_BUCKET", "tutorial-artifacts"),
+            s3_access_key=os.getenv("S3_ACCESS_KEY", ""),
+            s3_secret_key=os.getenv("S3_SECRET_KEY", ""),
+            broker_url=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
+            upload_limit_bytes=int(os.getenv("UPLOAD_LIMIT_BYTES", "2000000")),
+            job_lease_seconds=int(os.getenv("JOB_LEASE_SECONDS", "180")),
+            youtube_api_key=os.getenv("YOUTUBE_API_KEY", ""),
         )
