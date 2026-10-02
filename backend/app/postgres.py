@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import psycopg
 from psycopg.rows import dict_row
 
 from .models import (
+    AuthenticatedPrincipal,
     EvidenceSegment,
     Project,
+    ProjectListStatus,
     RetrievalHit,
     RetrievalRun,
     Source,
@@ -16,12 +19,19 @@ from .models import (
 from .store import ProjectNotFoundError
 
 
+class DatabaseUnavailableError(RuntimeError):
+    """A connection failure that is safe to expose without a connection string."""
+
+
 class PostgresStore:
     def __init__(self, database_url: str) -> None:
         self.database_url = database_url
 
     def _connect(self) -> psycopg.Connection:
-        return psycopg.connect(self.database_url, row_factory=dict_row)
+        try:
+            return psycopg.connect(self.database_url, row_factory=dict_row)
+        except psycopg.Error:
+            raise DatabaseUnavailableError("database connection failed") from None
 
     @staticmethod
     def _vector_literal(vector: list[float]) -> str:
@@ -37,50 +47,179 @@ class PostgresStore:
         migrations_dir = Path(__file__).resolve().parent / "migrations"
         with self._connect() as connection:
             connection.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                ("multimodal-tutorial-workspace:migrations",),
+            )
+            connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     version text PRIMARY KEY,
+                    sha256 text,
                     applied_at timestamptz NOT NULL DEFAULT now()
                 )
                 """
             )
+            connection.execute(
+                "ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS sha256 text"
+            )
             applied = {
-                row["version"]
-                for row in connection.execute("SELECT version FROM schema_migrations")
+                row["version"]: row["sha256"]
+                for row in connection.execute(
+                    "SELECT version, sha256 FROM schema_migrations"
+                )
             }
             for migration in sorted(migrations_dir.glob("*.sql")):
-                if migration.name in applied:
+                script = migration.read_text(encoding="utf-8")
+                checksum = hashlib.sha256(script.encode("utf-8")).hexdigest()
+                stored_checksum = applied.get(migration.name)
+                if stored_checksum:
+                    if stored_checksum != checksum:
+                        raise RuntimeError(
+                            f"applied migration checksum changed: {migration.name}"
+                        )
                     continue
-                connection.execute(migration.read_text(encoding="utf-8"))
+                if migration.name in applied:
+                    connection.execute(
+                        "UPDATE schema_migrations SET sha256 = %s WHERE version = %s",
+                        (checksum, migration.name),
+                    )
+                    continue
+                connection.execute(script)
                 connection.execute(
-                    "INSERT INTO schema_migrations (version) VALUES (%s)",
-                    (migration.name,),
+                    "INSERT INTO schema_migrations (version, sha256) VALUES (%s, %s)",
+                    (migration.name, checksum),
                 )
 
     def healthcheck(self) -> None:
         with self._connect() as connection:
             connection.execute("SELECT 1").fetchone()
 
-    def create_project(self, project: Project) -> Project:
+    def bootstrap_principal(self, principal: AuthenticatedPrincipal) -> UUID:
+        proposed_user_id = uuid5(
+            NAMESPACE_URL,
+            f"identity:{principal.provider}:{principal.subject}",
+        )
         with self._connect() as connection:
             connection.execute(
                 "INSERT INTO tenants (id) VALUES (%s) ON CONFLICT (id) DO NOTHING",
-                (project.tenant_id,),
+                (principal.tenant_id,),
             )
             connection.execute(
+                "INSERT INTO users (id) VALUES (%s) ON CONFLICT (id) DO NOTHING",
+                (proposed_user_id,),
+            )
+            identity = connection.execute(
                 """
-                INSERT INTO projects (id, tenant_id, title, created_at)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO auth_identities (provider, subject, user_id)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (provider, subject) DO UPDATE
+                    SET subject = EXCLUDED.subject
+                RETURNING user_id
                 """,
-                (project.id, project.tenant_id, project.title, project.created_at),
+                (principal.provider, principal.subject, proposed_user_id),
+            ).fetchone()
+            user_id = identity["user_id"]
+            connection.execute(
+                """
+                INSERT INTO memberships (tenant_id, user_id, role)
+                VALUES (%s, %s, 'owner')
+                ON CONFLICT (tenant_id, user_id) DO NOTHING
+                """,
+                (principal.tenant_id, user_id),
+            )
+        return user_id
+
+    @staticmethod
+    def _project_from_row(row: dict[str, object]) -> Project:
+        return Project.model_validate(row)
+
+    @staticmethod
+    def _record_audit(
+        connection: psycopg.Connection,
+        *,
+        tenant_id: str,
+        project_id: UUID,
+        actor_user_id: UUID,
+        action: str,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO audit_events (
+                id, tenant_id, project_id, actor_user_id, action, details
+            ) VALUES (%s, %s, %s, %s, %s, '{}'::jsonb)
+            """,
+            (uuid4(), tenant_id, project_id, actor_user_id, action),
+        )
+
+    @staticmethod
+    def _require_membership(
+        connection: psycopg.Connection, tenant_id: str, actor_user_id: UUID
+    ) -> None:
+        membership = connection.execute(
+            """
+            SELECT 1
+            FROM memberships
+            WHERE tenant_id = %s AND user_id = %s
+            """,
+            (tenant_id, actor_user_id),
+        ).fetchone()
+        if membership is None:
+            raise ProjectNotFoundError("project not found")
+
+    def create_project(self, project: Project, actor_user_id: UUID) -> Project:
+        with self._connect() as connection:
+            self._require_membership(connection, project.tenant_id, actor_user_id)
+            connection.execute(
+                """
+                INSERT INTO projects (
+                    id, tenant_id, title, status, created_at, updated_at, archived_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    project.id,
+                    project.tenant_id,
+                    project.title,
+                    project.status.value,
+                    project.created_at,
+                    project.updated_at,
+                    project.archived_at,
+                ),
+            )
+            self._record_audit(
+                connection,
+                tenant_id=project.tenant_id,
+                project_id=project.id,
+                actor_user_id=actor_user_id,
+                action="project.created",
             )
         return project
+
+    def list_projects(
+        self, tenant_id: str, status: ProjectListStatus
+    ) -> list[Project]:
+        status_filter = "" if status == ProjectListStatus.ALL else "AND status = %s"
+        parameters: tuple[object, ...]
+        if status == ProjectListStatus.ALL:
+            parameters = (tenant_id,)
+        else:
+            parameters = (tenant_id, status.value)
+        with self._connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT id, tenant_id, title, status, created_at, updated_at, archived_at
+                FROM projects
+                WHERE tenant_id = %s AND deleted_at IS NULL {status_filter}
+                ORDER BY updated_at DESC, id DESC
+                """,
+                parameters,
+            ).fetchall()
+        return [self._project_from_row(row) for row in rows]
 
     def get_project(self, tenant_id: str, project_id: UUID) -> Project:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT id, tenant_id, title, created_at
+                SELECT id, tenant_id, title, status, created_at, updated_at, archived_at
                 FROM projects
                 WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
                 """,
@@ -88,7 +227,136 @@ class PostgresStore:
             ).fetchone()
         if row is None:
             raise ProjectNotFoundError("project not found")
-        return Project.model_validate(row)
+        return self._project_from_row(row)
+
+    def update_project_title(
+        self,
+        tenant_id: str,
+        project_id: UUID,
+        title: str,
+        actor_user_id: UUID,
+    ) -> Project:
+        with self._connect() as connection:
+            self._require_membership(connection, tenant_id, actor_user_id)
+            row = connection.execute(
+                """
+                UPDATE projects
+                SET title = %s, updated_at = now()
+                WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                RETURNING id, tenant_id, title, status,
+                          created_at, updated_at, archived_at
+                """,
+                (title, tenant_id, project_id),
+            ).fetchone()
+            if row is None:
+                raise ProjectNotFoundError("project not found")
+            self._record_audit(
+                connection,
+                tenant_id=tenant_id,
+                project_id=project_id,
+                actor_user_id=actor_user_id,
+                action="project.renamed",
+            )
+        return self._project_from_row(row)
+
+    def archive_project(
+        self, tenant_id: str, project_id: UUID, actor_user_id: UUID
+    ) -> Project:
+        with self._connect() as connection:
+            self._require_membership(connection, tenant_id, actor_user_id)
+            row = connection.execute(
+                """
+                UPDATE projects
+                SET status = 'archived', archived_at = now(), updated_at = now()
+                WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                  AND status = 'active'
+                RETURNING id, tenant_id, title, status,
+                          created_at, updated_at, archived_at
+                """,
+                (tenant_id, project_id),
+            ).fetchone()
+            if row is not None:
+                self._record_audit(
+                    connection,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    actor_user_id=actor_user_id,
+                    action="project.archived",
+                )
+            else:
+                row = connection.execute(
+                    """
+                    SELECT id, tenant_id, title, status,
+                           created_at, updated_at, archived_at
+                    FROM projects
+                    WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                    """,
+                    (tenant_id, project_id),
+                ).fetchone()
+                if row is None:
+                    raise ProjectNotFoundError("project not found")
+        return self._project_from_row(row)
+
+    def restore_project(
+        self, tenant_id: str, project_id: UUID, actor_user_id: UUID
+    ) -> Project:
+        with self._connect() as connection:
+            self._require_membership(connection, tenant_id, actor_user_id)
+            row = connection.execute(
+                """
+                UPDATE projects
+                SET status = 'active', archived_at = NULL, updated_at = now()
+                WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                  AND status = 'archived'
+                RETURNING id, tenant_id, title, status,
+                          created_at, updated_at, archived_at
+                """,
+                (tenant_id, project_id),
+            ).fetchone()
+            if row is not None:
+                self._record_audit(
+                    connection,
+                    tenant_id=tenant_id,
+                    project_id=project_id,
+                    actor_user_id=actor_user_id,
+                    action="project.restored",
+                )
+            else:
+                row = connection.execute(
+                    """
+                    SELECT id, tenant_id, title, status,
+                           created_at, updated_at, archived_at
+                    FROM projects
+                    WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                    """,
+                    (tenant_id, project_id),
+                ).fetchone()
+                if row is None:
+                    raise ProjectNotFoundError("project not found")
+        return self._project_from_row(row)
+
+    def delete_project(
+        self, tenant_id: str, project_id: UUID, actor_user_id: UUID
+    ) -> None:
+        with self._connect() as connection:
+            self._require_membership(connection, tenant_id, actor_user_id)
+            deleted = connection.execute(
+                """
+                DELETE FROM projects
+                WHERE tenant_id = %s AND id = %s AND deleted_at IS NULL
+                RETURNING id
+                """,
+                (tenant_id, project_id),
+            ).fetchone()
+            if deleted is None:
+                raise ProjectNotFoundError("project not found")
+            self._record_audit(
+                connection,
+                tenant_id=tenant_id,
+                project_id=project_id,
+                actor_user_id=actor_user_id,
+                action="project.deleted",
+            )
 
     def get_source_by_idempotency_key(
         self, tenant_id: str, project_id: UUID, idempotency_key: str

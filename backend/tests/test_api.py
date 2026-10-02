@@ -3,6 +3,7 @@ from __future__ import annotations
 from httpx import AsyncClient
 import pytest
 
+from conftest import auth_headers
 
 pytestmark = pytest.mark.anyio
 
@@ -23,7 +24,7 @@ Run the application with the Uvicorn server.
 async def create_project(client: AsyncClient, tenant: str = "tenant-a") -> str:
     response = await client.post(
         "/api/v1/projects",
-        headers={"X-Tenant-ID": tenant},
+        headers=auth_headers(tenant),
         json={"title": "FastAPI course"},
     )
     assert response.status_code == 201
@@ -33,7 +34,7 @@ async def create_project(client: AsyncClient, tenant: str = "tenant-a") -> str:
 async def ingest(client: AsyncClient, project_id: str, tenant: str = "tenant-a") -> dict:
     response = await client.post(
         f"/api/v1/projects/{project_id}/sources/transcripts",
-        headers={"X-Tenant-ID": tenant},
+        headers=auth_headers(tenant),
         json={
             "filename": "tutorial.vtt",
             "content": TRANSCRIPT,
@@ -60,7 +61,7 @@ async def test_end_to_end_cited_answer(client: AsyncClient) -> None:
 
     response = await client.post(
         f"/api/v1/projects/{project_id}/questions",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={"question": "Which endpoint checks service health?"},
     )
     assert response.status_code == 200, response.text
@@ -76,7 +77,7 @@ async def test_unsupported_question_abstains(client: AsyncClient) -> None:
     await ingest(client, project_id)
     response = await client.post(
         f"/api/v1/projects/{project_id}/questions",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={"question": "How do Kubernetes ingress controllers manage TLS certificates?"},
     )
     assert response.status_code == 200
@@ -98,22 +99,45 @@ async def test_tenant_cannot_access_another_tenants_project(client: AsyncClient)
 
     query = await client.post(
         f"/api/v1/projects/{project_id}/questions",
-        headers={"X-Tenant-ID": "tenant-b"},
+        headers=auth_headers("tenant-b"),
         json={"question": "Which endpoint checks health?"},
     )
     direct = await client.get(
         f"/api/v1/projects/{project_id}/sources/{source['source']['id']}",
-        headers={"X-Tenant-ID": "tenant-b"},
+        headers=auth_headers("tenant-b"),
     )
     assert query.status_code == 404
     assert direct.status_code == 404
+
+
+async def test_sources_and_retrieval_are_isolated_between_projects(
+    client: AsyncClient,
+) -> None:
+    project_a = await create_project(client, "tenant-a")
+    project_b = await create_project(client, "tenant-a")
+    source_a = await ingest(client, project_a, "tenant-a")
+
+    direct = await client.get(
+        f"/api/v1/projects/{project_b}/sources/{source_a['source']['id']}",
+        headers=auth_headers("tenant-a"),
+    )
+    question = await client.post(
+        f"/api/v1/projects/{project_b}/questions",
+        headers=auth_headers("tenant-a"),
+        json={"question": "Which endpoint checks service health?"},
+    )
+
+    assert direct.status_code == 404
+    assert question.status_code == 200
+    assert question.json()["abstained"] is True
+    assert question.json()["citations"] == []
 
 
 async def test_rejects_unsupported_source_and_invalid_transcript(client: AsyncClient) -> None:
     project_id = await create_project(client)
     unsupported = await client.post(
         f"/api/v1/projects/{project_id}/sources/transcripts",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={
             "filename": "video.mp4",
             "content": "binary",
@@ -123,7 +147,7 @@ async def test_rejects_unsupported_source_and_invalid_transcript(client: AsyncCl
     )
     invalid = await client.post(
         f"/api/v1/projects/{project_id}/sources/transcripts",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={
             "filename": "bad.vtt",
             "content": "WEBVTT without cues",
@@ -138,7 +162,7 @@ async def test_rejects_unsupported_source_and_invalid_transcript(client: AsyncCl
 async def test_rejects_blank_project_title_and_question(client: AsyncClient) -> None:
     project = await client.post(
         "/api/v1/projects",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={"title": "   "},
     )
     assert project.status_code == 422
@@ -146,7 +170,7 @@ async def test_rejects_blank_project_title_and_question(client: AsyncClient) -> 
     project_id = await create_project(client)
     question = await client.post(
         f"/api/v1/projects/{project_id}/questions",
-        headers={"X-Tenant-ID": "tenant-a"},
+        headers=auth_headers(),
         json={"question": "  "},
     )
     assert question.status_code == 422

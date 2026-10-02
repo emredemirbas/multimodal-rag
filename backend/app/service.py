@@ -5,10 +5,14 @@ from time import perf_counter
 from uuid import UUID, NAMESPACE_URL, uuid5
 
 from .models import (
+    AuthenticatedPrincipal,
     Citation,
     EvidenceSegment,
     Project,
     ProjectCreate,
+    ProjectList,
+    ProjectListStatus,
+    ProjectUpdate,
     QuestionResponse,
     RetrievalRun,
     Source,
@@ -34,15 +38,76 @@ class TutorialService:
         self.answer_provider = answer_provider
         self.retrieval_limit = retrieval_limit
 
-    def create_project(self, tenant_id: str, request: ProjectCreate) -> Project:
-        return self.store.create_project(Project(tenant_id=tenant_id, title=request.title))
+    def _actor_user_id(self, principal: AuthenticatedPrincipal) -> UUID:
+        return self.store.bootstrap_principal(principal)
+
+    def create_project(
+        self, principal: AuthenticatedPrincipal, request: ProjectCreate
+    ) -> Project:
+        actor_user_id = self._actor_user_id(principal)
+        return self.store.create_project(
+            Project(tenant_id=principal.tenant_id, title=request.title),
+            actor_user_id,
+        )
+
+    def list_projects(
+        self,
+        principal: AuthenticatedPrincipal,
+        status: ProjectListStatus,
+    ) -> ProjectList:
+        self._actor_user_id(principal)
+        return ProjectList(items=self.store.list_projects(principal.tenant_id, status))
+
+    def get_project(
+        self, principal: AuthenticatedPrincipal, project_id: UUID
+    ) -> Project:
+        self._actor_user_id(principal)
+        return self.store.get_project(principal.tenant_id, project_id)
+
+    def update_project(
+        self,
+        principal: AuthenticatedPrincipal,
+        project_id: UUID,
+        request: ProjectUpdate,
+    ) -> Project:
+        actor_user_id = self._actor_user_id(principal)
+        return self.store.update_project_title(
+            principal.tenant_id,
+            project_id,
+            request.title,
+            actor_user_id,
+        )
+
+    def archive_project(
+        self, principal: AuthenticatedPrincipal, project_id: UUID
+    ) -> Project:
+        actor_user_id = self._actor_user_id(principal)
+        return self.store.archive_project(
+            principal.tenant_id, project_id, actor_user_id
+        )
+
+    def restore_project(
+        self, principal: AuthenticatedPrincipal, project_id: UUID
+    ) -> Project:
+        actor_user_id = self._actor_user_id(principal)
+        return self.store.restore_project(
+            principal.tenant_id, project_id, actor_user_id
+        )
+
+    def delete_project(
+        self, principal: AuthenticatedPrincipal, project_id: UUID
+    ) -> None:
+        actor_user_id = self._actor_user_id(principal)
+        self.store.delete_project(principal.tenant_id, project_id, actor_user_id)
 
     def ingest_transcript(
         self,
-        tenant_id: str,
+        principal: AuthenticatedPrincipal,
         project_id: UUID,
         request: TranscriptIngestRequest,
     ) -> SourceIngested:
+        self._actor_user_id(principal)
+        tenant_id = principal.tenant_id
         self.store.get_project(tenant_id, project_id)
         existing = self.store.get_source_by_idempotency_key(
             tenant_id, project_id, request.idempotency_key
@@ -107,10 +172,12 @@ class TutorialService:
 
     def ask(
         self,
-        tenant_id: str,
+        principal: AuthenticatedPrincipal,
         project_id: UUID,
         question: str,
     ) -> QuestionResponse:
+        self._actor_user_id(principal)
+        tenant_id = principal.tenant_id
         started = perf_counter()
         embedding = self.embedding_provider.embed(question)
         hits = self.store.search(
@@ -164,3 +231,12 @@ class TutorialService:
             processing_version="sprint0-v1",
             latency_ms=latency_ms,
         )
+
+    def get_source(
+        self,
+        principal: AuthenticatedPrincipal,
+        project_id: UUID,
+        source_id: UUID,
+    ) -> Source:
+        self._actor_user_id(principal)
+        return self.store.get_source(principal.tenant_id, project_id, source_id)

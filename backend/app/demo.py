@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .models import ProjectCreate, TranscriptIngestRequest
+from .models import AuthenticatedPrincipal, ProjectCreate, TranscriptIngestRequest
 from .providers import DeterministicHashEmbeddingProvider, EvidenceExtractiveAnswerProvider
 from .service import TutorialService
 from .store import InMemoryStore
@@ -21,9 +21,14 @@ def main() -> None:
         DeterministicHashEmbeddingProvider(),
         EvidenceExtractiveAnswerProvider(),
     )
-    project = service.create_project("demo", ProjectCreate(title="FastAPI tutorial"))
+    principal = AuthenticatedPrincipal(
+        provider="development",
+        subject="demo-user",
+        tenant_id="demo",
+    )
+    project = service.create_project(principal, ProjectCreate(title="FastAPI tutorial"))
     source = service.ingest_transcript(
-        "demo",
+        principal,
         project.id,
         TranscriptIngestRequest(
             filename="fastapi-intro.vtt",
@@ -33,7 +38,7 @@ def main() -> None:
             frame_candidates=frames,
         ),
     )
-    answer = service.ask("demo", project.id, "Which endpoint checks service health?")
+    answer = service.ask(principal, project.id, "Which endpoint checks service health?")
     print(
         json.dumps(
             {

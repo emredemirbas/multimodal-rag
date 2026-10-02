@@ -1,0 +1,9 @@
+.next
+node_modules
+coverage
+*.tsbuildinfo
+.env
+.env.*
+npm-debug.log*
+Dockerfile*
+README.md

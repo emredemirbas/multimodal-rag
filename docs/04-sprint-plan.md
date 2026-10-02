@@ -48,6 +48,13 @@ Exit:
 
 **Duration:** 2 weeks
 
+**Implementation status (2026-10-02):** Implemented and locally validated.
+Backend tests include real PostgreSQL API isolation and Sprint 0 migration
+upgrade checks. The complete Compose stack builds and becomes healthy; its
+application lifecycle smoke check passes. The CI workflow includes the same
+stack check, but its first hosted run is pending the first push. See
+`docs/sprint1/validation-record.md`.
+
 Deliver:
 
 - Next.js shell and FastAPI application;
@@ -67,6 +74,10 @@ Exit:
 ## Sprint 2 — Transcript-first ingestion
 
 **Duration:** 2 weeks
+
+**Planning status (2026-10-02):** Ready for implementation in ordered vertical
+slices; see `docs/sprint2/implementation-plan.md`. No Sprint 2 runtime features
+are claimed as shipped by this planning milestone.
 
 Deliver:
 

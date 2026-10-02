@@ -16,6 +16,7 @@ Resolve the blocking section during Sprint 0. Replace `Proposed` with `Confirmed
 | Original media retention | Avoid by default; store only permitted derived artifacts | Confirmed for MVP, 2026-09-21 |
 | Model strategy | Managed APIs behind provider-neutral interfaces | Confirmed for MVP, 2026-09-21 |
 | Initial tenancy | Private single-user projects | Confirmed for MVP, 2026-09-21 |
+| Sprint 1 identity boundary | Application-owned adapter; local bearer token or trusted identity gateway | Confirmed for MVP, 2026-09-21 |
 
 Questions to answer:
 
@@ -47,6 +48,22 @@ working answers for the MVP are:
 
 These decisions may be revisited through an ADR, but broad implementation should
 not silently contradict them.
+
+## Decide before binary media processing
+
+Sprint 2 starts with the already accepted SRT/VTT upload path. Binary media
+processing requires the choices below before its capability is enabled; they do
+not block subtitle uploads or allowlisted metadata adapters.
+
+| Decision | Proposed default | Status |
+|---|---|---|
+| Managed transcription provider | Application-owned ASR interface; provider, region and retention settings to be selected | Open |
+| Authorized binary media limits | Explicit file size, duration, format and spend limits | Open |
+| Binary input retention | Avoid by default; explicitly authorize any temporary original-media storage | Open |
+
+The implementation order and current assumptions are recorded in
+`docs/sprint2/implementation-plan.md`. No ASR vendor or original-media retention
+permission is implied by the subtitle-upload milestone.
 
 ## Decide before Sprint 5
 

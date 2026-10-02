@@ -138,6 +138,7 @@ Use `/api/v1`. Exact payloads should be generated from Pydantic models and expos
 - `GET /projects/{project_id}`
 - `PATCH /projects/{project_id}`
 - `POST /projects/{project_id}/archive`
+- `POST /projects/{project_id}/restore`
 - `DELETE /projects/{project_id}`
 
 ### Sources
@@ -193,4 +194,3 @@ Use `/api/v1`. Exact payloads should be generated from Pydantic models and expos
 - Never return raw worker/provider exceptions to the frontend.
 - Use signed object URLs with short expiration, content-type restrictions, and size limits.
 - Record audit events for destructive, permission-changing, and grading operations.
-

@@ -9,6 +9,24 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_vali
 
 
 TenantId = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")]
+IdentitySubject = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
+
+
+class AuthenticatedPrincipal(BaseModel):
+    provider: str = Field(min_length=1, max_length=64)
+    subject: IdentitySubject
+    tenant_id: TenantId
+
+
+class ProjectStatus(str, Enum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
+class ProjectListStatus(str, Enum):
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+    ALL = "all"
 
 
 class AuthorizationMode(str, Enum):
@@ -29,13 +47,24 @@ class ProjectCreate(BaseModel):
         return stripped
 
 
+class ProjectUpdate(ProjectCreate):
+    pass
+
+
 class Project(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID = Field(default_factory=uuid4)
     tenant_id: TenantId
     title: str
+    status: ProjectStatus = ProjectStatus.ACTIVE
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    archived_at: datetime | None = None
+
+
+class ProjectList(BaseModel):
+    items: list[Project]
 
 
 class FrameCandidate(BaseModel):
