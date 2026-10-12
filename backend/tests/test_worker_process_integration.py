@@ -28,9 +28,16 @@ if os.environ.get('PROBE_PAUSE') == '1':
         time.sleep(120)
         return content
     S3ArtifactStore.get = paused
+elif os.environ.get('PROBE_DELAY'):
+    original = S3ArtifactStore.get
+    def delayed(self, key, limit):
+        content = original(self, key, limit)
+        time.sleep(float(os.environ['PROBE_DELAY']))
+        return content
+    S3ArtifactStore.get = delayed
 celery_app.worker_main(['worker','--pool=solo','--concurrency=1','--loglevel=CRITICAL',
                        '--without-gossip','--without-mingle','--without-heartbeat',
-                       '--queues='+os.environ['PROBE_QUEUE'],'--hostname='+os.environ['PROBE_QUEUE']])
+                       '--queues='+os.environ['PROBE_QUEUE'],'--hostname='+os.environ['PROBE_QUEUE']+os.environ.get('PROBE_HOST_SUFFIX','')])
 '''
 
 

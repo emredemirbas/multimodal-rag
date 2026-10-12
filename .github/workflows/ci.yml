@@ -76,6 +76,8 @@ jobs:
         run: npm ci
       - name: Check dependency advisories
         run: npm audit --audit-level=high
+      - name: Verify pinned Next lint dependency compatibility
+        run: npm run test:lint-compat
       - name: Lint
         run: npm run lint
       - name: Typecheck
@@ -113,7 +115,7 @@ jobs:
           python-version: "3.12"
       - name: Install integration dependencies
         run: python -m pip install -e './backend[dev]'
-      - name: Verify actual worker crash recovery and MinIO cleanup
+      - name: Verify actual worker recovery, playlist slots and MinIO cleanup
         env:
           PYTHONPATH: backend
           TEST_REAL_WORKER: "1"

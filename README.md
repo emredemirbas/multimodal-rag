@@ -1,7 +1,8 @@
 # Multimodal Tutorial Learning Workspace
 
-A private learning workspace that turns authorized programming tutorials into
-searchable evidence, practical assignments, and feedback.
+A local, zero-service-spend GitHub portfolio project: authorized programming
+tutorials become searchable, citation-backed learning material. Assignments and
+feedback remain on the roadmap; this is not a production/SaaS deployment.
 
 Sprint 0 validated the transcript-to-cited-answer path. Sprint 1 adds the product
 foundation around it:
@@ -20,8 +21,12 @@ retry/cancel/reprocess controls and tracked source/project file cleanup. Optiona
 official YouTube video/playlist metadata never downloads audiovisual content.
 Sprint 3 adds a labelled offline extractive chat baseline with persisted SSE
 delivery, source filters, hybrid rank fusion/reranking and inspectable stable
-timestamp citations. Managed-provider choice and independently reviewed Alpha 1
-quality remain open. Binary media/ASR stays disabled.
+timestamp citations. Optional Ollama/Qwen3 4B now provides real local answers;
+the default remains a keyless extractive demo. Retrieval still uses the honest
+64-D hash/lexical infrastructure baseline. Binary media/ASR stays disabled.
+The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
+video-to-subtitle associations and bounded independent transcript processing.
+Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
 
 ## Read first
 
@@ -35,10 +40,12 @@ quality remain open. Binary media/ASR stays disabled.
 8. [`docs/08-testing-and-evaluation.md`](docs/08-testing-and-evaluation.md)
 
 Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
-validation evidence is recorded in [`docs/sprint3/validation-record.md`](docs/sprint3/validation-record.md).
+validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
+The free local model follow-up is in
+[`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
 Sprint 2 hosted CI passed for `d0ba720` after replacing the removed MinIO image.
-Current Sprint 3 changes are locally validated but have not been pushed or
-verified in hosted CI.
+The owner committed Sprint 3 as `e31d186`. Current Sprint 4 changes have not been
+committed/pushed; no hosted CI result for these new changes is claimed.
 
 ## Run locally
 
@@ -88,12 +95,62 @@ Deletion immediately removes records, then displays tracked file cleanup status.
 `YOUTUBE_API_KEY` is optional, server-side, and needed only for metadata imports;
 leave it empty to use uploads without external credentials or provider calls.
 
+After a playlist metadata import, its ordered video list shows missing transcripts
+and per-video progress. In **Transcript belongs to**, select the video described
+by your authorized subtitle; this records your assertion rather than verifying
+alignment against a video. At most two linked transcript jobs run per playlist
+by default (`PLAYLIST_CONCURRENCY=1..4`). Waiting for capacity does not consume a
+processing attempt. A failed video does not discard the other indexed videos.
+Retry it separately or upload corrected subtitles after its job becomes terminal.
+Older metadata imports need **Reprocess source** to populate ordered entries.
+Truncated snapshots are explicitly labelled. Deleting playlist metadata keeps
+separately uploaded transcripts; deleting the project removes both.
+
 Use **Chat with tutorial evidence** to ask a self-contained question, optionally
 filter to one indexed source, and inspect each citation. History survives reloads.
 Stopping delivery may leave a saved answer: reload history or resend the unchanged
-question to replay it without another logical turn. No LLM is connected yet;
-answers are quoted transcript excerpts, not a general-purpose conversational tutor.
+question to replay it without another logical turn. Default answers are quoted
+transcript excerpts; the optional local model explains conservatively matched
+evidence. Neither mode is a general-purpose conversational tutor.
 Deleting a source also removes saved turns quoting that source.
+
+## Optional real local AI (no API key or service bill)
+
+```bash
+docker compose --profile local-ai up --build -d ollama
+docker compose exec ollama ollama pull qwen3:4b
+ANSWER_PROVIDER=ollama docker compose --profile local-ai up -d api
+```
+
+Explicit setup downloads the official model (about 2.5 GB) and an Ollama image;
+allow roughly 10 GB extra disk and a 16 GB-RAM machine for this CPU profile.
+It uses local CPU/RAM/electricity, not a paid API. Cloud is disabled, the model port
+is not published, and no credential is required. Questions never download weights.
+The adapter has a one-call capacity gate and a 24-second deadline; retry if the
+machine is busy. It unloads the model after each answer to limit idle RAM and
+transient prompt retention. Weights remain in the `ollama_data` volume.
+
+Retrieval is still hash/lexical, not learned semantic search. Questions need
+matching identifiers/terms: weak matches abstain before invoking the model and
+are labelled `local-evidence-policy`, not falsely attributed to Qwen. Generated
+answers use only retrieved citation IDs, but reasoning can still be wrong;
+inspect the evidence. Saved history is not implicit context. ASR/OCR is disabled.
+
+Return to the lightweight demo without editing credentials:
+
+```bash
+ANSWER_PROVIDER=extractive docker compose up -d api
+docker compose stop ollama
+```
+
+After setup, test the real model with an owned temporary project:
+
+```bash
+set -a
+source .env
+set +a
+python3 scripts/smoke_local_model.py
+```
 
 Stop the stack without deleting data:
 
@@ -101,8 +158,9 @@ Stop the stack without deleting data:
 docker compose down
 ```
 
-Use `docker compose down -v` only when you intentionally want to delete all
-local PostgreSQL, Redis, and MinIO volumes.
+Use `docker compose down -v` only when you intentionally want to delete the
+local data volumes. Optional model weights also live in a named volume;
+`docker compose --profile local-ai down` stops the optional model container too.
 
 ## Authentication boundary
 

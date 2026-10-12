@@ -19,7 +19,7 @@ from .models import (
     SourceIngested,
     TranscriptIngestRequest,
 )
-from .providers import AnswerProvider, EmbeddingProvider
+from .providers import AnswerProvider, AnswerResult, EmbeddingProvider
 from .store import Store
 from .transcripts import parse_transcript, select_novel_frames
 
@@ -189,7 +189,9 @@ class TutorialService:
         from .sources.contracts import SourceError
         self._actor_user_id(principal)
         tenant_id = principal.tenant_id
-        self.store.get_project(tenant_id, project_id)
+        project = self.store.get_project(tenant_id, project_id)
+        if project.status.value != 'active':
+            raise SourceError('project_archived', 'Restore the project before asking new questions.', 409)
         for source_id in source_ids or []:
             self.store.get_source(tenant_id, project_id, source_id)
         started = perf_counter()
@@ -203,7 +205,9 @@ class TutorialService:
             source_ids,
         )
         retrieved = {hit.segment.id: hit.model_copy(deep=True) for hit in hits}
-        answer, abstained, cited_hits = self.answer_provider.answer(question, [hit.model_copy(deep=True) for hit in hits])
+        generated = self.answer_provider.answer(question, [hit.model_copy(deep=True) for hit in hits])
+        result = generated if isinstance(generated, AnswerResult) else AnswerResult(*generated)
+        answer, abstained, cited_hits = result.answer, result.abstained, result.cited_hits
         if (len(answer) > 12_000 or not answer.strip() or (abstained and cited_hits) or (not abstained and not cited_hits)
                 or len(cited_hits) > 4 or len({hit.segment.id for hit in cited_hits}) != len(cited_hits)):
             raise SourceError("invalid_model_answer", "The answer could not be validated.", 503)
@@ -218,13 +222,15 @@ class TutorialService:
             project_id=project_id,
             embedding_provider=self.embedding_provider.name,
             embedding_model=self.embedding_provider.model,
-            answer_provider=self.answer_provider.name,
-            answer_model=self.answer_provider.model,
+            answer_provider=result.provider or self.answer_provider.name,
+            answer_model=result.model or self.answer_provider.model,
             query_sha256=hashlib.sha256(question.encode("utf-8")).hexdigest(),
             retrieved_segment_ids=[hit.segment.id for hit in hits],
             cited_segment_ids=[hit.segment.id for hit in cited_hits],
             candidate_count=len(hits),
             latency_ms=latency_ms,
+            prompt_version=result.prompt_version or getattr(self.answer_provider, 'prompt_version', 'quoted-evidence-v1'),
+            input_tokens=result.input_tokens, output_tokens=result.output_tokens, answer_model_digest=result.model_digest,
         )
         citations = [
             Citation(
@@ -246,8 +252,8 @@ class TutorialService:
             abstained=abstained,
             citations=citations,
             retrieval_run_id=run.id,
-            provider=self.answer_provider.name,
-            model=self.answer_provider.model,
+            provider=run.answer_provider,
+            model=run.answer_model,
             processing_version=RETRIEVAL_VERSION,
             latency_ms=latency_ms,
         ), run

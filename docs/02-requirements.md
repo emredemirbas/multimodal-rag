@@ -2,6 +2,10 @@
 
 This is a baseline for Sprint 0 refinement, not a claim that every detail is final.
 
+The current target is a local GitHub portfolio demonstration with no paid
+API/service requirement (ADR 0015). Preserve isolation, safe content handling,
+provenance and testing; hosted beta performance/launch targets are deferred.
+
 ## Functional requirements
 
 ### Accounts and projects
@@ -141,4 +145,3 @@ Minimum assignment fields:
 - Application-owned model interfaces
 - Prompt and processing versioning
 - Automated unit, integration, isolation, and evaluation tests
-

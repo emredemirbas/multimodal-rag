@@ -131,9 +131,12 @@ class YouTubeMetadataProvider:
                         if not isinstance(video_id, str) or not re.fullmatch(r'[a-zA-Z0-9_-]{11}', video_id):
                             raise ValueError()
                         position = item['snippet']['position']
-                        if not isinstance(position, int) or position < 0:
+                        item_id = item['id']
+                        if not isinstance(item_id, str) or not re.fullmatch(r'[a-zA-Z0-9_+=./-]{1,512}', item_id):
                             raise ValueError()
-                        items.append({'video_id': video_id, 'title': self._title(item['snippet']['title']), 'position': position})
+                        if type(position) is not int or not 0 <= position <= 1_000_000:
+                            raise ValueError()
+                        items.append({'item_id': item_id, 'video_id': video_id, 'title': self._title(item['snippet']['title']), 'position': position})
                         if len(items) == self.playlist_limit:
                             break
                     page = payload.get('nextPageToken')
@@ -148,6 +151,8 @@ class YouTubeMetadataProvider:
                 else:
                     truncated = bool(page)
                 items.sort(key=lambda item: item['position'])
+                if len({item['position'] for item in items}) != len(items) or len({item['item_id'] for item in items}) != len(items):
+                    raise ValueError()
                 title = f'Playlist {source.canonical_id}'
             return {**source.metadata, 'title': title, 'items': items, 'truncated': truncated,
                     'retrieved_at': datetime.now(timezone.utc).isoformat(), 'provider_version': 'youtube-data-api-v3',

@@ -36,6 +36,18 @@ describe("server-only source actions", () => {
     expect((await uploadSourceAction(INITIAL_SOURCE_ACTION, data)).status).toBe("error");
     expect(requestJson).not.toHaveBeenCalled();
   });
+  it("passes a selected playlist item and rejects an invalid item identifier", async () => {
+    const data = form();
+    data.set("file", new File(["WEBVTT"], "tutorial.vtt", { type: "text/vtt" }));
+    data.set("playlist_item_id", sourceId);
+    vi.mocked(requestJson).mockResolvedValue({});
+    expect((await uploadSourceAction(INITIAL_SOURCE_ACTION, data)).status).toBe("success");
+    expect((vi.mocked(requestJson).mock.calls[0][1]?.body as FormData).get("playlist_item_id")).toBe(sourceId);
+    vi.mocked(requestJson).mockClear();
+    data.set("playlist_item_id", "../other-project");
+    expect((await uploadSourceAction(INITIAL_SOURCE_ACTION, data)).status).toBe("error");
+    expect(requestJson).not.toHaveBeenCalled();
+  });
   it("returns a tracked cleanup ticket instead of claiming object deletion is complete", async () => {
     const data = form();
     data.set("command", "delete");

@@ -52,7 +52,7 @@ def test_playlist_pagination_is_bounded_ordered_and_explicitly_truncated():
         assert resource == 'playlistItems'
         assert params['playlistId'] == 'PLabcdefghijk'
         pages.append(params)
-        return {'items': [{'contentDetails': {'videoId': 'abcdefghijk'}, 'snippet': {'title': 'Fixture', 'position': 3-len(pages)}}], 'nextPageToken': f'page-{len(pages)}'}
+        return {'items': [{'id': f'playlist-item-{len(pages)}', 'contentDetails': {'videoId': 'abcdefghijk'}, 'snippet': {'title': 'Fixture', 'position': 3-len(pages)}}], 'nextPageToken': f'page-{len(pages)}'}
     source = YouTubeAdapter().normalize('https://www.youtube.com/playlist?list=PLabcdefghijk')
     result = YouTubeMetadataProvider('fixture-only', fetch=fetch, playlist_limit=2).metadata(source)
     assert len(pages) == 2 and len(result['items']) == 2 and result['truncated']
@@ -64,4 +64,14 @@ def test_malformed_and_cyclic_provider_response_is_safe():
     provider = YouTubeMetadataProvider('fixture-only', fetch=lambda *_: {'items': [], 'nextPageToken': 'same-token'})
     with pytest.raises(SourceError) as error:
         provider.metadata(source)
+    assert error.value.code == 'invalid_provider_response'
+
+
+@pytest.mark.parametrize('change', [{'id': None}, {'id': 'duplicate'}, {'snippet': {'title': 'Fixture', 'position': True}}])
+def test_playlist_item_identity_and_position_are_validated(change):
+    source = YouTubeAdapter().normalize('https://www.youtube.com/playlist?list=PLabcdefghijk')
+    first = {'id': 'duplicate', 'contentDetails': {'videoId': 'abcdefghijk'}, 'snippet': {'title': 'First', 'position': 0}}
+    second = {'id': 'second', 'contentDetails': {'videoId': 'abcdefghijk'}, 'snippet': {'title': 'Second', 'position': 1}, **change}
+    with pytest.raises(SourceError) as error:
+        YouTubeMetadataProvider('fixture-only', fetch=lambda *_: {'items': [first, second]}).metadata(source)
     assert error.value.code == 'invalid_provider_response'

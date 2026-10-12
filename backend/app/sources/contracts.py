@@ -38,10 +38,30 @@ class ManagedSource(Source):
     failure_detail: str | None = None
     job: Job | None = None
     metadata: dict = Field(default_factory=dict)
+    parent_playlist_source_id: UUID | None = None
+    playlist_snapshot_generation: int | None = None
+
+
+class PlaylistMetadataItem(BaseModel):
+    item_id: str = Field(min_length=1, max_length=512, pattern=r'^[a-zA-Z0-9_+=./-]+$')
+    video_id: str = Field(pattern=r'^[a-zA-Z0-9_-]{11}$')
+    title: str = Field(min_length=1, max_length=255)
+    position: int = Field(strict=True, ge=0, le=1_000_000)
+
+
+class PlaylistItem(BaseModel):
+    id: UUID
+    playlist_source_id: UUID
+    generation: int
+    position: int
+    video_id: str
+    title: str
+    transcript_source_id: UUID | None = None
 
 
 class SourceList(BaseModel):
     items: list[ManagedSource]
+    playlist_items: list[PlaylistItem] = Field(default_factory=list)
 
 
 class Registration(BaseModel):

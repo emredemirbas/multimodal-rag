@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
-import type { SourceItem } from "@/lib/api/source-contracts";
+import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 
 vi.mock("@/app/actions/sources", () => ({ uploadSourceAction: vi.fn(), metadataSourceAction: vi.fn(), sourceCommandAction: vi.fn(), retryCleanupAction: vi.fn() }));
 const projectId = "12345678-1234-1234-1234-123456789abc";
@@ -62,5 +62,32 @@ describe("source management", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep source" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("shows ordered videos, truncation, partial failure and an explicit upload association", () => {
+    const playlist: SourceItem = { ...source, id: projectId, filename: "Python playlist", kind: "youtube_playlist", provider: "youtube", status: "metadata_ready", active_generation: null, playlist_truncated: true };
+    const failed: SourceItem = { ...source, status: "failed", active_generation: null, job: { ...source.job!, status: "failed", failure_code: "invalid_transcript", stage: "failed" } };
+    const items: PlaylistItem[] = [
+      { id: "22345678-1234-1234-1234-123456789abc", playlist_source_id: playlist.id, generation: 1, position: 2, video_id: "abcdefghijk", title: "Third lesson", transcript_source_id: null },
+      { id: "32345678-1234-1234-1234-123456789abc", playlist_source_id: playlist.id, generation: 1, position: 0, video_id: "ABCDEFGHIJK", title: "First lesson", transcript_source_id: failed.id },
+    ];
+    render(<SourcesWorkspace projectId={projectId} initialSources={[playlist, failed]} initialPlaylistItems={items} archived={false} />);
+    expect(screen.getByLabelText("Transcript belongs to")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Transcript belongs to"), { target: { value: items[0].id } });
+    expect(screen.getByRole("button", { name: "Process transcript" })).toBeDisabled();
+    expect(screen.getByText(/0 of 2 videos have indexed transcripts. 1 failed/)).toBeVisible();
+    expect(screen.getByText(/snapshot is truncated/)).toBeVisible();
+    expect(screen.getByText(/Other videos remain usable/)).toBeVisible();
+    const entries = screen.getByRole("region", { name: "Ordered videos: Python playlist" }).querySelectorAll("ol li");
+    expect(entries[0]).toHaveTextContent("First lesson");
+    expect(entries[1]).toHaveTextContent("Third lesson");
+    expect(entries[1]).toHaveAttribute("value", "3");
+    expect(screen.getByRole("button", { name: "Retry processing" })).toBeVisible();
+  });
+
+  it("explains that deleting playlist metadata keeps independent transcripts", () => {
+    render(<SourcesWorkspace projectId={projectId} initialSources={[{ ...source, kind: "youtube_playlist" }]} archived={true} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+    expect(screen.getByText(/keeps separately uploaded transcripts/)).toBeVisible();
   });
 });

@@ -15,6 +15,23 @@ function response() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
+  it("labels local generation and keeps the retrieval limitation visible", () => {
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[]} initialHistory={null} archived={false} answerMode="ollama" />);
+    expect(screen.getByText(/Local Ollama answer mode/)).toHaveTextContent("deterministic hash/lexical baseline");
+    expect(screen.queryByText(/Offline extractive baseline/)).not.toBeInTheDocument();
+  });
+  it("offers actionable local-model recovery while retaining the same retry key", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({code:"local_model_not_installed"}),{status:503,headers:{"Content-Type":"application/json"}})).mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetcher);
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{conversation,turns:[]}} archived={false} answerMode="ollama" />);
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "What is health?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Explicitly download qwen3:4b");
+    const key = JSON.parse(fetcher.mock.calls[0][1].body).idempotency_key;
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByText(turn.response.answer);
+    expect(JSON.parse(fetcher.mock.calls[1][1].body).idempotency_key).toBe(key);
+  });
   it("has labelled empty states and honestly identifies the offline provider", () => {
     render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[]} initialHistory={null} archived={false} />);
     expect(screen.getByLabelText("Question about the tutorial")).toHaveAttribute("maxlength", "2000");

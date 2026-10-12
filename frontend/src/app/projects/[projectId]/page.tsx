@@ -6,12 +6,12 @@ import { ProjectLifecycleControls } from "@/components/projects/project-lifecycl
 import { ProjectRenameForm } from "@/components/projects/project-rename-form";
 import { ApiErrorState, Notice } from "@/components/ui/api-state";
 import { getProject } from "@/lib/api/client";
-import { listSources } from "@/lib/api/sources";
+import { listSourceInventory } from "@/lib/api/sources";
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
-import { getHistory, listConversations } from "@/lib/api/chat";
-import type { Conversation, History } from "@/lib/api/chat-contracts";
-import type { SourceItem } from "@/lib/api/source-contracts";
+import { getAnswerMode, getHistory, listConversations } from "@/lib/api/chat";
+import type { AnswerMode, Conversation, History } from "@/lib/api/chat-contracts";
+import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 import type { Project } from "@/lib/api/contracts";
 import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
 
@@ -71,14 +71,19 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   let conversations: Conversation[] = [];
   let history: History | null = null;
   let chatError = "";
+  let answerMode: AnswerMode = "unavailable";
   try {
+    answerMode = await getAnswerMode();
     conversations = await listConversations(project.id);
     if (conversations[0]) history = await getHistory(project.id, conversations[0].id);
   } catch (error) { chatError = publicErrorMessage(error); }
   let sources: SourceItem[] = [];
+  let playlistItems: PlaylistItem[] = [];
   let sourceError = "";
   try {
-    sources = await listSources(project.id);
+    const inventory = await listSourceInventory(project.id);
+    sources = inventory.items;
+    playlistItems = inventory.playlist_items;
   } catch (error) {
     sourceError = publicErrorMessage(error);
   }
@@ -115,12 +120,12 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           <p className="eyebrow">Ask and inspect</p>
           <h2 id="chat-heading">Chat with tutorial evidence</h2>
           <ChatWorkspace projectId={project.id} sources={sources} initialConversations={conversations} initialHistory={history}
-            archived={project.status === "archived"} initialError={chatError} />
+            archived={project.status === "archived"} initialError={chatError} answerMode={answerMode} />
         </section>
         <section className="panel panel--wide" aria-labelledby="workspace-heading">
           <p className="eyebrow">Learning material</p>
           <h2 id="workspace-heading">Source management</h2>
-          <SourcesWorkspace projectId={project.id} initialSources={sources} archived={project.status === "archived"} initialError={sourceError} />
+          <SourcesWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems} archived={project.status === "archived"} initialError={sourceError} />
         </section>
 
         <section className="panel" aria-labelledby="settings-heading">

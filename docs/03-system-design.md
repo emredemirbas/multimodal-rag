@@ -1,5 +1,10 @@
 # Proposed system design
 
+Current target: free local portfolio mode (ADR 0015), superseding the managed
+model/hosted beta deployment default. Optional Ollama runs as a separate local
+process/container; default offline demos and CI require no model download.
+The production evolution sections remain future considerations, not current work.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.
@@ -229,4 +234,3 @@ Scale only after measurements:
 - add HNSW and iterative scans;
 - introduce separate retrieval service only when load requires it;
 - introduce Kubernetes only for a demonstrated orchestration need.
-

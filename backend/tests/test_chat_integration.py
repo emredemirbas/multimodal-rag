@@ -62,6 +62,43 @@ def test_atomic_history_idempotency_conflict_and_attribution(chat_fixture):
         assert row["prompt_version"] and row["reranker_version"] and row["billed_usd"] == 0 and row["input_tokens"] is None
 
 
+def test_local_model_usage_is_atomic_and_scoped(chat_fixture):
+    from app.providers import AnswerResult
+    repo,service,principal,project,actor,_,conversation = chat_fixture
+    class FixtureLocalProvider:
+        name='ollama-local'
+        model='qwen3:4b'
+        prompt_version='local-evidence-json-v1'
+        def answer(self, question, hits):
+            return AnswerResult('GET /health reports availability.',False,[hits[0]],input_tokens=123,output_tokens=35,model_digest='a'*64)
+    service.answer_provider=FixtureLocalProvider()
+    turn=record(chat_fixture)
+    with repo.store._connect() as connection:
+        for table in ['chat_turns','retrieval_runs']:
+            row=connection.execute(f'SELECT * FROM {table} WHERE tenant_id=%s AND project_id=%s', (principal.tenant_id,project.id)).fetchone()
+            assert row['input_tokens']==123 and row['output_tokens']==35 and row['answer_model_digest']=='a'*64
+            assert row['prompt_version']=='local-evidence-json-v1'
+    replay=repo.replay(principal.tenant_id,project.id,actor,conversation.id,prepare(chat_fixture)[0])
+    assert replay.id == turn.id
+
+
+def test_archive_blocks_new_generation_before_provider_but_preserves_replay(chat_fixture):
+    repo,service,principal,project,actor,source,conversation = chat_fixture
+    turn=record(chat_fixture)
+    service.archive_project(principal,project.id)
+    class NoCalls:
+        def answer(self,*args): raise AssertionError('Archived projects must not invoke models')
+    service.answer_provider=NoCalls()
+    with pytest.raises(SourceError) as blocked:
+        service.prepare_answer(principal,project.id,'What is GET /health?',[source.id])
+    assert blocked.value.code=='project_archived'
+    body=MessageRequest(question='What is GET /health?',source_ids=[source.id],idempotency_key='chat-message-0001')
+    assert repo.replay(principal.tenant_id,project.id,actor,conversation.id,body).id==turn.id
+    with pytest.raises(SourceError) as blocked:
+        repo.replay(principal.tenant_id,project.id,actor,conversation.id,body.model_copy(update={'idempotency_key':'new-archived-message'}))
+    assert blocked.value.code=='project_archived'
+
+
 def test_concurrent_same_key_commits_one_turn_and_one_run(chat_fixture):
     prepared = [prepare(chat_fixture), prepare(chat_fixture)]
     with ThreadPoolExecutor(max_workers=2) as pool:

@@ -46,13 +46,14 @@ from .artifacts.storage import ArtifactStore, S3ArtifactStore
 from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration, Registration, SourceCommand, SourceError, SourceList
 from .sources.repository import SourceRepository
 from .sources.upload_limit import UploadLimitMiddleware
+from .local_model import OllamaAnswerProvider
 from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
 from .chat.repository import ChatRepository
 from .chat.delivery import deliver
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.4.0"
+API_VERSION = "0.6.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -120,7 +121,8 @@ def create_app(
         application.state.service = TutorialService(
             active_store,
             DeterministicHashEmbeddingProvider(active_settings.embedding_dimensions),
-            EvidenceExtractiveAnswerProvider(),
+            (OllamaAnswerProvider(active_settings.ollama_base_url, active_settings.ollama_model, active_settings.local_model_timeout)
+             if active_settings.answer_provider == 'ollama' else EvidenceExtractiveAnswerProvider()),
             retrieval_limit=active_settings.retrieval_limit,
         )
         application.state.metrics = metrics
@@ -272,6 +274,13 @@ def create_app(
             media_type="text/plain; version=0.0.4",
         )
 
+    @app.get("/api/v1/runtime")
+    def runtime_configuration(request: Request, principal: CurrentPrincipal) -> dict[str, str]:
+        actor(request, principal)
+        provider = service(request).answer_provider
+        return {'mode': active_settings.answer_provider, 'provider': provider.name, 'model': provider.model,
+                'retrieval': 'deterministic-hash-and-lexical', 'spend_policy': 'no-paid-provider'}
+
     @app.post("/api/v1/projects", response_model=Project, status_code=201)
     def create_project(
         body: ProjectCreate,
@@ -337,6 +346,7 @@ def create_app(
         file: Annotated[UploadFile, File()],
         authorization_mode: Annotated[AuthorizationMode, Form()],
         idempotency_key: Annotated[str, Form(min_length=8, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")],
+        playlist_item_id: Annotated[UUID | None, Form()] = None,
     ) -> Registration:
         repository = sources(request)
         allowed_types = {"text/plain", "text/vtt", "application/x-subrip", "application/octet-stream"}
@@ -346,7 +356,8 @@ def create_app(
             content = await file.read(active_settings.upload_limit_bytes + 1)
             actor_id = await run_in_threadpool(actor, request, principal)
             return await run_in_threadpool(repository.register, principal.tenant_id, project_id, actor_id,
-                                          filename=file.filename or "", content=content, rights=authorization_mode, idempotency_key=idempotency_key)
+                                          filename=file.filename or "", content=content, rights=authorization_mode,
+                                          idempotency_key=idempotency_key, playlist_item_id=playlist_item_id)
         finally:
             await file.close()
 

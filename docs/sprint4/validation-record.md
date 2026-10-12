@@ -1,0 +1,136 @@
+# Sprint 4 ordered-transcript playlist validation
+
+Date: 2026-10-11
+Status: Local playlist slice validated; not full multimodal/Alpha 2 approval.
+The dependency-audit blocker is now resolved locally; hosted CI still requires a
+push. The free local portfolio decision is recorded in ADR 0015.
+
+## Delivered scope
+
+- Additive migration `0005_ordered_playlists.sql`, ordered metadata snapshots and
+  current successful snapshot references under tenant/project scope.
+- Stable provider item/video identities, correct repeated-video relationships,
+  explicit truncation and upload-link preservation across metadata reordering.
+- Atomic authorized subtitle upload association; unchanged-key replay and conflict
+  checks include the chosen video. Replacements preserve independent old sources.
+- Per-playlist active lease cap, no-attempt capacity waiting, durable redelivery,
+  independent cancellation/retry and a bounded operational waiting gauge.
+- Accessible ordered videos, missing/ready/failed states, upload selector,
+  truncation warning and accurate playlist-versus-transcript deletion wording.
+- Source/project deletion and old citation stability retained.
+
+## Checks
+
+- Full backend suite with PostgreSQL, Redis, MinIO and `TEST_REAL_WORKER=1`:
+  **90 passed, no skips** (37.20 seconds).
+- Three actual test-owned Celery processes competing for two playlist slots:
+  ten synthetic videos, observed maximum two running jobs and capacity waiting;
+  nine successful subtitles and one malformed failure; only the failed video's
+  corrected replacement processed, leaving the other nine attempts unchanged.
+- Existing actual worker-death recovery, duplicate delivery and MinIO checks pass.
+- Negative tenant/project upload, item reads and worker-claim tests pass; scoped
+  foreign keys, concurrent replay, failed metadata refresh, stale snapshot item,
+  repeated-video identity and project deletion are covered.
+- Frontend **12 files, 37 tests passed**, lint and typecheck passed. Includes
+  playlist selection, ordering, partial failure, deletion wording, malformed
+  contracts and truncation surviving the server-only proxy's normalization.
+- Production Docker builds pass, including the final frontend correction.
+  Migration executes and repeats successfully; seven runtime services are healthy.
+- Live Sprint 1/2/3 smoke regressions passed against the new stack.
+- Final frontend rerun passed all 37 tests, lint and typecheck; Compose config and
+  `git diff --check` passed. The ignored `.env` was not changed.
+
+## Browser evidence
+
+A test-owned project was seeded with clearly labelled synthetic metadata; its
+outbox entry was removed in the same transaction before dispatch. No YouTube
+request or provider key was used. Two synthetic subtitles were uploaded through
+the API and processed by the normal Compose worker: one ready, one malformed;
+a third item remained without a subtitle.
+
+The production browser showed ordered 1/2/3 entries, **1 of 3 indexed**, **1 failed**,
+an actionable partial-failure message and individual retry controls. The explicit
+truncation warning survived source refresh. Selecting a video preserved its label;
+inspection found that selection could enable the upload button without a file.
+The button now also requires a selected file, with a regression assertion.
+The final production rebuild was checked again: selecting the third video kept
+the file-less upload button disabled, and the truncation warning stayed visible
+after source refresh. No warnings/errors were observed in these browser flows.
+The exact owned test project and its two uploaded files were permanently removed
+after verification; durable artifact cleanup completed and project reads returned
+404. Existing user data and shared volumes were preserved. This validates a
+synthetic local fixture, not live YouTube availability or subtitle/video alignment.
+
+## Dependency advisory and release gate
+
+Initial full `npm audit` reported seven high findings. Regenerating the lockfile
+with compatible published fixes updates `sharp` **0.35.4 → 0.35.5** and
+`source-map-js` **1.2.1 → 1.2.2**. Production-only audit reports zero findings.
+References: [sharp maintainer advisory](https://github.com/lovell/sharp/security/advisories/GHSA-wq5f-xc86-pv6w),
+[source-map-js advisory](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
+
+Initially `npm audit --audit-level=high` exited 1 with five high dependency-chain
+findings, all originating in `braces@3.0.3` through Next's development ESLint plugin,
+`fast-glob` and `micromatch`. The
+[reviewed advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) lists no
+patched version; the official npm registry still lists 3.0.3 as latest. Even the
+current Next ESLint plugin 16.4.0 retains that dependency. The application's uploaded
+transcripts never become lint glob patterns; this is an exposure observation,
+not permission to waive the advisory or a claim of exploit immunity.
+
+The follow-up replaces only the pinned Next lint plugin's root-directory lookup
+dependency with a private, tested compatibility package backed by official
+`tinyglobby@0.2.17`. Literal/absolute paths and glob/array roots are verified using
+the real upstream helper; unsupported options and pathological patterns fail
+closed. Next Core Web Vitals, TypeScript and accessibility violations still
+produce their original diagnostics. Native imports in the CJS adapter receive
+only a narrow file-specific style allowance; framework/accessibility rules are
+unchanged. Braces/micromatch code is absent from the install/lockfile, not relabelled.
+
+Clean `npm ci`, **5 lint compatibility tests**, full
+`npm audit --audit-level=high` (**zero findings**), lint and typecheck pass.
+CI retains the full audit and adds compatibility tests. No finding is suppressed,
+no Next 14 downgrade or third-party fork is used. Docker copies the private
+tooling package before clean dependency installation. See
+`lint-compatibility-plan.md`. Changes remain uncommitted/unpushed; no hosted CI
+success is claimed.
+
+## Reproduce
+
+```bash
+docker compose up --build -d --wait --wait-timeout 120
+set -a
+source .env
+set +a
+TEST_REAL_WORKER=1 PYTHONPATH=backend backend/.venv/bin/python -m pytest backend --tb=short
+backend/.venv/bin/python scripts/smoke_sprint1.py
+backend/.venv/bin/python scripts/smoke_sprint2.py
+backend/.venv/bin/python scripts/smoke_sprint3.py
+cd frontend
+npm ci
+npm test
+npm run lint
+npm run typecheck
+npm audit --omit=dev --audit-level=high
+npm run test:lint-compat
+npm audit --audit-level=high
+```
+
+The real-process probe uses its own schema, Redis key prefix, queue, processes and
+S3 prefix. Only its exact namespace/processes are cleaned; shared Redis, user data,
+Compose workers and volumes are preserved.
+
+## Remaining scope
+
+The owner's subsequent free-portfolio direction and completed optional local
+answer slice are recorded in ADR 0015 and
+`../sprint3/local-model-validation.md` (115 backend, 40 UI and 5 lint-compatibility
+tests, plus actual local model smoke). Managed providers are no longer a blocking
+choice for this target. Local semantic embeddings and media remain separate work.
+
+Official metadata imports still require an owner-configured server-side
+`YOUTUBE_API_KEY`; no live provider request was verified. Managed LLM/ASR/vision,
+retention/region/spend policy, binary input limits, FFmpeg isolation, meaningful
+frame selection/OCR/alignment, visual citations and reviewed benchmarks remain
+open. No arbitrary download, learned semantic model, external docs, assignment
+or grading feature is added. See ADR 0014 and the open decision log.

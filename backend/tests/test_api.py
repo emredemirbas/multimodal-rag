@@ -31,6 +31,14 @@ async def create_project(client: AsyncClient, tenant: str = "tenant-a") -> str:
     return response.json()["id"]
 
 
+async def test_runtime_mode_is_authenticated_and_contains_no_endpoint_secrets(client: AsyncClient):
+    assert (await client.get('/api/v1/runtime')).status_code == 401
+    response = await client.get('/api/v1/runtime', headers=auth_headers())
+    assert response.status_code == 200
+    assert response.json() == {'mode':'extractive','provider':'local-deterministic','model':'evidence-extractive-v2',
+                               'retrieval':'deterministic-hash-and-lexical','spend_policy':'no-paid-provider'}
+
+
 async def ingest(client: AsyncClient, project_id: str, tenant: str = "tenant-a") -> dict:
     response = await client.post(
         f"/api/v1/projects/{project_id}/sources/transcripts",

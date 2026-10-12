@@ -28,6 +28,15 @@ Names are provisional. Prefer stable domain concepts over provider-specific name
 - `processing_attempts`
 - `document_versions`
 
+The authorized-transcript Sprint 4 slice adds `playlist_items` metadata snapshots,
+the last successful snapshot generation and scoped parent playlist references.
+`GET .../sources` returns ordered `playlist_items` alongside sources.
+Upload multipart forms may include `playlist_item_id` to atomically associate an
+authorized subtitle with a current video entry. Reprocessing playlist metadata
+refreshes its snapshot; matching item/video identities preserve upload links.
+Metadata-only playlist deletion unlinks, but does not delete, independent uploads.
+See ADR 0014 for concurrency, truncation and migration compatibility.
+
 Suggested source fields:
 
 - `id`, `tenant_id`, `project_id`;
@@ -186,6 +195,14 @@ recovery; a separate GET stream and citation-feedback command remain outlines,
 not implemented endpoints. `GET /projects/{project_id}/evidence/{segment_id}`
 returns scoped stable text, timestamps, source and processing generation.
 The stateless JSON `/questions` API also accepts optional source IDs.
+
+Optional local generation adds migration 0006 for actual token counts and a model
+manifest lookup digest on retrieval/turn records; prompt versions distinguish
+model generation from application-side lexical abstention. Unknown usage stays
+null. New questions on archived projects are rejected before invoking providers;
+saved same-key replay remains readable. Authenticated `GET /api/v1/runtime` reports
+only configured mode/model, retrieval baseline and no-paid-provider policy, never
+service URLs or credentials. The model port itself is not published.
 
 ### Assignments
 

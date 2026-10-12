@@ -1,0 +1,9 @@
+{
+  "name": "@multimodal-rag/next-lint-glob",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Narrow root-directory glob compatibility for the pinned Next.js ESLint plugin",
+  "main": "index.cjs",
+  "engines": { "node": ">=20.19.0" },
+  "peerDependencies": { "tinyglobby": "0.2.17" }
+}

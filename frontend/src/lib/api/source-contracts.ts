@@ -18,6 +18,18 @@ export interface SourceItem {
   provider: string;
   job: ProcessingJob | null;
   failure_code: string | null;
+  kind?: string;
+  playlist_truncated?: boolean;
+}
+
+export interface PlaylistItem {
+  id: string;
+  playlist_source_id: string;
+  generation: number;
+  position: number;
+  video_id: string;
+  title: string;
+  transcript_source_id: string | null;
 }
 
 export interface CleanupTicket {
@@ -50,6 +62,16 @@ function integer(value: unknown): number {
   return value;
 }
 
+function playlistTruncated(source: Record<string, unknown>): boolean {
+  if (source.playlist_truncated !== undefined) {
+    if (typeof source.playlist_truncated !== "boolean") throw new Error("Invalid playlist truncation");
+    return source.playlist_truncated;
+  }
+  const flag = source.metadata === undefined ? undefined : record(source.metadata).truncated;
+  if (flag !== undefined && typeof flag !== "boolean") throw new Error("Invalid playlist truncation");
+  return flag === true;
+}
+
 export function parseSourceList(value: unknown): SourceItem[] {
   const payload = record(value);
   if (!Array.isArray(payload.items)) throw new Error("Invalid source list");
@@ -67,7 +89,28 @@ export function parseSourceList(value: unknown): SourceItem[] {
       generation: integer(source.generation), active_generation: source.active_generation === null ? null : integer(source.active_generation),
       segment_count: integer(source.segment_count), provider: string(source.provider), job,
       failure_code: source.failure_code === null ? null : string(source.failure_code),
+      ...(source.kind === undefined ? {} : { kind: string(source.kind) }),
+      playlist_truncated: playlistTruncated(source),
     };
+  });
+}
+
+export function parsePlaylistItems(value: unknown): PlaylistItem[] {
+  const payload = record(value);
+  if (payload.playlist_items === undefined) return [];
+  if (!Array.isArray(payload.playlist_items) || payload.playlist_items.length > 20_000) throw new Error("Invalid playlist items");
+  const seen = new Set<string>();
+  return payload.playlist_items.map((raw) => {
+    const item = record(raw);
+    const id = identifier(item.id);
+    const video = string(item.video_id);
+    const title = string(item.title);
+    const generation = integer(item.generation);
+    const position = integer(item.position);
+    if (seen.has(id) || !/^[a-zA-Z0-9_-]{11}$/.test(video) || !title || title.length > 255 || generation < 1 || position > 1_000_000) throw new Error("Invalid playlist item");
+    seen.add(id);
+    return { id, playlist_source_id: identifier(item.playlist_source_id), generation, position, video_id: video, title,
+      transcript_source_id: item.transcript_source_id === null ? null : identifier(item.transcript_source_id) };
   });
 }
 

@@ -38,8 +38,21 @@ class Settings:
     upload_limit_bytes: int = 2_000_000
     job_lease_seconds: int = 180
     youtube_api_key: str = ""
+    playlist_concurrency: int = 2
+    answer_provider: str = 'extractive'
+    ollama_base_url: str = 'http://ollama:11434'
+    ollama_model: str = 'qwen3:4b'
+    local_model_timeout: int = 24
 
     def __post_init__(self) -> None:
+        from .local_model import checked_local_url
+        if self.answer_provider not in {'extractive', 'ollama'}:
+            raise ValueError('Only extractive and local Ollama answers are supported; no paid provider is configured')
+        checked_local_url(self.ollama_base_url)
+        if self.ollama_model != 'qwen3:4b' or not 1 <= self.local_model_timeout <= 24:
+            raise ValueError('Use local qwen3:4b with a 1–24 second timeout')
+        if not 1 <= self.playlist_concurrency <= 4:
+            raise ValueError("PLAYLIST_CONCURRENCY must be between 1 and 4")
         if not 1 <= self.retrieval_limit <= 4:
             raise ValueError("RETRIEVAL_LIMIT must be between 1 and 4")
         if not 1 <= self.upload_limit_bytes <= 2_000_000:
@@ -95,4 +108,9 @@ class Settings:
             upload_limit_bytes=int(os.getenv("UPLOAD_LIMIT_BYTES", "2000000")),
             job_lease_seconds=int(os.getenv("JOB_LEASE_SECONDS", "180")),
             youtube_api_key=os.getenv("YOUTUBE_API_KEY", ""),
+            playlist_concurrency=int(os.getenv("PLAYLIST_CONCURRENCY", "2")),
+            answer_provider=os.getenv('ANSWER_PROVIDER', 'extractive'),
+            ollama_base_url=os.getenv('OLLAMA_BASE_URL', 'http://ollama:11434'),
+            ollama_model=os.getenv('OLLAMA_MODEL', 'qwen3:4b'),
+            local_model_timeout=int(os.getenv('LOCAL_MODEL_TIMEOUT', '24')),
         )

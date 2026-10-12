@@ -559,10 +559,10 @@ class PostgresStore:
                 id, tenant_id, project_id, embedding_provider, embedding_model,
                 answer_provider, answer_model, query_sha256, retrieved_segment_ids,
                 cited_segment_ids, candidate_count, latency_ms, created_at,
-                retrieval_version, reranker_version, prompt_version
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                retrieval_version, reranker_version, prompt_version,input_tokens,output_tokens,answer_model_digest
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (run.id, run.tenant_id, run.project_id, run.embedding_provider, run.embedding_model,
              run.answer_provider, run.answer_model, run.query_sha256, run.retrieved_segment_ids,
              run.cited_segment_ids, run.candidate_count, run.latency_ms, run.created_at,
-             run.retrieval_version, run.reranker_version, run.prompt_version),
+             run.retrieval_version, run.reranker_version, run.prompt_version,run.input_tokens,run.output_tokens,run.answer_model_digest),
         )

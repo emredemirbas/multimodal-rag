@@ -40,6 +40,11 @@ export async function uploadSourceAction(previous: SourceActionState, form: Form
     upload.set("file", file);
     upload.set("authorization_mode", rights);
     upload.set("idempotency_key", key(form));
+    const item = form.get("playlist_item_id");
+    if (item !== null && item !== "") {
+      if (typeof item !== "string" || !UUID_PATTERN.test(item)) throw new ApiError({ status: 422, code: "validation_error" });
+      upload.set("playlist_item_id", item);
+    }
     await requestJson(`${sourcePath(id)}/uploads`, { method: "POST", body: upload });
     revalidatePath(`/projects/${id}`);
     return { status: "success", message: "Transcript uploaded. Processing continues in the background.", version: previous.version + 1 };

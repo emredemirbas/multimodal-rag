@@ -62,6 +62,7 @@ export function publicErrorMessage(error: unknown): string {
     project_archived: "Restore the project before adding sources.",
     source_limit: "This project has reached its current limit of 200 sources.",
     retry_limit: "Retry limit reached. Correct the problem and upload a new source.",
+    playlist_item_busy: "Wait for or cancel this video's current transcript processing before uploading its replacement.",
   };
   if (sourceErrors[error.code]) return sourceErrors[error.code];
 

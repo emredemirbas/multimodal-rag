@@ -1,5 +1,11 @@
 # Sprint plan
 
+The owner's 2026-10-11 direction makes this a free local GitHub portfolio project
+(ADR 0015), not a production/private-beta launch. Keep sprint order and delivery
+boundaries; hosted release milestones and staffing estimates below are historical
+planning references. Local answer generation can complete the earlier RAG slice
+without enabling paid providers or jumping to assignments/grading.
+
 ## Estimation assumptions
 
 - Team: three full-time engineers covering frontend, backend, and AI/platform
@@ -129,6 +135,14 @@ Exit:
 ## Sprint 4 — Playlists and multimodal evidence
 
 **Duration:** 2 weeks
+
+**Implementation status (2026-10-11):** Ordered authorized-transcript playlist
+slice implemented and locally validated: metadata snapshots, video/upload links,
+bounded processing, partial failure and independent recovery. This is not full
+multimodal/Alpha 2 completion. ASR/vision, binary retention and reviewed quality
+decisions remain open. The development dependency advisory is resolved through a
+tested, pinned lint adapter; full audit passes locally. Hosted CI has not run for
+these unpushed changes; see `docs/sprint4/validation-record.md`.
 
 Deliver:
 

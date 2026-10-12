@@ -1,5 +1,13 @@
 # Product brief
 
+## Current delivery target (2026-10-11)
+
+The owner selected a **GitHub portfolio project**, not a production launch, and
+requires no paid API/service dependency (ADR 0015). Default startup is a keyless
+demo; real model generation is optional and local. Local model downloads and
+CPU/RAM usage remain explicit. The product vision below is the demonstration
+roadmap, not a current commitment to a hosted private beta or managed vendors.
+
 ## Product statement
 
 Build an AI learning workspace that turns programming video tutorials and playlists into searchable, citation-backed course material and practical, assessable coding assignments.
@@ -80,7 +88,7 @@ Confirmed MVP persona:
 - Plagiarism detection
 - Arbitrary web crawling
 - Private YouTube account integration
-- Self-hosted foundation models
+- Large/custom model hosting (optional local Ollama answers are now a portfolio feature)
 - Fully autonomous assignment publication without review
 - Kubernetes as a prerequisite
 - Email/SMS/push reminders

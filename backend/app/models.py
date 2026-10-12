@@ -188,4 +188,7 @@ class RetrievalRun(BaseModel):
     retrieval_version: str = "hybrid-rrf-v1"
     reranker_version: str = "identifier-overlap-v1"
     prompt_version: str = "quoted-evidence-v1"
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    answer_model_digest: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

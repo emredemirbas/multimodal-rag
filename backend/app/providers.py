@@ -39,7 +39,20 @@ class AnswerProvider(Protocol):
     name: str
     model: str
 
-    def answer(self, question: str, hits: Sequence[RetrievalHit]) -> tuple[str, bool, list[RetrievalHit]]: ...
+    def answer(self, question: str, hits: Sequence[RetrievalHit]) -> AnswerResult | tuple[str, bool, list[RetrievalHit]]: ...
+
+
+@dataclass(frozen=True)
+class AnswerResult:
+    answer: str
+    abstained: bool
+    cited_hits: list[RetrievalHit]
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    model_digest: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    prompt_version: str | None = None
 
 
 @dataclass(frozen=True)

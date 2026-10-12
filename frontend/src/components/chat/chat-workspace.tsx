@@ -2,16 +2,18 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { parseConversation, parseHistory, timestamp, type ChatTurn, type Conversation, type History } from "@/lib/api/chat-contracts";
+import { parseConversation, parseHistory, timestamp, type AnswerMode, type ChatTurn, type Conversation, type History } from "@/lib/api/chat-contracts";
+import { ApiError, apiErrorFromResponse } from "@/lib/api/errors";
 import type { SourceItem } from "@/lib/api/source-contracts";
 import { consumeChatStream } from "@/lib/chat-stream";
 
 interface Props {
   projectId: string; sources: SourceItem[]; initialConversations: Conversation[];
   initialHistory: History | null; archived: boolean; initialError?: string;
+  answerMode?: AnswerMode;
 }
 
-export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "" }: Props) {
+export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "", answerMode = "extractive" }: Props) {
   const [conversations, setConversations] = useState(initialConversations);
   const [conversation, setConversation] = useState<Conversation | null>(initialHistory?.conversation ?? null);
   const [turns, setTurns] = useState<ChatTurn[]>(initialHistory?.turns ?? []);
@@ -81,14 +83,21 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
         method: "POST", headers: { "Content-Type": "application/json", "Accept": "text/event-stream" }, signal,
         body: JSON.stringify({ question: question.trim(), source_ids: sourceId ? [sourceId] : [], idempotency_key: requestKey.current }),
       });
-      if (!response.ok || !response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) throw new Error("Answer unavailable");
+      if (!response.ok) throw await apiErrorFromResponse(response);
+      if (!response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) throw new Error("Answer unavailable");
       const turn = await consumeChatStream(response.body, (chunk) => setPartial((previous) => previous + chunk));
       setTurns((previous) => [...previous.filter((item) => item.id !== turn.id), turn].sort((left, right) => left.sequence - right.sequence));
       setQuestion(""); setPartial(""); requestKey.current = "";
       setStatus(turn.response.abstained ? "No supporting evidence was found. The limitation was saved." : "Answer saved with inspectable source citations.");
-    } catch {
+    } catch (failure) {
       setPartial("");
-      setError(active.signal.aborted ? "Delivery stopped. The answer may already be saved. Reload history or resend this unchanged question to replay it." :
+      const modelErrors: Record<string, string> = {
+        local_model_unavailable: "The local model is unavailable or timed out. Start the local-ai service, free resources and retry this unchanged question.",
+        local_model_not_installed: "The local model is not installed. Explicitly download qwen3:4b in the local-ai service, then retry this unchanged question.",
+        local_model_busy: "The local model is answering another question. Retry this unchanged question shortly.",
+        invalid_model_answer: "The local model answer could not be validated. Retry this unchanged question; no unvalidated answer is displayed.",
+      };
+      setError(failure instanceof ApiError && modelErrors[failure.code] ? modelErrors[failure.code] : active.signal.aborted ? "Delivery stopped. The answer may already be saved. Reload history or resend this unchanged question to replay it." :
         "Delivery could not finish. The answer may already be saved. Reload history or resend this unchanged question; it will not create a duplicate turn.");
       setStatus("");
     } finally {
@@ -98,7 +107,9 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   }
 
   return <div className="stack">
-    <p className="muted">Offline extractive baseline: answers quote your indexed transcripts, not a connected language model. Each question is self-contained; saved history is not model context.</p>
+    <p className="muted">{answerMode === "ollama" ? "Local Ollama answer mode: Qwen3 4B runs on your computer, with no paid/cloud provider. Retrieval still uses the deterministic hash/lexical baseline." :
+      answerMode === "extractive" ? "Offline extractive baseline: answers quote your indexed transcripts, not a connected language model." :
+      "Answer configuration could not be verified. Reload the workspace before relying on the configured model."} Each question is self-contained; saved history is not model context.</p>
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {

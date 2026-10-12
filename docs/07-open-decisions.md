@@ -14,7 +14,7 @@ Resolve the blocking section during Sprint 0. Replace `Proposed` with `Confirmed
 | Grading languages | Python only | Confirmed for MVP, 2026-09-21 |
 | Grading method | Deterministic tests plus qualitative rubric feedback | Confirmed for MVP, 2026-09-21 |
 | Original media retention | Avoid by default; store only permitted derived artifacts | Confirmed for MVP, 2026-09-21 |
-| Model strategy | Managed APIs behind provider-neutral interfaces | Confirmed for MVP, 2026-09-21 |
+| Model strategy | Keyless demo plus optional local models behind provider-neutral interfaces | Confirmed for free portfolio mode, 2026-10-11; supersedes managed-API default (ADR 0015) |
 | Initial tenancy | Private single-user projects | Confirmed for MVP, 2026-09-21 |
 | Sprint 1 identity boundary | Application-owned adapter; local bearer token or trusted identity gateway | Confirmed for MVP, 2026-09-21 |
 
@@ -71,15 +71,31 @@ and limits remain open and their capability remains disabled.
 
 ## Decide before the provider-backed Alpha 1 release
 
+These managed-service release gates are deferred: the owner now targets a free
+local GitHub portfolio, not a production beta (ADR 0015). The selected answer
+path is optional local Ollama/Qwen3 4B. Keep deterministic retrieval honest and
+record actual local-model tests; this decision is not a managed-service quality
+certification. Local semantic embeddings and local ASR/vision are follow-up
+slices, with no paid endpoint or cloud fallback. Binary input limits/retention
+and dedicated media isolation still need their implementation boundaries.
+
 | Decision | Proposed default | Status |
 |---|---|---|
-| Managed answer/embedding provider and models | Provider-neutral managed APIs, with approved retention/region/spend policy | Open; owner preference requested during Sprint 3 |
-| Reviewed RAG dataset and release threshold | Owner-reviewed representative tutorials and supported/unsupported/adversarial questions | Open; local synthetic regression is not release approval |
+| Answer/embedding provider and models | Local Ollama/Qwen3 4B for optional answers; hash/lexical retrieval until a separate local semantic-embedding slice | Confirmed for zero-service-spend portfolio, 2026-10-11; managed providers deferred |
+| Reviewed RAG dataset and release threshold | Record local regression/smoke evidence; independent representative review before general quality claims | Production release threshold deferred; synthetic demos are not broad quality approval |
 
 Sprint 3's local infrastructure uses the existing deterministic embedding and
 extractive answer provider (ADR 0013). No model key or paid request is required.
 Its streaming interface delivers validated persisted answers; remote incremental
 generation, contextual follow-ups and provider-backed quality are not implied.
+
+## Sprint 4 implementation boundary
+
+The ordered-playlist slice continues only the accepted authorized SRT/VTT path
+(ADR 0014). Playlist metadata is not audiovisual evidence. Each uploaded subtitle
+has its own rights assertion and user-selected video association. The local
+two-job playlist safety cap does not settle beta quotas. No binary retention,
+managed ASR/vision vendor, download permission or full Alpha 2 approval is implied.
 
 ## Decide before Sprint 5
 

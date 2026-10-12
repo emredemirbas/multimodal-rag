@@ -95,7 +95,7 @@ class ChatRepository:
 
     def replay(self, tenant: str, project: UUID, actor: UUID, conversation: UUID, body: MessageRequest) -> ChatTurn | None:
         with self.store._connect() as connection:
-            self._scope(connection, tenant, project, actor)
+            state = self._scope(connection, tenant, project, actor)
             self._conversation(connection, tenant, project, conversation)
             row = connection.execute(
                 "SELECT * FROM chat_turns WHERE tenant_id=%s AND project_id=%s AND conversation_id=%s AND idempotency_key=%s",
@@ -105,6 +105,12 @@ class ChatRepository:
                 if row["request_sha256"] != self.request_hash(body):
                     raise SourceError("idempotency_conflict", "This message key was used for different input.", 409)
                 return self._turn(connection, tenant, project, row)
+            if state['status'] != 'active':
+                raise SourceError('project_archived', 'Restore the project before asking a new question.', 409)
+            latest = connection.execute('SELECT coalesce(max(sequence),0) AS sequence FROM chat_turns WHERE tenant_id=%s AND project_id=%s AND conversation_id=%s',
+                (tenant, project, conversation)).fetchone()['sequence']
+            if latest >= 200:
+                raise SourceError('message_limit', 'Start a new conversation after 200 turns.', 429)
         return None
 
     def record(self, tenant: str, project: UUID, actor: UUID, conversation: UUID, body: MessageRequest,
@@ -142,12 +148,13 @@ class ChatRepository:
             row = connection.execute(
                 """INSERT INTO chat_turns (tenant_id,project_id,conversation_id,id,sequence,actor_user_id,
                    idempotency_key,request_sha256,question,source_ids,answer,abstained,retrieval_run_id,provider,model,
-                   prompt_version,retrieval_version,reranker_version,duration_ms,input_characters,output_characters)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+                   prompt_version,retrieval_version,reranker_version,duration_ms,input_characters,output_characters,
+                   input_tokens,output_tokens,answer_model_digest)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
                 (tenant, project, conversation, uuid4(), latest+1, actor, body.idempotency_key, self.request_hash(body),
                  body.question, body.source_ids, response.answer, response.abstained, run.id, response.provider, response.model,
                  run.prompt_version, run.retrieval_version, run.reranker_version, response.latency_ms,
-                 len(body.question), len(response.answer)),
+                 len(body.question), len(response.answer),run.input_tokens,run.output_tokens,run.answer_model_digest),
             ).fetchone()
             for index, citation in enumerate(response.citations, 1):
                 connection.execute(

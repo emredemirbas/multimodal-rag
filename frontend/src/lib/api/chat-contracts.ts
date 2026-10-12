@@ -11,6 +11,13 @@ export interface ChatTurn {
 }
 export interface History { conversation: Conversation; turns: ChatTurn[] }
 export interface Evidence extends Citation { text: string }
+export type AnswerMode = "extractive" | "ollama" | "unavailable";
+
+export function parseAnswerMode(value: unknown): AnswerMode {
+  const row = record(value);
+  if ((row.mode !== "extractive" && row.mode !== "ollama") || row.spend_policy !== "no-paid-provider") throw new Error("Invalid answer mode");
+  return row.mode;
+}
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid chat record");

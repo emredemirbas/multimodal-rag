@@ -1,6 +1,10 @@
 import "server-only";
 import { requestJson } from "@/lib/api/client";
-import { parseConversations, parseHistory, type Conversation, type History } from "@/lib/api/chat-contracts";
+import { parseAnswerMode, parseConversations, parseHistory, type Conversation, type History } from "@/lib/api/chat-contracts";
+
+export async function getAnswerMode() {
+  return parseAnswerMode(await requestJson('/api/v1/runtime'));
+}
 
 export function conversationPath(projectId: string): string {
   return `/api/v1/projects/${encodeURIComponent(projectId)}/conversations`;

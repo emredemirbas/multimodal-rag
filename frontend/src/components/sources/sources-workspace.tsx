@@ -4,7 +4,7 @@ import { useActionState, useCallback, useEffect, useId, useRef, useState } from 
 
 import { metadataSourceAction, sourceCommandAction, uploadSourceAction } from "@/app/actions/sources";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { isProcessing, parseSourceList, type CleanupTicket, type SourceItem } from "@/lib/api/source-contracts";
+import { isProcessing, parsePlaylistItems, parseSourceList, type CleanupTicket, type PlaylistItem, type SourceItem } from "@/lib/api/source-contracts";
 import { CleanupStatus } from "@/components/sources/cleanup-status";
 import { INITIAL_SOURCE_ACTION } from "@/lib/source-action-state";
 
@@ -20,10 +20,10 @@ const FAILURE_MESSAGES: Record<string, string> = {
   artifact_integrity: "Transcript integrity verification failed. Upload a new source.",
 };
 
-function RightsSelect({ id }: { id: string }) {
+function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
   return <div className="field">
     <label htmlFor={id}>Ownership / permission</label>
-    <select id={id} name="authorization_mode" required defaultValue="">
+    <select id={id} name="authorization_mode" required defaultValue="" onChange={onChange}>
       <option value="" disabled>Select the statement that applies</option>
       <option value="owner_upload">I own this content</option>
       <option value="authorized_upload">I am authorized to process this content</option>
@@ -33,12 +33,13 @@ function RightsSelect({ id }: { id: string }) {
   </div>;
 }
 
-function AddSource({ projectId, onCompleted }: { projectId: string; onCompleted: () => Promise<void> }) {
+function AddSource({ projectId, sources, playlistItems, onCompleted }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void> }) {
   const [state, action] = useActionState(uploadSourceAction, INITIAL_SOURCE_ACTION);
   const [metadataState, metadataAction] = useActionState(metadataSourceAction, INITIAL_SOURCE_ACTION);
   const [uploadKey, setUploadKey] = useState("");
   const [metadataKey, setMetadataKey] = useState("");
   const [fileError, setFileError] = useState("");
+  const [fileSelected, setFileSelected] = useState(false);
   const id = useId();
   useEffect(() => {
     if (state.status === "success" || metadataState.status === "success") void onCompleted();
@@ -54,13 +55,24 @@ function AddSource({ projectId, onCompleted }: { projectId: string; onCompleted:
           onChange={(event) => {
             setUploadKey(crypto.randomUUID());
             const file = event.target.files?.[0];
+            setFileSelected(Boolean(file));
             setFileError(file && (file.size === 0 || file.size > 2_000_000) ? "Choose a non-empty file of at most 2 MB." : "");
           }} />
         <p id={`${id}-file-help`} className="field-hint">UTF-8 text, up to 2 MB. Audio/video uploads are not yet available.</p>
       </div>
-      <RightsSelect id={`${id}-rights`} />
+      <div className="field">
+        <label htmlFor={`${id}-playlist-item`}>Transcript belongs to</label>
+        <select id={`${id}-playlist-item`} name="playlist_item_id" defaultValue="" onChange={() => setUploadKey(crypto.randomUUID())}>
+          <option value="">Standalone source (not a playlist video)</option>
+          {playlistItems.map((item) => <option key={item.id} value={item.id} disabled={sources.some((source) => source.id === item.transcript_source_id && isProcessing(source))}>
+            {sources.find((source) => source.id === item.playlist_source_id)?.filename} · {item.position + 1}. {item.title}
+          </option>)}
+        </select>
+        <p className="field-hint">For a playlist video, confirm that this subtitle describes that video. Replacing an upload preserves its previous independent source.</p>
+      </div>
+      <RightsSelect id={`${id}-rights`} onChange={() => setUploadKey(crypto.randomUUID())} />
       {fileError ? <p role="alert">{fileError}</p> : null}
-      <SubmitButton className="button button--primary" pendingLabel="Uploading…" disabled={Boolean(fileError) || !uploadKey}>Process transcript</SubmitButton>
+      <SubmitButton className="button button--primary" pendingLabel="Uploading…" disabled={Boolean(fileError) || !uploadKey || !fileSelected}>Process transcript</SubmitButton>
       <p role={state.status === "error" ? "alert" : "status"}>{state.message}</p>
     </form>
     <details>
@@ -73,7 +85,7 @@ function AddSource({ projectId, onCompleted }: { projectId: string; onCompleted:
           <label htmlFor={`${id}-url`}>YouTube HTTPS URL</label>
           <input id={`${id}-url`} name="url" type="url" maxLength={2048} required onChange={() => setMetadataKey(crypto.randomUUID())} />
         </div>
-        <RightsSelect id={`${id}-metadata-rights`} />
+        <RightsSelect id={`${id}-metadata-rights`} onChange={() => setMetadataKey(crypto.randomUUID())} />
         <SubmitButton className="button button--secondary" pendingLabel="Registering…" disabled={!metadataKey}>Import metadata only</SubmitButton>
         <p role={metadataState.status === "error" ? "alert" : "status"}>{metadataState.message}</p>
       </form>
@@ -114,6 +126,7 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
       <div className="confirmation-dialog__content">
         <h3 id={`${id}-title`}>Delete “{source.filename}”?</h3>
         <p>Indexed evidence is removed immediately. Retained files are deleted by a tracked cleanup job. This cannot be undone.</p>
+        {source.kind === "youtube_playlist" ? <p>Deleting playlist metadata removes its ordered video list, but keeps separately uploaded transcripts and their evidence.</p> : null}
         <form action={action} className="stack">
           <input type="hidden" name="projectId" value={projectId} />
           <input type="hidden" name="sourceId" value={source.id} />
@@ -129,10 +142,11 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
   </>;
 }
 
-export function SourcesWorkspace({ projectId, initialSources, archived, initialError = "" }: {
-  projectId: string; initialSources: SourceItem[]; archived: boolean; initialError?: string;
+export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "" }: {
+  projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string;
 }) {
   const [sources, setSources] = useState(initialSources);
+  const [playlistItems, setPlaylistItems] = useState(initialPlaylistItems);
   const [error, setError] = useState(initialError);
   const [cleanups, setCleanups] = useState<CleanupTicket[]>([]);
   const inflight = useRef(false);
@@ -146,8 +160,10 @@ export function SourcesWorkspace({ projectId, initialSources, archived, initialE
     try {
       const response = await fetch(`/api/projects/${projectId}/sources`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
       if (!response.ok) throw new Error("Sources could not refresh. Try again shortly.");
-      const next = parseSourceList(await response.json());
-      if (mounted.current) { setSources(next); setError(""); }
+      const payload = await response.json();
+      const next = parseSourceList(payload);
+      const nextItems = parsePlaylistItems(payload);
+      if (mounted.current) { setSources(next); setPlaylistItems(nextItems); setError(""); }
     } catch {
       if (mounted.current) setError("Sources could not refresh. Try again shortly.");
     } finally { inflight.current = false; }
@@ -178,13 +194,32 @@ export function SourcesWorkspace({ projectId, initialSources, archived, initialE
   }, [working, projectId, refresh]);
 
   return <div className="stack stack--large">
-    {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <AddSource projectId={projectId} onCompleted={refresh} />}
+    {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} />}
     <div className="form-actions">
       <h3 ref={heading} tabIndex={-1}>Sources</h3>
       <button className="button button--secondary" type="button" onClick={() => { void refresh(); }}>Refresh sources</button>
     </div>
     {error ? <p role="alert">{error}</p> : null}
     <p role="status" aria-live="polite">{working ? "Processing continues in the background. This list updates every five seconds while visible." : `${sources.length} source${sources.length === 1 ? "" : "s"}. No processing is currently running.`}</p>
+    {sources.filter((source) => source.kind === "youtube_playlist").map((playlist) => {
+      const items = playlistItems.filter((item) => item.playlist_source_id === playlist.id).sort((a, b) => a.position - b.position);
+      const linked = items.map((item) => sources.find((source) => source.id === item.transcript_source_id));
+      const ready = linked.filter((source) => source?.active_generation !== null && source?.active_generation !== undefined).length;
+      const failed = linked.filter((source) => source?.job?.status === "failed").length;
+      return <section key={playlist.id} className="source-card stack" aria-label={`Ordered videos: ${playlist.filename}`}>
+        <h4>{playlist.filename} · ordered videos</h4>
+        <p role="status">{ready} of {items.length} videos have indexed transcripts. {failed} failed transcript jobs.</p>
+        {playlist.playlist_truncated ? <p role="status">This metadata snapshot is truncated at the import safety limit; it is not the complete playlist.</p> : null}
+        {failed > 0 ? <p>Other videos remain usable. Retry each failed transcript using its source controls below, or upload corrected subtitles for that video.</p> : null}
+        {items.length === 0 ? <p>No ordered videos are available yet. Wait for metadata processing or reprocess an older metadata import to refresh it.</p> : null}
+        <ol>
+          {items.map((item, index) => <li key={item.id} value={item.position + 1}>
+            <p>{item.title} <span className="field-hint">(video {item.video_id})</span></p>
+            <p>{linked[index] ? `${linked[index]!.filename} · ${linked[index]!.job?.stage.replaceAll("_", " ") ?? linked[index]!.status}` : "Authorized transcript required. Select this video in the upload form above."}</p>
+          </li>)}
+        </ol>
+      </section>;
+    })}
     {sources.length === 0 ? <div className="state-panel state-panel--compact"><h4>No sources yet</h4><p>Add an authorized transcript to create timestamped evidence.</p></div> : null}
     <ul className="source-list">
       {sources.map((source) => <li key={source.id} className="source-card stack" aria-label={source.filename}>

@@ -14,6 +14,7 @@ from ..store import ProjectNotFoundError
 from .chunking import PROCESSING_VERSION, decode_transcript
 from .contracts import Cleanup, Job, ManagedSource, Registration, SourceError, SourceList
 from .adapters import TranscriptAdapter, YouTubeAdapter
+from .playlists import current_item, read_items, store_snapshot
 
 
 class SourceRepository:
@@ -67,7 +68,7 @@ class SourceRepository:
                    WHERE s.tenant_id=%s AND s.project_id=%s AND s.deleted_at IS NULL
                    ORDER BY s.created_at DESC, s.id''', (tenant, project),
             ).fetchall()
-            return SourceList(items=[ManagedSource.model_validate(row) for row in rows])
+            return SourceList(items=[ManagedSource.model_validate(row) for row in rows], playlist_items=read_items(connection, tenant, project))
 
     def get_job(self, tenant: str, project: UUID, job: UUID) -> Job:
         self.store.get_project(tenant, project)
@@ -100,13 +101,16 @@ class SourceRepository:
         return Job.model_validate(row)
 
     def register(self, tenant: str, project: UUID, actor: UUID, *, filename: str, content: bytes,
-                 rights: AuthorizationMode, idempotency_key: str) -> Registration:
+                 rights: AuthorizationMode, idempotency_key: str, playlist_item_id: UUID | None = None) -> Registration:
         if not content or len(content) > self.settings.upload_limit_bytes:
             raise SourceError('upload_too_large', 'Upload a non-empty SRT/VTT file of at most 2 MB.', 413)
         filename = TranscriptAdapter().normalize(filename).title
         decode_transcript(content)
         digest = hashlib.sha256(content).hexdigest()
-        request_hash = hashlib.sha256(json.dumps([filename, digest, rights.value]).encode()).hexdigest()
+        hash_input = [filename, digest, rights.value]
+        if playlist_item_id is not None:
+            hash_input.append(str(playlist_item_id))
+        request_hash = hashlib.sha256(json.dumps(hash_input).encode()).hexdigest()
         source_id, reservation = uuid4(), uuid4()
         prefix = object_prefix(tenant, project, source_id)
         key = f'{prefix}1/input'
@@ -136,6 +140,7 @@ class SourceRepository:
                     ).fetchone()
                     connection.execute('DELETE FROM artifact_cleanup WHERE id=%s AND tenant_id=%s AND project_id=%s', (reservation, tenant, project))
                     return Registration(source=self._source(connection, tenant, project, existing['id']), job=Job.model_validate(job), deduplicated=True)
+                item = current_item(connection, tenant, project, playlist_item_id) if playlist_item_id else None
                 count = connection.execute('SELECT count(*) AS count FROM sources WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()['count']
                 if count >= 200:
                     raise SourceError('source_limit', 'A project currently supports at most 200 sources.', 429)
@@ -158,6 +163,16 @@ class SourceRepository:
                     '''INSERT INTO source_artifacts (tenant_id,project_id,source_id,object_key,content_sha256,byte_count,retention_class)
                        VALUES (%s,%s,%s,%s,%s,%s,'permitted_transcript')''', (tenant, project, source_id, key, digest, len(content)),
                 )
+                if item:
+                    connection.execute(
+                        'UPDATE sources SET parent_playlist_source_id=%s,metadata=%s WHERE tenant_id=%s AND project_id=%s AND id=%s',
+                        (item['playlist_source_id'], Jsonb({'playlist_item_id': str(item['id']), 'video_id': item['video_id'],
+                         'playlist_generation': item['generation'], 'alignment': 'user_asserted'}), tenant, project, source_id),
+                    )
+                    connection.execute(
+                        'UPDATE playlist_items SET transcript_source_id=%s WHERE tenant_id=%s AND project_id=%s AND id=%s',
+                        (source_id, tenant, project, item['id']),
+                    )
                 job = self._new_job(connection, tenant, project, source_id, actor, 1)
                 self.store._record_audit(connection, tenant_id=tenant, project_id=project, actor_user_id=actor, action='source.created')
                 connection.execute('DELETE FROM artifact_cleanup WHERE id=%s AND tenant_id=%s AND project_id=%s', (reservation, tenant, project))
@@ -273,6 +288,21 @@ class SourceRepository:
             if row['attempt_count'] >= row['max_attempts']:
                 self._fail_unclaimed(connection, row, 'retry_exhausted', 'Processing attempts exhausted; retry after correcting the problem.')
                 return None
+            if current.parent_playlist_source_id and row['job_type'] == 'transcript':
+                active = connection.execute(
+                    '''SELECT count(*) AS count FROM processing_jobs j JOIN sources s
+                       ON s.tenant_id=j.tenant_id AND s.project_id=j.project_id AND s.id=j.source_id
+                       WHERE j.tenant_id=%s AND j.project_id=%s AND s.parent_playlist_source_id=%s
+                       AND j.job_type='transcript' AND j.status='running' AND j.lease_expires_at>now()''',
+                    (tenant, project, current.parent_playlist_source_id),
+                ).fetchone()['count']
+                if active >= self.settings.playlist_concurrency:
+                    connection.execute(
+                        "UPDATE processing_jobs SET stage='waiting_capacity',available_at=now()+interval '2 seconds',updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
+                        (tenant, project, job),
+                    )
+                    self.enqueue(connection, tenant, project, source, job, generation, delay=2)
+                    return None
             token = uuid4()
             claimed = connection.execute(
                 '''UPDATE processing_jobs SET status='running',stage='validating',progress_percent=5,
@@ -325,6 +355,8 @@ class SourceRepository:
         with self.store._connect() as connection:
             if not self._fenced(connection, claim):
                 return False
+            if claim['source'].kind == 'youtube_playlist':
+                store_snapshot(connection, tenant, project, source, claim['generation'], metadata)
             connection.execute(
                 '''INSERT INTO processing_versions (tenant_id,project_id,source_id,generation,processing_version,
                    embedding_provider,embedding_model,embedding_dimensions) VALUES (%s,%s,%s,%s,%s,'none','none',0)
@@ -475,6 +507,7 @@ class SourceRepository:
             attempts = connection.execute('SELECT status,count(*) AS count,coalesce(sum(duration_ms),0) AS duration FROM processing_attempts GROUP BY status').fetchall()
             pending = connection.execute('SELECT count(*) AS count FROM outbox_events WHERE sent_at IS NULL').fetchone()['count']
             cleanup = connection.execute('SELECT status,count(*) AS count FROM artifact_cleanup GROUP BY status').fetchall()
+            waiting = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_capacity' AND status IN ('pending','retrying')").fetchone()['count']
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
                  '# TYPE tutorial_artifact_cleanup gauge']
@@ -486,4 +519,6 @@ class SourceRepository:
         for row in cleanup:
             lines.append(f'tutorial_artifact_cleanup{{status="{row["status"]}"}} {row["count"]}')
         lines.append(f'tutorial_outbox_pending {pending}')
+        lines.append('# TYPE tutorial_playlist_jobs_waiting_capacity gauge')
+        lines.append(f'tutorial_playlist_jobs_waiting_capacity {waiting}')
         return '\n'.join(lines) + '\n'

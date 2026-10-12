@@ -1,6 +1,7 @@
 FROM node:24.21.0-bookworm-slim AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY tooling/next-lint-glob ./tooling/next-lint-glob
 RUN npm ci
 
 FROM node:24.21.0-bookworm-slim AS builder
