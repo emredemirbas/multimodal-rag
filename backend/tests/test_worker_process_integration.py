@@ -21,6 +21,29 @@ import os,time
 from app.jobs.worker import celery_app
 from app.artifacts.storage import S3ArtifactStore
 celery_app.conf.broker_transport_options = {**celery_app.conf.broker_transport_options, 'global_keyprefix': os.environ['PROBE_PREFIX']}
+if os.environ.get('PROBE_SEMANTIC') == '1':
+    import re,psycopg
+    from app.jobs import processing
+    from app.jobs.checkpoints import TranscriptCheckpoints
+    from app.embedding_profiles import QWEN_SPACE,QWEN_MODEL,QWEN_DIGEST
+    from app.providers import EmbeddingBatch
+    class FixtureEmbeddings:
+        name,model,model_digest,space_id,dimensions = 'ollama-local',QWEN_MODEL,QWEN_DIGEST,QWEN_SPACE,1024
+        def embed_documents(self,texts):
+            with psycopg.connect(os.environ['DATABASE_URL']) as connection:
+                for text in texts:
+                    number=int(re.search(r'Chunk (\\d+)\\.',text).group(1))
+                    connection.execute('INSERT INTO probe_embedding_calls(tenant_id,project_id,source_id,chunk_number) VALUES(%s,%s,%s,%s)',
+                        (os.environ['PROBE_TENANT'],os.environ['PROBE_PROJECT'],os.environ['PROBE_SOURCE'],number))
+            return EmbeddingBatch([[1.]+[0.]*1023 for text in texts],len(texts)*12)
+    processing.build_embedding_provider=lambda settings: FixtureEmbeddings()
+    if os.environ.get('PROBE_CHECKPOINT_PAUSE') == '1':
+        checkpoint_save=TranscriptCheckpoints.save
+        def save_and_pause(self,*args,**kwargs):
+            saved=checkpoint_save(self,*args,**kwargs)
+            if saved: time.sleep(120)
+            return saved
+        TranscriptCheckpoints.save=save_and_pause
 if os.environ.get('PROBE_PAUSE') == '1':
     original = S3ArtifactStore.get
     def paused(self, key, limit):
@@ -127,4 +150,84 @@ def test_actual_worker_death_recovery_and_duplicate_delivery(ingestion):
         keys = list(redis.scan_iter(match=prefix+'*'))
         if keys:
             redis.delete(*keys)
+        client.close()
+
+
+@pytest.mark.integration
+@pytest.mark.worker_integration
+def test_actual_sigkill_after_checkpoint_resumes_without_duplicate_embeddings(ingestion):
+    if os.getenv('TEST_REAL_WORKER') != '1':
+        pytest.skip('Set TEST_REAL_WORKER=1 with Redis and MinIO available')
+    from app.jobs.dispatch import cleanup_once
+    from test_checkpoints_integration import long_transcript, make_due
+    repo, service, principal, project, actor = ingestion
+    repo.settings = replace(repo.settings,embedding_provider='ollama',
+        s3_endpoint=f"http://127.0.0.1:{os.getenv('MINIO_API_PORT','9000')}",
+        s3_access_key=os.getenv('MINIO_ROOT_USER','tutorial'),s3_secret_key=os.environ['MINIO_ROOT_PASSWORD'])
+    repo.artifacts = S3ArtifactStore(repo.settings)
+    broker = os.getenv('TEST_REDIS_URL',f"redis://127.0.0.1:{os.getenv('REDIS_PORT','6380')}/0")
+    prefix, queue = 'checkpoint-probe-'+uuid4().hex+':', 'checkpoint-'+uuid4().hex
+    redis = Redis.from_url(broker); redis.ping()
+    assert not list(redis.scan_iter(match=prefix+'*'))
+    client = Celery('checkpoint_probe',broker=broker)
+    client.conf.broker_transport_options = {'global_keyprefix':prefix,'socket_connect_timeout':3,'socket_timeout':5}
+    with repo.store._connect() as connection:
+        connection.execute('CREATE TABLE probe_embedding_calls(tenant_id text,project_id uuid,source_id uuid,chunk_number integer)')
+    result = register(ingestion,content=long_transcript(129))
+    env = {**os.environ,'PYTHONPATH':str(Path(__file__).resolve().parents[1]),'APP_ENV':'test',
+        'DATABASE_URL':repo.store.database_url,'S3_ENDPOINT':repo.settings.s3_endpoint,
+        'S3_ACCESS_KEY':repo.settings.s3_access_key,'S3_SECRET_KEY':repo.settings.s3_secret_key,
+        'CELERY_BROKER_URL':broker,'AUTH_MODE':'development','DEVELOPMENT_AUTH_TOKEN':'probe-development-token',
+        'EMBEDDING_PROVIDER':'ollama','ANSWER_PROVIDER':'extractive','PROBE_PREFIX':prefix,'PROBE_QUEUE':queue,
+        'PROBE_SEMANTIC':'1','PROBE_TENANT':principal.tenant_id,'PROBE_PROJECT':str(project.id),'PROBE_SOURCE':str(result.source.id)}
+    workers = []
+    def start(paused):
+        worker = subprocess.Popen([sys.executable,'-c',WORKER_CODE],env={**env,'PROBE_CHECKPOINT_PAUSE':'1' if paused else '0'},
+            stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        workers.append(worker); return worker
+    def publish(row):
+        client.send_task('tutorial.process_transcript',args=[row['tenant_id'],str(row['project_id']),str(row['source_id']),str(row['job_id']),row['generation']],queue=queue,expires=60)
+    try:
+        first = start(True)
+        assert dispatch_once(repo,publish) == 1
+        deadline = time.monotonic()+25
+        while time.monotonic()<deadline:
+            job = repo.get_job(principal.tenant_id,project.id,result.job.id)
+            if job.processed_segments == 8: break
+            assert job.status not in {'failed','cancelled'}, job.failure_code
+            time.sleep(.1)
+        else: raise AssertionError('Test-owned worker did not commit its first checkpoint')
+        first.kill(); first.wait(timeout=5)
+        with repo.store._connect() as connection:
+            connection.execute("UPDATE processing_jobs SET lease_expires_at=now()-interval '1 second' WHERE tenant_id=%s AND project_id=%s AND id=%s", (principal.tenant_id,project.id,result.job.id))
+        assert repo.recover_leases() == 1
+        make_due(repo,result); start(False)
+        deadline = time.monotonic()+35
+        while time.monotonic()<deadline:
+            dispatch_once(repo,publish)
+            job = repo.get_job(principal.tenant_id,project.id,result.job.id)
+            if job.status == 'succeeded': break
+            assert job.status not in {'failed','cancelled'}, job.failure_code
+            time.sleep(.1)
+        else: raise AssertionError('Replacement worker did not finish checkpointed deliveries')
+        assert job.attempt_count == 2 and job.delivery_count == 3 and job.processed_segments == 129
+        with repo.store._connect() as connection:
+            scope = (principal.tenant_id,project.id,result.source.id)
+            calls = connection.execute('SELECT chunk_number,count(*) AS n FROM probe_embedding_calls WHERE tenant_id=%s AND project_id=%s AND source_id=%s GROUP BY chunk_number ORDER BY chunk_number',scope).fetchall()
+            assert [row['chunk_number'] for row in calls] == list(range(129)) and all(row['n']==1 for row in calls)
+            assert connection.execute('SELECT count(*) AS n FROM embedding_checkpoints WHERE tenant_id=%s AND project_id=%s AND source_id=%s',scope).fetchone()['n'] == 0
+            assert connection.execute('SELECT count(*) AS n FROM content_segments WHERE tenant_id=%s AND project_id=%s AND source_id=%s',scope).fetchone()['n'] == 129
+        publish({'tenant_id':principal.tenant_id,'project_id':project.id,'source_id':result.source.id,'job_id':result.job.id,'generation':1})
+        time.sleep(.3)
+        assert repo.get_job(principal.tenant_id,project.id,result.job.id).delivery_count == 3
+    finally:
+        for worker in workers:
+            if worker.poll() is None:
+                worker.terminate()
+                try: worker.wait(timeout=5)
+                except subprocess.TimeoutExpired: worker.kill(); worker.wait(timeout=5)
+        cleanup = service.delete_project(principal,project.id)
+        assert cleanup_once(repo) == 1 and repo.get_cleanup(principal.tenant_id,project.id,cleanup,actor).status == 'completed'
+        keys = list(redis.scan_iter(match=prefix+'*'))
+        if keys: redis.delete(*keys)
         client.close()

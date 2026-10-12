@@ -80,6 +80,11 @@ in a separately versioned 1024-D space (ADR 0016); local ASR/vision remains a fo
 slice, with no paid endpoint or cloud fallback. Binary input limits/retention
 and dedicated media isolation still need their implementation boundaries.
 
+The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic
+cap with checkpointed work under the already accepted transcript input limits.
+It does not authorize binary media, new providers, new retention classes or paid
+calls. Target space remains immutable per job; changes require a new generation.
+
 | Decision | Proposed default | Status |
 |---|---|---|
 | Answer/embedding provider and models | Optional local Ollama/Qwen3 4B answers and Qwen3 Embedding 0.6B semantic search; hash/extractive remains default | Confirmed for zero-service-spend portfolio, 2026-10-12 (ADRs 0015/0016); managed providers deferred |

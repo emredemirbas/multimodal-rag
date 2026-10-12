@@ -78,6 +78,17 @@ runtime exposes configured retrieval mode/space. Old evidence inspection does no
 require the current space. Local query and document token counts are separate from
 answer tokens. Unknown counts remain null; zero billed API cost is explicit.
 
+Migration 0008 adds scoped private `embedding_checkpoints`, a job's pinned target
+space, ordered chunk manifest, saved/total counts and independent delivery count.
+The historical `processing_attempts.attempt_number` now tracks delivery sequence;
+`attempt_count` tracks bounded failure attempts. Successful unfinished deliveries
+close as `checkpointed` and requeue atomically. The existing Job API adds
+`processed_segments`, `total_segments` and `delivery_count`; no staging text or
+vector is exposed. Final promotion removes staging in the same activation
+transaction. Cancel preserves it for retry; reprocess discards unfinished staging;
+source/project cascades remove it. Usage aggregates accepted batch tokens and
+delivery durations, not queue waiting time. See ADR 0017.
+
 ### Chat
 
 - `conversations`

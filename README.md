@@ -46,8 +46,10 @@ validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sp
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
 Sprint 2 hosted CI passed for `d0ba720` after replacing the removed MinIO image.
-The owner committed playlists/local answers as `feb762e`. The semantic slice is
-locally validated; its hosted CI result has not yet been verified. Evidence is recorded in
+The owner committed playlists/local answers as `feb762e`. Semantic commit `d979a08`
+passed [hosted CI](https://github.com/emredemirbas/multimodal-rag/actions/runs/38263085923).
+This does not cover the resumable-indexing follow-up; its hosted result has not
+yet been verified. Evidence is recorded in
 [`docs/sprint3/semantic-search-validation.md`](docs/sprint3/semantic-search-validation.md).
 
 ## Run locally
@@ -94,6 +96,11 @@ In a project, choose an SRT/VTT file (UTF-8, at most 2 MB), select your rights
 statement and click **Process transcript**. Work continues if you leave the page.
 Retry uses the retained input; correcting malformed content requires a new upload.
 Reprocessing preserves the last usable generation until replacement succeeds.
+Semantic processing saves each completed batch privately, continuing in bounded
+deliveries until the whole generation is ready. Worker loss or explicit retry
+resumes from committed progress; an in-flight, uncommitted batch may be recomputed.
+Cancel keeps saved batches for retry. Reprocess starts a new generation and removes
+only its superseded unfinished staging, not published evidence or old citations.
 Deletion immediately removes records, then displays tracked file cleanup status.
 `YOUTUBE_API_KEY` is optional, server-side, and needed only for metadata imports;
 leave it empty to use uploads without external credentials or provider calls.
@@ -184,11 +191,15 @@ This is not a broad model-quality certification. Source IDs/generations are alwa
 validated. `ANSWER_PROVIDER=extractive` can use the same semantic index while
 returning only literal evidence quotes without running the answer model.
 
-CPU safety limits: eight chunks/batch, 128 chunks/input, a 70-second embedding
-attempt budget (existing 90/120-second task limits), six-second query inference,
+CPU safety limits: eight chunks/batch, at most eight batches/64 segments per
+delivery, no new inference after 48 seconds (existing 90/120-second task limits).
+Unfinished work requeues after two seconds without consuming a failure retry;
+the 2 MB / 20,000 cues / 10,000 chunks input bounds remain. A separate processing
+delivery count and saved/total progress are shown in the UI. Target model space
+and a chunk manifest are pinned: restore the original mode/parser to retry, or
+Reprocess source after a configuration change. Queries retain six-second inference
 and a shared 28-second retrieval/answer budget (answer inference at most 24 seconds).
-The model receives the time remaining after query retrieval. Split long
-transcripts when the worker reports its limit. Unknown usage stays null; local
+The model receives the time remaining after query retrieval. Unknown usage stays null; local
 token/model/space attribution is recorded and billed API cost is zero.
 
 With semantic mode enabled, run the explicit owned-project probe:
@@ -198,6 +209,8 @@ set -a
 source .env
 set +a
 python3 scripts/smoke_semantic_search.py
+# Explicit 129-chunk, multi-delivery native worker/model probe:
+python3 scripts/smoke_semantic_search.py --long
 ```
 
 For default regression smoke scripts below, use hash/extractive mode. CI exercises
@@ -295,6 +308,13 @@ PYTHONPATH=backend python3 scripts/evaluate_rag.py --postgres
 
 The 19-question synthetic set is a regression check, not an independent,
 provider-backed model-quality benchmark or Alpha 1 approval.
+
+Resumable-indexing design and validation are in
+[`docs/sprint3/resumable-indexing-plan.md`](docs/sprint3/resumable-indexing-plan.md)
+and [`docs/sprint3/resumable-indexing-validation.md`](docs/sprint3/resumable-indexing-validation.md).
+Its real-process probe kills only its own worker after a committed checkpoint,
+then counts fixture embedding calls to prove no accepted batch was recomputed.
+This tests recovery, not neural-model quality; native model smoke is separate.
 
 The deterministic Sprint 0 proof remains available without Docker or model
 credentials:

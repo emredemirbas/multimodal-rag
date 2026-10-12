@@ -11,6 +11,11 @@ queries are bounded API requests. Incompatible active generations are excluded
 before distance calculation, not silently blended into either retrieval channel.
 The production evolution sections remain future considerations, not current work.
 
+Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
+The scheduler/outbox continues bounded deliveries without consuming failure
+retries. No staging row participates in retrieval or citation inspection; the
+full generation is promoted atomically. LangGraph is not involved in queue work.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.

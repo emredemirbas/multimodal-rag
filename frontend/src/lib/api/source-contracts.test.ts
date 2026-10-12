@@ -39,4 +39,12 @@ describe("source contracts", () => {
     expect(parseSourceList({items:upstream})[0].active_embedding_space).toBe('signed-hash-v1:64');
     expect(() => parseSourceList({items:[{...source,reindex_required:'true'}]})).toThrow();
   });
+  it('preserves bounded checkpoint counters through normalized proxy responses', () => {
+    const payload = {items:[{...source, job:{...source.job,stage:'waiting_continuation',processed_segments:64,total_segments:129,delivery_count:1}}]};
+    const parsed = parseSourceList(payload);
+    expect(parseSourceList({items:parsed})[0].job).toMatchObject({processed_segments:64,total_segments:129,delivery_count:1});
+    for (const patch of [{processed_segments:130}, {total_segments:10_001}, {delivery_count:-1}, {total_segments:'129'}, {processed_segments:null}]) {
+      expect(() => parseSourceList({items:[{...source,job:{...payload.items[0].job,...patch}}]})).toThrow();
+    }
+  });
 });

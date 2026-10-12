@@ -12,7 +12,6 @@ from .providers import DeterministicHashEmbeddingProvider, EmbeddingBatch
 from .sources.contracts import SourceError
 
 BATCH_SIZE = 8
-MAX_SEMANTIC_CHUNKS = 128
 
 
 class OllamaEmbeddingProvider:

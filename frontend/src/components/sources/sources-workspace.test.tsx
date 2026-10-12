@@ -95,4 +95,12 @@ describe("source management", () => {
     expect(screen.getByText(/Reindex required:/)).toHaveTextContent('Old citations remain inspectable');
     expect(screen.getByRole('button', {name:'Reprocess source'})).toBeVisible();
   });
+  it('announces automatic continuation separately from a failed retry', () => {
+    const pending = {...source,status:'processing',job:{...source.job!,status:'pending' as const,stage:'waiting_continuation',processed_segments:64,total_segments:129,delivery_count:1,progress_percent:67}};
+    render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false} />);
+    expect(screen.getByText(/64 of 129 segments saved/)).toBeVisible();
+    expect(screen.getByText(/continue automatically without consuming a retry/)).toBeVisible();
+    expect(screen.queryByRole('button', {name:'Retry processing'})).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name:'Cancel processing'})).toBeVisible();
+  });
 });

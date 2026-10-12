@@ -94,14 +94,14 @@ class SourceRepository:
             (tenant, project, uuid4(), job, source, generation, delay),
         )
 
-    @staticmethod
-    def _new_job(connection, tenant: str, project: UUID, source: UUID, actor: UUID, generation: int, job_type: str = 'transcript') -> Job:
+    def _new_job(self, connection, tenant: str, project: UUID, source: UUID, actor: UUID, generation: int, job_type: str = 'transcript') -> Job:
         job_id = uuid4()
         row = connection.execute(
             '''INSERT INTO processing_jobs (tenant_id,project_id,id,source_id,job_type,stage,status,
-               idempotency_key,generation,actor_user_id)
-               VALUES (%s,%s,%s,%s,%s,'queued','pending',%s,%s,%s) RETURNING *''',
-            (tenant, project, job_id, source, job_type, f'ingest-{job_id}', generation, actor),
+               idempotency_key,generation,actor_user_id,target_embedding_space)
+               VALUES (%s,%s,%s,%s,%s,'queued','pending',%s,%s,%s,%s) RETURNING *''',
+            (tenant, project, job_id, source, job_type, f'ingest-{job_id}', generation, actor,
+             configured_space(self.settings.embedding_provider) if job_type == 'transcript' else None),
         ).fetchone()
         SourceRepository.enqueue(connection, tenant, project, source, job_id, generation)
         return Job.model_validate(row)
@@ -212,7 +212,7 @@ class SourceRepository:
                 if job.status not in {'pending', 'running', 'retrying', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only unfinished processing can be cancelled.', 409)
                 connection.execute(
-                    "UPDATE processing_jobs SET status='cancelled',stage='cancelled',cancellation_requested_at=now(),finished_at=now(),updated_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s",
+                    "UPDATE processing_jobs SET status='cancelled',stage='cancelled',continuation_pending=false,cancellation_requested_at=now(),finished_at=now(),updated_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s",
                     (tenant, project, job.id),
                 )
                 self._finish_attempt(connection, tenant, project, job.id, 'cancelled', None)
@@ -223,7 +223,7 @@ class SourceRepository:
                 if job.max_attempts >= 12:
                     raise SourceError('retry_limit', 'Retry limit reached; upload a new source after correcting the problem.', 429)
                 connection.execute(
-                    "UPDATE processing_jobs SET status='pending',stage='queued',available_at=now(),max_attempts=max_attempts+3,cancellation_requested_at=NULL,failure_code=NULL,failure_detail=NULL,finished_at=NULL,progress_percent=0,updated_at=now(),actor_user_id=%s WHERE tenant_id=%s AND project_id=%s AND id=%s",
+                    "UPDATE processing_jobs SET status='pending',stage='queued',continuation_pending=false,available_at=now(),max_attempts=max_attempts+3,cancellation_requested_at=NULL,failure_code=NULL,failure_detail=NULL,finished_at=NULL,progress_percent=CASE WHEN total_segments>0 THEN least(85,50+35*processed_segments/total_segments) ELSE 0 END,updated_at=now(),actor_user_id=%s WHERE tenant_id=%s AND project_id=%s AND id=%s",
                     (actor, tenant, project, job.id),
                 )
                 self.enqueue(connection, tenant, project, source, job.id, job.generation)
@@ -232,6 +232,7 @@ class SourceRepository:
                 if job.status not in {'succeeded', 'failed', 'cancelled'}:
                     raise SourceError('invalid_state', 'Wait for or cancel the current processing before reprocessing.', 409)
                 generation = current.generation + 1
+                connection.execute('DELETE FROM embedding_checkpoints WHERE tenant_id=%s AND project_id=%s AND source_id=%s', (tenant, project, source))
                 job = self._new_job(connection, tenant, project, source, actor, generation, 'metadata' if current.provider == 'youtube' else 'transcript')
                 connection.execute(
                     "UPDATE sources SET generation=%s,status='reprocessing',failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
@@ -291,7 +292,7 @@ class SourceRepository:
             except ProjectNotFoundError:
                 self._fail_unclaimed(connection, row, 'authorization_revoked', 'Processing stopped because access was revoked.')
                 return None
-            if row['attempt_count'] >= row['max_attempts']:
+            if row['attempt_count'] >= row['max_attempts'] and not row['continuation_pending']:
                 self._fail_unclaimed(connection, row, 'retry_exhausted', 'Processing attempts exhausted; retry after correcting the problem.')
                 return None
             if current.parent_playlist_source_id and row['job_type'] == 'transcript':
@@ -311,15 +312,18 @@ class SourceRepository:
                     return None
             token = uuid4()
             claimed = connection.execute(
-                '''UPDATE processing_jobs SET status='running',stage='validating',progress_percent=5,
-                   attempt_count=attempt_count+1,lease_token=%s,lease_expires_at=now()+make_interval(secs=>%s),
+                '''UPDATE processing_jobs SET status='running',stage='validating',progress_percent=CASE WHEN total_segments>0 THEN greatest(5,progress_percent) ELSE 5 END,
+                   attempt_count=attempt_count+CASE WHEN continuation_pending THEN 0 ELSE 1 END,
+                   delivery_count=greatest(delivery_count,attempt_count)+1,continuation_pending=false,
+                   target_embedding_space=CASE WHEN job_type='transcript' THEN coalesce(target_embedding_space,%s) ELSE NULL END,
+                   lease_token=%s,lease_expires_at=now()+make_interval(secs=>%s),
                    started_at=now(),updated_at=now(),failure_code=NULL,failure_detail=NULL
                    WHERE tenant_id=%s AND project_id=%s AND id=%s RETURNING *''',
-                (token, self.settings.job_lease_seconds, tenant, project, job),
+                (configured_space(self.settings.embedding_provider), token, self.settings.job_lease_seconds, tenant, project, job),
             ).fetchone()
             connection.execute(
                 "INSERT INTO processing_attempts (tenant_id,project_id,id,job_id,attempt_number,status) VALUES (%s,%s,%s,%s,%s,'running')",
-                (tenant, project, uuid4(), job, claimed['attempt_count']),
+                (tenant, project, uuid4(), job, claimed['delivery_count']),
             )
             connection.execute("UPDATE sources SET status='validating',updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, source))
             artifact = connection.execute('SELECT * FROM source_artifacts WHERE tenant_id=%s AND project_id=%s AND source_id=%s', (tenant, project, source)).fetchone()
@@ -404,7 +408,7 @@ class SourceRepository:
             if not self._fenced(connection, claim):
                 return False
             connection.execute(
-                'UPDATE processing_jobs SET stage=%s,progress_percent=%s,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s',
+                'UPDATE processing_jobs SET stage=%s,progress_percent=greatest(progress_percent,%s),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s',
                 (stage, progress, claim['tenant_id'], claim['project_id'], claim['id']),
             )
             connection.execute(
@@ -425,7 +429,7 @@ class SourceRepository:
     def _fail_unclaimed(self, connection, claim: dict, code: str, detail: str):
         tenant, project, source, job = (claim[key] for key in ('tenant_id', 'project_id', 'source_id', 'id'))
         connection.execute(
-            "UPDATE processing_jobs SET status='failed',stage='failed',failure_code=%s,failure_detail=%s,finished_at=now(),updated_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s",
+            "UPDATE processing_jobs SET status='failed',stage='failed',continuation_pending=false,failure_code=%s,failure_detail=%s,finished_at=now(),updated_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s",
             (code, detail, tenant, project, job),
         )
         connection.execute("UPDATE sources SET status='failed',failure_code=%s,failure_detail=%s,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (code, detail, tenant, project, source))
@@ -444,7 +448,7 @@ class SourceRepository:
         if error.transient and claim['attempt_count'] < claim['max_attempts']:
             delay = min(60, 2 ** claim['attempt_count']) + jitter
             connection.execute(
-                "UPDATE processing_jobs SET status='retrying',stage='waiting_retry',failure_code=%s,failure_detail=%s,lease_token=NULL,lease_expires_at=NULL,available_at=now()+make_interval(secs=>%s),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
+                "UPDATE processing_jobs SET status='retrying',stage='waiting_retry',continuation_pending=false,failure_code=%s,failure_detail=%s,lease_token=NULL,lease_expires_at=NULL,available_at=now()+make_interval(secs=>%s),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
                 (error.code, error.detail, delay, tenant, project, job),
             )
             self.enqueue(connection, tenant, project, source, job, claim['generation'], delay)
@@ -476,21 +480,30 @@ class SourceRepository:
                     (tenant, project, segment.id, source, segment.start_ms, segment.end_ms, segment.text,
                      self.store._vector_literal(segment.embedding), version, generation, cue_start, cue_end, embedding_space),
                 )
-            connection.execute(
-                "UPDATE sources SET status='ready',active_generation=%s,active_embedding_space=%s,processing_version=%s,segment_count=%s,failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
-                (generation, embedding_space, version, len(segments), tenant, project, source),
-            )
-            connection.execute(
-                "UPDATE processing_jobs SET status='succeeded',stage='ready',progress_percent=100,lease_token=NULL,lease_expires_at=NULL,finished_at=now(),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, job),
-            )
-            self._finish_attempt(connection, tenant, project, job, 'succeeded', None)
-            connection.execute(
-                '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms,
-                   embedding_space,model_digest,input_tokens) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
-                (tenant, project, source, job, generation, provider, model, sum(len(segment.text) for segment in segments), len(segments), duration_ms,
-                 embedding_space,model_digest,input_tokens),
-            )
+            self._activate(connection, claim, provider, model, len(segments), sum(len(segment.text) for segment in segments), duration_ms,
+                           embedding_space=embedding_space, model_digest=model_digest, input_tokens=input_tokens)
             return True
+
+    def _activate(self, connection, claim: dict, provider: str, model: str, segment_count: int, characters: int, duration_ms: int,
+                  *, embedding_space: str, model_digest: str | None, input_tokens: int | None, cumulative: bool = False):
+        tenant, project, source, job = (claim[key] for key in ('tenant_id', 'project_id', 'source_id', 'id'))
+        generation, version = claim['generation'], f"{PROCESSING_VERSION}:g{claim['generation']}"
+        connection.execute(
+            "UPDATE sources SET status='ready',active_generation=%s,active_embedding_space=%s,processing_version=%s,segment_count=%s,failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
+            (generation, embedding_space, version, segment_count, tenant, project, source),
+        )
+        connection.execute(
+            "UPDATE processing_jobs SET status='succeeded',stage='ready',progress_percent=100,continuation_pending=false,lease_token=NULL,lease_expires_at=NULL,finished_at=now(),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, job),
+        )
+        self._finish_attempt(connection, tenant, project, job, 'succeeded', None)
+        if cumulative:
+            duration_ms = connection.execute('SELECT coalesce(sum(duration_ms),0) AS duration FROM processing_attempts WHERE tenant_id=%s AND project_id=%s AND job_id=%s', (tenant, project, job)).fetchone()['duration']
+        connection.execute(
+            '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms,
+               embedding_space,model_digest,input_tokens) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
+            (tenant, project, source, job, generation, provider, model, characters, segment_count, duration_ms,
+             embedding_space,model_digest,input_tokens),
+        )
 
     def recover_leases(self) -> int:
         # Global scheduler enumerates IDs only; every subsequent operation uses full scope.
@@ -520,9 +533,14 @@ class SourceRepository:
             pending = connection.execute('SELECT count(*) AS count FROM outbox_events WHERE sent_at IS NULL').fetchone()['count']
             cleanup = connection.execute('SELECT status,count(*) AS count FROM artifact_cleanup GROUP BY status').fetchall()
             waiting = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_capacity' AND status IN ('pending','retrying')").fetchone()['count']
+            continuations = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_continuation' AND status='pending'").fetchone()['count']
+            checkpoints = connection.execute('SELECT count(*) AS count FROM embedding_checkpoints').fetchone()['count']
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
-                 '# TYPE tutorial_artifact_cleanup gauge']
+                 '# TYPE tutorial_artifact_cleanup gauge', '# TYPE tutorial_embedding_checkpoint_segments gauge',
+                 '# TYPE tutorial_embedding_continuations_pending gauge']
+        lines.append(f'tutorial_embedding_checkpoint_segments {checkpoints}')
+        lines.append(f'tutorial_embedding_continuations_pending {continuations}')
         for row in jobs:
             lines.append(f'tutorial_processing_jobs{{status="{row["status"]}"}} {row["count"]}')
         for row in attempts:

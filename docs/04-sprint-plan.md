@@ -146,8 +146,10 @@ slice implemented and locally validated: metadata snapshots, video/upload links,
 bounded processing, partial failure and independent recovery. This is not full
 multimodal/Alpha 2 completion. ASR/vision, binary retention and reviewed quality
 decisions remain open. The development dependency advisory is resolved through a
-tested, pinned lint adapter; full audit passes locally. Hosted CI has not run for
-these unpushed changes; see `docs/sprint4/validation-record.md`.
+tested, pinned lint adapter; full audit passes locally. Playlist/local-answer
+commit `feb762e` and semantic commit `d979a08` passed hosted CI. The new resumable
+indexing follow-up is locally validated; its hosted result has not yet been verified. See
+`docs/sprint4/validation-record.md` and `docs/sprint3/resumable-indexing-validation.md`.
 
 Deliver:
 

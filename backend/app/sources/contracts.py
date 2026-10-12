@@ -22,6 +22,9 @@ class Job(BaseModel):
     progress_percent: int
     attempt_count: int
     max_attempts: int
+    delivery_count: int = Field(default=0, ge=0)
+    processed_segments: int = Field(default=0, ge=0, le=10000)
+    total_segments: int = Field(default=0, ge=0, le=10000)
     failure_code: str | None = None
     failure_detail: str | None = None
     created_at: datetime

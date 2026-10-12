@@ -4,6 +4,9 @@ Date: 2026-10-12
 Status: Implemented and locally validated; see `semantic-search-validation.md`.
 Earlier RAG follow-up, not assignment/media work.
 
+ADR 0017 and `resumable-indexing-validation.md` supersede the initial one-delivery
+128-chunk limit below; this record preserves the original semantic slice's scope.
+
 The owner authorized continued development and removal of their test data.
 Keep the keyless hash demo as the default. Explicitly opt into the existing private
 Ollama service with multilingual Qwen3 Embedding 0.6B (639 MB, 1024 dimensions).

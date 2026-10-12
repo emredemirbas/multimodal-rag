@@ -7,8 +7,9 @@ from uuid import UUID
 from billiard.exceptions import SoftTimeLimitExceeded
 
 from ..models import EvidenceSegment
-from ..local_embeddings import build_embedding_provider, BATCH_SIZE, MAX_SEMANTIC_CHUNKS
-from ..embedding_profiles import HASH_SPACE
+from ..local_embeddings import build_embedding_provider, BATCH_SIZE
+from ..embedding_profiles import HASH_SPACE, QWEN_SPACE, QWEN_MODEL, QWEN_DIGEST
+from .checkpoints import TranscriptCheckpoints, MAX_BATCHES_PER_DELIVERY
 from ..sources.chunking import PROCESSING_VERSION, chunk_transcript, segment_id
 from ..sources.contracts import SourceError
 from ..sources.repository import SourceRepository
@@ -28,7 +29,7 @@ def process_transcript(repository: SourceRepository, tenant: str, project: UUID,
         if updated:
             LOGGER.info(json.dumps({'event': 'processing_stage', 'tenant_id': tenant, 'project_id': str(project),
                                     'source_id': str(source), 'job_id': str(job), 'generation': generation,
-                                    'stage': name, 'attempt': claim['attempt_count']}))
+                                    'stage': name, 'attempt': claim['attempt_count'], 'delivery': claim['delivery_count']}))
         return updated
 
     try:
@@ -40,40 +41,59 @@ def process_transcript(repository: SourceRepository, tenant: str, project: UUID,
             return repository.complete_metadata(claim, metadata, round((perf_counter()-started)*1000))
         if not claim['artifact']:
             raise SourceError('missing_artifact', 'The retained transcript is missing; upload the source again.')
-        if not stage('parsing', 20):
+        provider = build_embedding_provider(repository.settings)
+        if claim['target_embedding_space'] != provider.space_id:
+            raise SourceError('processing_configuration_changed', 'Restore the original embedding mode or Reprocess source for a new generation.')
+        if provider.space_id != HASH_SPACE and (provider.space_id, provider.name, provider.model, provider.dimensions, provider.model_digest) != (QWEN_SPACE, 'ollama-local', QWEN_MODEL, 1024, QWEN_DIGEST):
+            raise SourceError('processing_configuration_changed', 'The embedding profile could not be validated. Restore the approved provider or Reprocess source.')
+        if not stage('parsing', max(20, claim['progress_percent'])):
             return False
         content = repository.artifacts.get(claim['artifact']['object_key'], repository.settings.upload_limit_bytes)
         if hashlib.sha256(content).hexdigest() != claim['artifact']['content_sha256']:
             raise SourceError('artifact_integrity', 'Transcript integrity verification failed; upload a new source.')
         chunks = chunk_transcript(content)
-        if not stage('embedding', 50):
+        checkpoints = TranscriptCheckpoints(repository) if provider.space_id != HASH_SPACE else None
+        start_offset = checkpoints.begin(claim, chunks) if checkpoints else 0
+        if start_offset is None:
             return False
-        provider = build_embedding_provider(repository.settings)
-        if provider.space_id != HASH_SPACE and len(chunks) > MAX_SEMANTIC_CHUNKS:
-            raise SourceError('semantic_transcript_limit', 'Local semantic mode accepts up to 128 chunks. Split this transcript into smaller files.')
+        if not stage('embedding', min(85, 50 + 35 * start_offset // len(chunks))):
+            return False
         segments = []
         input_tokens = 0
-        for offset in range(0, len(chunks), BATCH_SIZE):
+        batches = 0
+        for offset in range(start_offset, len(chunks), BATCH_SIZE):
             if not stage('embedding', min(85, 50 + int(35 * offset / len(chunks)))):
                 return False
-            if provider.space_id != HASH_SPACE and perf_counter() - started > 48:
-                raise SourceError('job_timeout', 'Local semantic processing exceeded its CPU budget. Retry a smaller transcript.', transient=True)
+            if checkpoints and (batches >= MAX_BATCHES_PER_DELIVERY or perf_counter() - started > 48):
+                if checkpoints.continue_later(claim):
+                    LOGGER.info(json.dumps({'event': 'processing_continuation', 'job_id': str(job), 'generation': generation,
+                                            'processed_segments': offset, 'total_segments': len(chunks)}))
+                return False
             batch = chunks[offset:offset + BATCH_SIZE]
             embedded = provider.embed_documents([chunk.text for chunk in batch])
             input_tokens = None if input_tokens is None or embedded.input_tokens is None else input_tokens + embedded.input_tokens
+            batch_segments = []
             for index, (chunk, vector) in enumerate(zip(batch, embedded.vectors, strict=True), offset):
-                segments.append(EvidenceSegment(
+                batch_segments.append(EvidenceSegment(
                     id=segment_id(source, generation, chunk, index), tenant_id=tenant, project_id=project, source_id=source,
                     modality='transcript', start_ms=chunk.start_ms, end_ms=chunk.end_ms, generation=generation,
                     text=chunk.text, embedding=vector, embedding_space=provider.space_id, processing_version=f'{PROCESSING_VERSION}:g{generation}',
                 ))
+            if checkpoints:
+                if not checkpoints.save(claim, offset, batch_segments, [(chunk.cue_start, chunk.cue_end) for chunk in batch], embedded.input_tokens):
+                    return False
+                LOGGER.info(json.dumps({'event': 'embedding_checkpoint', 'job_id': str(job), 'generation': generation,
+                                        'processed_segments': offset + len(batch), 'total_segments': len(chunks)}))
+            else:
+                segments.extend(batch_segments)
+            batches += 1
         if not stage('indexing', 90):
             return False
-        completed = repository.complete(claim, segments, [(chunk.cue_start, chunk.cue_end) for chunk in chunks], provider.name, provider.model,
+        completed = checkpoints.finish(claim) if checkpoints else repository.complete(claim, segments, [(chunk.cue_start, chunk.cue_end) for chunk in chunks], provider.name, provider.model,
                                         round((perf_counter() - started) * 1000), embedding_space=provider.space_id,
                                         dimensions=provider.dimensions, model_digest=provider.model_digest, input_tokens=input_tokens)
         if completed:
-            LOGGER.info(json.dumps({'event': 'processing_completed', 'job_id': str(job), 'stage': 'ready', 'segment_count': len(segments),
+            LOGGER.info(json.dumps({'event': 'processing_completed', 'job_id': str(job), 'stage': 'ready', 'segment_count': len(chunks),
                                     'embedding_provider': provider.name, 'embedding_model': provider.model, 'embedding_dimensions': provider.dimensions}))
         return completed
     except SourceError as exc:

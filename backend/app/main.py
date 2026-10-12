@@ -55,7 +55,7 @@ from .chat.delivery import deliver
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.7.0"
+API_VERSION = "0.8.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 

@@ -65,6 +65,13 @@ regression and synthetic HTTP/isolation tests. A small successful smoke and its
 experimental cosine floor do not establish representative recall or faithfulness.
 CI does not start/download local weights. See `sprint3/semantic-search-validation.md`.
 
+Checkpoint recovery also has an isolated actual Celery SIGKILL probe after the
+first saved batch, followed by replacement-worker continuation and duplicate
+delivery. Fixture calls are counted by chunk to distinguish resumability from
+simply redoing all inference. Check private staging visibility, scope/lease/model/
+parser fences, failed/cancelled replacement, atomic promotion and deletion.
+Native `scripts/smoke_semantic_search.py --long` is explicit and never pulls weights.
+
 ## Ingestion evaluation
 
 - transcript word/error quality on technical vocabulary;

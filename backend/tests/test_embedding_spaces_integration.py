@@ -87,7 +87,7 @@ def test_reindex_spaces_failed_activation_provenance_usage_isolation_and_deletio
             assert connection.execute(f'SELECT count(*) AS n FROM {table} WHERE tenant_id=%s AND project_id=%s', (principal.tenant_id,project.id)).fetchone()['n'] == 0
 
 
-def test_semantic_chunk_cap_and_cancellation_before_embedding(ingestion, monkeypatch):
+def test_semantic_long_transcript_continues_without_consuming_retries_and_cancellation(ingestion, monkeypatch):
     repo, _, principal, project, actor = ingestion
     repo.settings = replace(repo.settings, embedding_provider='ollama')
     monkeypatch.setattr('app.jobs.processing.build_embedding_provider', lambda _: FixtureSemanticProvider())
@@ -95,7 +95,16 @@ def test_semantic_chunk_cap_and_cancellation_before_embedding(ingestion, monkeyp
     cues = '\n\n'.join(f'{i*10//60:02d}:{i*10%60:02d}.000 --> {i*10//60:02d}:{i*10%60+1:02d}.000\nChunk {i}.' for i in range(129))
     too_large = register(ingestion, content=('WEBVTT\n\n'+cues).encode())
     assert not run(repo, too_large)
-    assert repo.get_job(principal.tenant_id,project.id,too_large.job.id).failure_code == 'semantic_transcript_limit'
+    pending = repo.get_job(principal.tenant_id,project.id,too_large.job.id)
+    assert pending.stage == 'waiting_continuation' and pending.processed_segments == 64 and pending.total_segments == 129
+    with repo.store._connect() as connection:
+        connection.execute('UPDATE processing_jobs SET available_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s', (principal.tenant_id,project.id,too_large.job.id))
+    assert not run(repo, too_large)
+    with repo.store._connect() as connection:
+        connection.execute('UPDATE processing_jobs SET available_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s', (principal.tenant_id,project.id,too_large.job.id))
+    assert run(repo, too_large)
+    done = repo.get_job(principal.tenant_id,project.id,too_large.job.id)
+    assert done.attempt_count == 1 and done.delivery_count == 3 and done.processed_segments == 129
     cancelled = register(ingestion, key='cancel-semantic')
     repo.command(principal.tenant_id,project.id,cancelled.source.id,actor,'cancel','cancel-semantic-command')
     assert not run(repo, cancelled)

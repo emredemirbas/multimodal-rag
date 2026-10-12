@@ -5,6 +5,9 @@ export interface ProcessingJob {
   progress_percent: number;
   attempt_count: number;
   max_attempts: number;
+  delivery_count?: number;
+  processed_segments?: number;
+  total_segments?: number;
   failure_code: string | null;
 }
 
@@ -82,10 +85,15 @@ export function parseSourceList(value: unknown): SourceItem[] {
     if (source.reindex_required !== undefined && typeof source.reindex_required !== 'boolean') throw new Error('Invalid reindex state');
     const rawJob = source.job === null ? null : record(source.job);
     if (rawJob && (!JOB_STATES.includes(string(rawJob.status)) || integer(rawJob.progress_percent) > 100)) throw new Error("Invalid processing state");
+    const processed = rawJob?.processed_segments === undefined ? 0 : integer(rawJob.processed_segments);
+    const total = rawJob?.total_segments === undefined ? 0 : integer(rawJob.total_segments);
+    if (processed > total || total > 10_000) throw new Error('Invalid checkpoint progress');
     const job: ProcessingJob | null = rawJob ? {
       id: identifier(rawJob.id), status: rawJob.status as ProcessingJob["status"], stage: string(rawJob.stage),
       progress_percent: integer(rawJob.progress_percent), attempt_count: integer(rawJob.attempt_count),
       max_attempts: integer(rawJob.max_attempts), failure_code: rawJob.failure_code === null ? null : string(rawJob.failure_code),
+      processed_segments: processed, total_segments: total,
+      delivery_count: rawJob.delivery_count === undefined ? 0 : integer(rawJob.delivery_count),
     } : null;
     return {
       id: identifier(source.id), filename: string(source.filename), status: string(source.status),

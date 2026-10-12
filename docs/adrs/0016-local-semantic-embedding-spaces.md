@@ -28,6 +28,10 @@ previous evidence; the existing job/deletion/authorization fences are unchanged.
 Document embeddings run in real jobs, eight chunks/batch, 128 chunks/input and a
 70-second attempt budget under existing task limits/leases/retries. Recheck the
 claim between batches and before atomic activation. No partial index is activated.
+
+ADR 0017 supersedes the initial 128-chunk/one-delivery limit: semantic batches
+are now durably checkpointed under the existing transcript input caps, and
+unfinished bounded deliveries continue without consuming failure retries.
 Queries have six-second inference, one-second manifest checks. Local answers use
 the remaining shared 28-second retrieval/answer budget, with inference capped at
 24 seconds, to fit the existing 30-second BFF boundary. A 16-second fixed cap

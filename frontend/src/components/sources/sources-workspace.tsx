@@ -23,7 +23,11 @@ const FAILURE_MESSAGES: Record<string, string> = {
   local_embeddings_busy: "Local embedding capacity is busy; processing retries automatically within its limit.",
   embedding_model_changed: "Restore the approved embedding model. Different model versions need separate indexes.",
   invalid_embeddings: "The local embedding response could not be validated. Check the local model and retry.",
-  semantic_transcript_limit: "Local semantic mode accepts up to 128 chunks. Split this transcript into smaller files.",
+  semantic_transcript_limit: "This job used the previous local input limit. Retry with resumable processing, or split the file.",
+  processing_configuration_changed: "Processing uses a different embedding mode. Restore its original mode and retry, or Reprocess source for a new generation.",
+  checkpoint_input_changed: "The parser or transcript changed. Reprocess source to start a fresh generation; saved citations remain unchanged.",
+  checkpoint_incomplete: "The saved index is incomplete. Retry processing; the previous active evidence remains unchanged.",
+  checkpoint_no_progress: "Processing could not advance. Free local resources and retry; completed batches are saved.",
   embedding_input_limit: "The local model rejected this input. Split the transcript into smaller files.",
 };
 
@@ -238,6 +242,8 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           <label htmlFor={`progress-${source.id}`}>Processing: {source.job.stage.replaceAll("_", " ")} ({source.job.progress_percent}%)</label>
           <progress id={`progress-${source.id}`} max={100} value={source.job.progress_percent} />
           <p className="field-hint">Attempt {source.job.attempt_count} of {source.job.max_attempts}</p>
+          {(source.job.total_segments ?? 0) > 0 ? <p role="status" aria-live="polite">{source.job.processed_segments ?? 0} of {source.job.total_segments} segments saved · {source.job.delivery_count ?? 0} processing deliveries. Completed batches survive retries.</p> : null}
+          {source.job.stage === 'waiting_continuation' ? <p>Progress saved. Processing will continue automatically without consuming a retry attempt; no action is needed.</p> : null}
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
         {source.status === "metadata_ready" ? <p>Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically.</p> : null}
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
