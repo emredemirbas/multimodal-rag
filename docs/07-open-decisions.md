@@ -75,13 +75,14 @@ These managed-service release gates are deferred: the owner now targets a free
 local GitHub portfolio, not a production beta (ADR 0015). The selected answer
 path is optional local Ollama/Qwen3 4B. Keep deterministic retrieval honest and
 record actual local-model tests; this decision is not a managed-service quality
-certification. Local semantic embeddings and local ASR/vision are follow-up
-slices, with no paid endpoint or cloud fallback. Binary input limits/retention
+certification. Optional local semantic embeddings now use Qwen3 Embedding 0.6B
+in a separately versioned 1024-D space (ADR 0016); local ASR/vision remains a follow-up
+slice, with no paid endpoint or cloud fallback. Binary input limits/retention
 and dedicated media isolation still need their implementation boundaries.
 
 | Decision | Proposed default | Status |
 |---|---|---|
-| Answer/embedding provider and models | Local Ollama/Qwen3 4B for optional answers; hash/lexical retrieval until a separate local semantic-embedding slice | Confirmed for zero-service-spend portfolio, 2026-10-11; managed providers deferred |
+| Answer/embedding provider and models | Optional local Ollama/Qwen3 4B answers and Qwen3 Embedding 0.6B semantic search; hash/extractive remains default | Confirmed for zero-service-spend portfolio, 2026-10-12 (ADRs 0015/0016); managed providers deferred |
 | Reviewed RAG dataset and release threshold | Record local regression/smoke evidence; independent representative review before general quality claims | Production release threshold deferred; synthetic demos are not broad quality approval |
 
 Sprint 3's local infrastructure uses the existing deterministic embedding and

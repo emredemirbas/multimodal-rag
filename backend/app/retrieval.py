@@ -12,7 +12,7 @@ CANDIDATES_PER_CHANNEL = 24
 CONTEXT_CHARACTERS = 4_800
 
 
-def fuse_and_rerank(query: str, channels: list[list[RetrievalHit]], limit: int) -> list[RetrievalHit]:
+def fuse_and_rerank(query: str, channels: list[list[RetrievalHit]], limit: int, *, semantic_mode: bool = False) -> list[RetrievalHit]:
     """RRF k=60, then lexical coverage; not a learned relevance model."""
     scores: Counter[UUID] = Counter()
     candidates: dict[UUID, RetrievalHit] = {}
@@ -26,6 +26,7 @@ def fuse_and_rerank(query: str, channels: list[list[RetrievalHit]], limit: int) 
             scores[hit.segment.id] += 1 / (60 + rank)
     terms = content_tokens(query)
     ranked = sorted(candidates.values(), key=lambda hit: (
+        -(hit.semantic_similarity or 0) - .05 * len(terms & content_tokens(hit.segment.text)) / max(1, len(terms)) if semantic_mode else
         -len(terms & content_tokens(hit.segment.text)) / max(1, len(terms)),
         -scores[hit.segment.id], hit.segment.start_ms, str(hit.segment.id),
     ))

@@ -7,6 +7,7 @@ import re
 from typing import Protocol, Sequence
 
 from .models import RetrievalHit
+from .embedding_profiles import HASH_SPACE, QWEN_SPACE, SEMANTIC_FLOOR
 
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
@@ -31,8 +32,29 @@ class EmbeddingProvider(Protocol):
     name: str
     model: str
     dimensions: int
+    space_id: str
+    model_digest: str | None
 
     def embed(self, text: str) -> list[float]: ...
+    def embed_query(self, text: str) -> EmbeddingBatch: ...
+    def embed_documents(self, texts: Sequence[str]) -> EmbeddingBatch: ...
+
+
+@dataclass(frozen=True)
+class EmbeddingBatch:
+    vectors: list[list[float]]
+    input_tokens: int | None = None
+
+
+def grounded_hits(question: str, hits: Sequence[RetrievalHit]) -> list[RetrievalHit]:
+    terms = content_tokens(question)
+    return [hit for hit in hits if (
+        hit.segment.embedding_space == QWEN_SPACE and hit.semantic_similarity is not None
+        and hit.semantic_similarity >= SEMANTIC_FLOOR
+    ) or (
+        hit.segment.embedding_space == HASH_SPACE and terms
+        and len(terms & content_tokens(hit.segment.text)) / len(terms) >= .5
+    )]
 
 
 class AnswerProvider(Protocol):
@@ -62,6 +84,14 @@ class DeterministicHashEmbeddingProvider:
     dimensions: int = 64
     name: str = "local-deterministic"
     model: str = "signed-hash-embedding-v1"
+    space_id: str = HASH_SPACE
+    model_digest: str | None = None
+
+    def embed_query(self, text: str) -> EmbeddingBatch:
+        return EmbeddingBatch([self.embed(text)], 0)
+
+    def embed_documents(self, texts: Sequence[str]) -> EmbeddingBatch:
+        return EmbeddingBatch([self.embed(text) for text in texts], 0)
 
     def embed(self, text: str) -> list[float]:
         vector = [0.0] * self.dimensions
@@ -86,9 +116,7 @@ class EvidenceExtractiveAnswerProvider:
         question: str,
         hits: Sequence[RetrievalHit],
     ) -> tuple[str, bool, list[RetrievalHit]]:
-        question_terms = content_tokens(question)
-        grounded = [hit for hit in hits if question_terms and
-                    len(question_terms & content_tokens(hit.segment.text)) / len(question_terms) >= 0.5]
+        grounded = grounded_hits(question, hits)
         if not grounded:
             return (
                 "I could not find support for that question in this project's tutorial evidence.",

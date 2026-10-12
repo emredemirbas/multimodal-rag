@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { parseConversation, parseHistory, timestamp, type AnswerMode, type ChatTurn, type Conversation, type History } from "@/lib/api/chat-contracts";
+import { parseConversation, parseHistory, timestamp, type AnswerMode, type RetrievalMode, type ChatTurn, type Conversation, type History } from "@/lib/api/chat-contracts";
 import { ApiError, apiErrorFromResponse } from "@/lib/api/errors";
 import type { SourceItem } from "@/lib/api/source-contracts";
 import { consumeChatStream } from "@/lib/chat-stream";
@@ -11,9 +11,10 @@ interface Props {
   projectId: string; sources: SourceItem[]; initialConversations: Conversation[];
   initialHistory: History | null; archived: boolean; initialError?: string;
   answerMode?: AnswerMode;
+  retrievalMode?: RetrievalMode;
 }
 
-export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "", answerMode = "extractive" }: Props) {
+export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "", answerMode = "extractive", retrievalMode = 'deterministic-hash-and-lexical' }: Props) {
   const [conversations, setConversations] = useState(initialConversations);
   const [conversation, setConversation] = useState<Conversation | null>(initialHistory?.conversation ?? null);
   const [turns, setTurns] = useState<ChatTurn[]>(initialHistory?.turns ?? []);
@@ -92,6 +93,12 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     } catch (failure) {
       setPartial("");
       const modelErrors: Record<string, string> = {
+        local_embeddings_unavailable: "Local semantic search is unavailable or timed out. Start local-ai, free resources and retry this unchanged question.",
+        local_embeddings_not_installed: "Explicitly download qwen3-embedding:0.6b in local-ai, then retry this unchanged question.",
+        local_embeddings_busy: "Local semantic search is busy. Retry this unchanged question shortly.",
+        embedding_model_changed: "The embedding model changed. Restore the approved model before searching this index.",
+        invalid_embeddings: "The embedding response could not be validated. No unvalidated evidence is displayed; retry shortly.",
+        embedding_input_limit: "The local model rejected this input. Shorten the question, then send it again.",
         local_model_unavailable: "The local model is unavailable or timed out. Start the local-ai service, free resources and retry this unchanged question.",
         local_model_not_installed: "The local model is not installed. Explicitly download qwen3:4b in the local-ai service, then retry this unchanged question.",
         local_model_busy: "The local model is answering another question. Retry this unchanged question shortly.",
@@ -107,9 +114,12 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   }
 
   return <div className="stack">
-    <p className="muted">{answerMode === "ollama" ? "Local Ollama answer mode: Qwen3 4B runs on your computer, with no paid/cloud provider. Retrieval still uses the deterministic hash/lexical baseline." :
+    <p className="muted">{answerMode === "ollama" ? "Local Ollama answer mode: Qwen3 4B runs on your computer, with no paid/cloud provider." :
       answerMode === "extractive" ? "Offline extractive baseline: answers quote your indexed transcripts, not a connected language model." :
       "Answer configuration could not be verified. Reload the workspace before relying on the configured model."} Each question is self-contained; saved history is not model context.</p>
+    <p className="muted">{retrievalMode === 'local-semantic-and-lexical' ? 'Local semantic search: Qwen3 Embedding 0.6B + exact project-filtered vectors and full-text search. The experimental relevance guard can miss valid questions; inspect citations.' :
+      retrievalMode === 'deterministic-hash-and-lexical' ? 'Retrieval still uses the deterministic hash/lexical baseline, not a learned semantic model.' : 'Retrieval configuration could not be verified. Reload the workspace.'}</p>
+    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use Reprocess source below (or reupload validation-only transcripts), then reload this workspace. Saved citations remain inspectable.</p> : null}
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {
@@ -143,7 +153,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       <div className="form-field"><label htmlFor="chat-source">Source filter</label>
         <select id="chat-source" disabled={pending} value={sourceId} onChange={(event) => { setSourceId(event.target.value); requestKey.current = ""; }}>
           <option value="">All indexed sources in this project</option>
-          {sources.filter((source) => source.active_generation !== null).map((source) => <option value={source.id} key={source.id}>{source.filename}</option>)}
+          {sources.filter((source) => source.active_generation !== null && !source.reindex_required).map((source) => <option value={source.id} key={source.id}>{source.filename}</option>)}
         </select>
       </div>
       <div className="form-field"><label htmlFor="chat-question">Question about the tutorial</label>

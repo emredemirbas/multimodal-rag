@@ -203,7 +203,7 @@ async def test_liveness_is_dependency_free_and_readiness_checks_store(
     ready = await client.get("/health/ready")
     compatibility = await client.get("/health")
     assert live.status_code == ready.status_code == compatibility.status_code == 200
-    assert live.json()["version"] == "0.6.0"
+    assert live.json()["version"] == "0.7.0"
 
 
 async def test_readiness_returns_safe_service_unavailable_when_database_is_down(

@@ -415,8 +415,8 @@ class PostgresStore:
                 INSERT INTO sources (
                     id, tenant_id, project_id, filename, authorization_mode,
                     status, processing_version, segment_count, frame_count,
-                    idempotency_key, created_at, active_generation
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+                    idempotency_key, created_at, active_generation, active_embedding_space
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, 'signed-hash-v1:64')
                 """,
                 (
                     saved.id,
@@ -480,6 +480,7 @@ class PostgresStore:
         query_embedding: list[float],
         limit: int,
         source_ids: list[UUID] | None = None,
+        *, embedding_space: str = 'signed-hash-v1:64',
     ) -> list[RetrievalHit]:
         from .providers import content_tokens
         from .retrieval import CANDIDATES_PER_CHANNEL, fuse_and_rerank
@@ -491,10 +492,8 @@ class PostgresStore:
         with self._connect() as connection:
             rows = connection.execute(
                 """
-                WITH candidates AS MATERIALIZED (
-                    SELECT cs.*, s.filename,
-                           to_tsquery('simple', %s) AS query,
-                           GREATEST(0.0, 1.0 - (cs.embedding <=> %s::vector)) AS semantic
+                WITH eligible AS MATERIALIZED (
+                    SELECT cs.*, s.filename
                     FROM content_segments cs
                     JOIN sources s
                       ON s.tenant_id = cs.tenant_id
@@ -504,7 +503,12 @@ class PostgresStore:
                       AND s.deleted_at IS NULL
                       AND s.active_generation IS NOT NULL
                       AND cs.generation = s.active_generation
+                      AND cs.embedding_space = %s AND vector_dims(cs.embedding) = %s
                       AND (%s::uuid[] IS NULL OR cs.source_id = ANY(%s::uuid[]))
+                ), candidates AS MATERIALIZED (
+                    SELECT e.*, to_tsquery('simple', %s) AS query,
+                           GREATEST(0.0, 1.0 - (e.embedding <=> %s::vector)) AS semantic
+                    FROM eligible e
                 ), lexical AS (
                     SELECT id, ts_rank_cd(search_document, query) AS score, 'lexical' AS channel
                     FROM candidates WHERE search_document @@ query
@@ -518,7 +522,7 @@ class PostgresStore:
                 SELECT c.*, r.score, r.channel FROM ranks r JOIN candidates c ON c.id=r.id
                 ORDER BY r.channel, r.score DESC, c.id
                 """,
-                (lexical_query, vector, tenant_id, project_id, source_ids or None, source_ids or None,
+                (tenant_id, project_id, embedding_space, len(query_embedding), source_ids or None, source_ids or None, lexical_query, vector,
                  CANDIDATES_PER_CHANNEL, CANDIDATES_PER_CHANNEL),
             ).fetchall()
 
@@ -534,6 +538,7 @@ class PostgresStore:
                 end_ms=row["end_ms"],
                 text=row["text"],
                 embedding=self._parse_vector(row["embedding"]),
+                embedding_space=row['embedding_space'],
                 processing_version=row["processing_version"],
                 generation=row["generation"],
                 frame_id=row["frame_id"],
@@ -543,9 +548,10 @@ class PostgresStore:
                     segment=segment,
                     source_filename=row["filename"],
                     score=float(row["score"]),
+                    semantic_similarity=float(row['semantic']),
                 )
             )
-        return fuse_and_rerank(query_text, list(channels.values()), limit)
+        return fuse_and_rerank(query_text, list(channels.values()), limit, semantic_mode=embedding_space != 'signed-hash-v1:64')
 
     def save_retrieval_run(self, run: RetrievalRun) -> None:
         self.get_project(run.tenant_id, run.project_id)
@@ -559,10 +565,12 @@ class PostgresStore:
                 id, tenant_id, project_id, embedding_provider, embedding_model,
                 answer_provider, answer_model, query_sha256, retrieved_segment_ids,
                 cited_segment_ids, candidate_count, latency_ms, created_at,
-                retrieval_version, reranker_version, prompt_version,input_tokens,output_tokens,answer_model_digest
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                retrieval_version, reranker_version, prompt_version,input_tokens,output_tokens,answer_model_digest,
+                embedding_space,embedding_dimensions,embedding_model_digest,embedding_input_tokens
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (run.id, run.tenant_id, run.project_id, run.embedding_provider, run.embedding_model,
              run.answer_provider, run.answer_model, run.query_sha256, run.retrieved_segment_ids,
              run.cited_segment_ids, run.candidate_count, run.latency_ms, run.created_at,
-             run.retrieval_version, run.reranker_version, run.prompt_version,run.input_tokens,run.output_tokens,run.answer_model_digest),
+             run.retrieval_version, run.reranker_version, run.prompt_version,run.input_tokens,run.output_tokens,run.answer_model_digest,
+             run.embedding_space,run.embedding_dimensions,run.embedding_model_digest,run.embedding_input_tokens),
         )

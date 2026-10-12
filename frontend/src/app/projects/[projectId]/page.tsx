@@ -9,8 +9,8 @@ import { getProject } from "@/lib/api/client";
 import { listSourceInventory } from "@/lib/api/sources";
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
-import { getAnswerMode, getHistory, listConversations } from "@/lib/api/chat";
-import type { AnswerMode, Conversation, History } from "@/lib/api/chat-contracts";
+import { getRuntimeConfiguration, getHistory, listConversations } from "@/lib/api/chat";
+import type { AnswerMode, RetrievalMode, Conversation, History } from "@/lib/api/chat-contracts";
 import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 import type { Project } from "@/lib/api/contracts";
 import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
@@ -72,8 +72,9 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
   let history: History | null = null;
   let chatError = "";
   let answerMode: AnswerMode = "unavailable";
+  let retrievalMode: RetrievalMode = "unavailable";
   try {
-    answerMode = await getAnswerMode();
+    ({ answerMode, retrievalMode } = await getRuntimeConfiguration());
     conversations = await listConversations(project.id);
     if (conversations[0]) history = await getHistory(project.id, conversations[0].id);
   } catch (error) { chatError = publicErrorMessage(error); }
@@ -120,7 +121,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
           <p className="eyebrow">Ask and inspect</p>
           <h2 id="chat-heading">Chat with tutorial evidence</h2>
           <ChatWorkspace projectId={project.id} sources={sources} initialConversations={conversations} initialHistory={history}
-            archived={project.status === "archived"} initialError={chatError} answerMode={answerMode} />
+            archived={project.status === "archived"} initialError={chatError} answerMode={answerMode} retrievalMode={retrievalMode} />
         </section>
         <section className="panel panel--wide" aria-labelledby="workspace-heading">
           <p className="eyebrow">Learning material</p>

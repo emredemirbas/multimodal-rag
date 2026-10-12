@@ -119,3 +119,13 @@ def test_missing_model_and_unavailable_service_do_not_fallback_or_download(local
     with pytest.raises(SourceError) as unavailable: provider.answer('health',[evidence])
     assert unavailable.value.code == 'local_model_unavailable'
     assert '/api/pull' not in state['calls']
+
+
+def test_expired_shared_answer_budget_skips_inference_and_releases_capacity(local_server):
+    from time import perf_counter
+    provider, evidence, state = local_server
+    with pytest.raises(SourceError) as error:
+        provider.answer_with_budget('health', [evidence], perf_counter()-1)
+    assert error.value.code == 'local_model_unavailable' and not state['calls']
+    assert provider.capacity.acquire(blocking=False)
+    provider.capacity.release()

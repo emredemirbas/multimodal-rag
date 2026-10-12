@@ -36,7 +36,7 @@ async def test_runtime_mode_is_authenticated_and_contains_no_endpoint_secrets(cl
     response = await client.get('/api/v1/runtime', headers=auth_headers())
     assert response.status_code == 200
     assert response.json() == {'mode':'extractive','provider':'local-deterministic','model':'evidence-extractive-v2',
-                               'retrieval':'deterministic-hash-and-lexical','spend_policy':'no-paid-provider'}
+                              'retrieval':'deterministic-hash-and-lexical','spend_policy':'no-paid-provider', 'embedding_space':'signed-hash-v1:64'}
 
 
 async def ingest(client: AsyncClient, project_id: str, tenant: str = "tenant-a") -> dict:

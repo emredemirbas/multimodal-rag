@@ -33,4 +33,10 @@ describe("source contracts", () => {
     expect(parseSourceList({ items: upstream })[0].playlist_truncated).toBe(true);
     expect(() => parseSourceList({ items: [{ ...source, playlist_truncated: "true" }] })).toThrow();
   });
+  it('retains reindex state through the source proxy and rejects malformed flags', () => {
+    const upstream = parseSourceList({items:[{...source,active_embedding_space:'signed-hash-v1:64',reindex_required:true}]});
+    expect(parseSourceList({items:upstream})[0].reindex_required).toBe(true);
+    expect(parseSourceList({items:upstream})[0].active_embedding_space).toBe('signed-hash-v1:64');
+    expect(() => parseSourceList({items:[{...source,reindex_required:'true'}]})).toThrow();
+  });
 });

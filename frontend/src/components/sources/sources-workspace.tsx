@@ -18,6 +18,13 @@ const FAILURE_MESSAGES: Record<string, string> = {
   provider_not_configured: "YouTube metadata needs a server-side Data API key. Transcript uploads do not.",
   metadata_unavailable: "Metadata is unavailable. Check the provider configuration or retry later.",
   artifact_integrity: "Transcript integrity verification failed. Upload a new source.",
+  local_embeddings_unavailable: "Start local-ai and free resources. Processing retries within its attempt limit.",
+  local_embeddings_not_installed: "Explicitly download qwen3-embedding:0.6b in local-ai, then retry processing.",
+  local_embeddings_busy: "Local embedding capacity is busy; processing retries automatically within its limit.",
+  embedding_model_changed: "Restore the approved embedding model. Different model versions need separate indexes.",
+  invalid_embeddings: "The local embedding response could not be validated. Check the local model and retry.",
+  semantic_transcript_limit: "Local semantic mode accepts up to 128 chunks. Split this transcript into smaller files.",
+  embedding_input_limit: "The local model rejected this input. Split the transcript into smaller files.",
 };
 
 function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
@@ -204,7 +211,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     {sources.filter((source) => source.kind === "youtube_playlist").map((playlist) => {
       const items = playlistItems.filter((item) => item.playlist_source_id === playlist.id).sort((a, b) => a.position - b.position);
       const linked = items.map((item) => sources.find((source) => source.id === item.transcript_source_id));
-      const ready = linked.filter((source) => source?.active_generation !== null && source?.active_generation !== undefined).length;
+      const ready = linked.filter((source) => source?.active_generation !== null && source?.active_generation !== undefined && !source.reindex_required).length;
       const failed = linked.filter((source) => source?.job?.status === "failed").length;
       return <section key={playlist.id} className="source-card stack" aria-label={`Ordered videos: ${playlist.filename}`}>
         <h4>{playlist.filename} · ordered videos</h4>
@@ -225,6 +232,8 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
       {sources.map((source) => <li key={source.id} className="source-card stack" aria-label={source.filename}>
         <h4>{source.filename}</h4>
         <p>{source.status.replaceAll("_", " ")} · generation {source.generation} · {source.segment_count} indexed segments</p>
+        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.job ? 'Reprocess source' : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
+          source.active_embedding_space ? <p className="field-hint">Search index: {source.active_embedding_space.startsWith('qwen3-0.6b:') ? 'Qwen3 Embedding 0.6B · 1024 dimensions' : 'Deterministic hash · 64 dimensions'}</p> : null}
         {source.job ? <>
           <label htmlFor={`progress-${source.id}`}>Processing: {source.job.stage.replaceAll("_", " ")} ({source.job.progress_percent}%)</label>
           <progress id={`progress-${source.id}`} max={100} value={source.job.progress_percent} />
@@ -232,7 +241,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
         {source.status === "metadata_ready" ? <p>Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically.</p> : null}
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
-        {source.active_generation !== null && source.active_generation !== source.generation ? <p>Previously indexed generation {source.active_generation} remains available until replacement succeeds.</p> : null}
+        {source.active_generation !== null && source.active_generation !== source.generation ? <p>Previously indexed generation {source.active_generation} remains available{source.reindex_required ? ' for saved citation inspection' : ''} until replacement succeeds.</p> : null}
         <div className="form-actions">
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
           {source.job && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}

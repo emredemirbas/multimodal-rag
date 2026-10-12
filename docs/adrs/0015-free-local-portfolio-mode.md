@@ -26,6 +26,11 @@ semantic embeddings with existing data. Label this retrieval limitation. Native
 semantic embeddings and local ASR/OCR remain follow-up slices, not features
 claimed by this adapter.
 
+The subsequent owner-authorized semantic follow-up is ADR 0016 (2026-10-12):
+optional Qwen3 Embedding 0.6B has its own immutable 1024-D space and explicit
+reprocessing workflow. This supersedes only the semantic deferral; default
+hash-mode safety and all other boundaries below remain unchanged.
+
 Require at least 50% meaningful query-term overlap before local generation while
 using hash retrieval. Weak/empty matches abstain without a model call and are
 attributed to `local-evidence-policy`/`lexical-abstention-v1`, with zero tokens and

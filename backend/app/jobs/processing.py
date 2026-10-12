@@ -7,7 +7,8 @@ from uuid import UUID
 from billiard.exceptions import SoftTimeLimitExceeded
 
 from ..models import EvidenceSegment
-from ..providers import DeterministicHashEmbeddingProvider
+from ..local_embeddings import build_embedding_provider, BATCH_SIZE, MAX_SEMANTIC_CHUNKS
+from ..embedding_profiles import HASH_SPACE
 from ..sources.chunking import PROCESSING_VERSION, chunk_transcript, segment_id
 from ..sources.contracts import SourceError
 from ..sources.repository import SourceRepository
@@ -47,22 +48,33 @@ def process_transcript(repository: SourceRepository, tenant: str, project: UUID,
         chunks = chunk_transcript(content)
         if not stage('embedding', 50):
             return False
-        provider = DeterministicHashEmbeddingProvider()
+        provider = build_embedding_provider(repository.settings)
+        if provider.space_id != HASH_SPACE and len(chunks) > MAX_SEMANTIC_CHUNKS:
+            raise SourceError('semantic_transcript_limit', 'Local semantic mode accepts up to 128 chunks. Split this transcript into smaller files.')
         segments = []
-        for index, chunk in enumerate(chunks):
-            if index % 25 == 0 and not stage('embedding', min(85, 50 + int(35 * index / len(chunks)))):
+        input_tokens = 0
+        for offset in range(0, len(chunks), BATCH_SIZE):
+            if not stage('embedding', min(85, 50 + int(35 * offset / len(chunks)))):
                 return False
-            segments.append(EvidenceSegment(
-                id=segment_id(source, generation, chunk, index), tenant_id=tenant, project_id=project, source_id=source,
-                modality='transcript', start_ms=chunk.start_ms, end_ms=chunk.end_ms,
-                text=chunk.text, embedding=provider.embed(chunk.text), processing_version=f'{PROCESSING_VERSION}:g{generation}',
-            ))
+            if provider.space_id != HASH_SPACE and perf_counter() - started > 48:
+                raise SourceError('job_timeout', 'Local semantic processing exceeded its CPU budget. Retry a smaller transcript.', transient=True)
+            batch = chunks[offset:offset + BATCH_SIZE]
+            embedded = provider.embed_documents([chunk.text for chunk in batch])
+            input_tokens = None if input_tokens is None or embedded.input_tokens is None else input_tokens + embedded.input_tokens
+            for index, (chunk, vector) in enumerate(zip(batch, embedded.vectors, strict=True), offset):
+                segments.append(EvidenceSegment(
+                    id=segment_id(source, generation, chunk, index), tenant_id=tenant, project_id=project, source_id=source,
+                    modality='transcript', start_ms=chunk.start_ms, end_ms=chunk.end_ms, generation=generation,
+                    text=chunk.text, embedding=vector, embedding_space=provider.space_id, processing_version=f'{PROCESSING_VERSION}:g{generation}',
+                ))
         if not stage('indexing', 90):
             return False
         completed = repository.complete(claim, segments, [(chunk.cue_start, chunk.cue_end) for chunk in chunks], provider.name, provider.model,
-                                        round((perf_counter() - started) * 1000))
+                                        round((perf_counter() - started) * 1000), embedding_space=provider.space_id,
+                                        dimensions=provider.dimensions, model_digest=provider.model_digest, input_tokens=input_tokens)
         if completed:
-            LOGGER.info(json.dumps({'event': 'processing_completed', 'job_id': str(job), 'stage': 'ready', 'segment_count': len(segments)}))
+            LOGGER.info(json.dumps({'event': 'processing_completed', 'job_id': str(job), 'stage': 'ready', 'segment_count': len(segments),
+                                    'embedding_provider': provider.name, 'embedding_model': provider.model, 'embedding_dimensions': provider.dimensions}))
         return completed
     except SourceError as exc:
         repository.fail(claim, exc)

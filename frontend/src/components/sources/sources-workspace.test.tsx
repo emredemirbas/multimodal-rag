@@ -90,4 +90,9 @@ describe("source management", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
     expect(screen.getByText(/keeps separately uploaded transcripts/)).toBeVisible();
   });
+  it('announces reindex requirements and retains the recovery control', () => {
+    render(<SourcesWorkspace projectId={projectId} initialSources={[{...source,active_embedding_space:'signed-hash-v1:64',reindex_required:true}]} archived={false} />);
+    expect(screen.getByText(/Reindex required:/)).toHaveTextContent('Old citations remain inspectable');
+    expect(screen.getByRole('button', {name:'Reprocess source'})).toBeVisible();
+  });
 });

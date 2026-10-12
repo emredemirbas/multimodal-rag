@@ -2,6 +2,7 @@
 import json
 import re
 from threading import BoundedSemaphore
+from time import perf_counter
 from typing import Sequence
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -10,7 +11,8 @@ from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_ope
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .models import RetrievalHit
-from .providers import AnswerResult, content_tokens
+from .providers import AnswerResult, grounded_hits
+from .embedding_profiles import QWEN_SPACE
 from .sources.contracts import SourceError
 
 LOCAL_PROMPT_VERSION = 'local-evidence-json-v1'
@@ -44,17 +46,18 @@ class OllamaAnswerProvider:
     name = 'ollama-local'
     prompt_version = LOCAL_PROMPT_VERSION
 
-    def __init__(self, base_url: str, model: str = 'qwen3:4b', timeout: int = 24):
+    def __init__(self, base_url: str, model: str = 'qwen3:4b', timeout: int = 24, *, embedding_space: str = 'signed-hash-v1:64'):
         self.base_url = checked_local_url(base_url)
         if model != 'qwen3:4b':
             raise ValueError('Only the approved local qwen3:4b model is enabled')
         if not 1 <= timeout <= 24:
             raise ValueError('Local model timeout must be 1–24 seconds')
         self.model, self.timeout = model, timeout
+        self.embedding_space = embedding_space
         self.capacity = BoundedSemaphore(1)
         self.opener = build_opener(ProxyHandler({}), NoRedirects())
 
-    def _request(self, path: str, payload=None, *, timeout: int | None = None) -> dict:
+    def _request(self, path: str, payload=None, *, timeout: float | None = None) -> dict:
         data = json.dumps(payload, ensure_ascii=False).encode() if payload is not None else None
         request = Request(self.base_url+path, data=data, headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
         try:
@@ -73,19 +76,25 @@ class OllamaAnswerProvider:
         except (ValueError, UnicodeError):
             raise SourceError('invalid_model_answer', 'The local model response could not be validated.', 503) from None
 
-    def answer(self, question: str, hits: Sequence[RetrievalHit]) -> AnswerResult:
-        # Hash similarity is not semantic support. Keep the conservative gate
-        # until real semantic embeddings have their own migration/evaluation.
-        terms = content_tokens(question)
-        hits = [hit for hit in hits if terms and len(terms & content_tokens(hit.segment.text))/len(terms) >= .5]
+    def answer_with_budget(self, question: str, hits: Sequence[RetrievalHit], deadline: float) -> AnswerResult:
+        return self.answer(question, hits, deadline=deadline)
+
+    def answer(self, question: str, hits: Sequence[RetrievalHit], *, deadline: float | None = None) -> AnswerResult:
+        def remaining(limit: float) -> float:
+            budget = limit if deadline is None else min(limit, deadline - perf_counter())
+            if budget <= 0:
+                raise SourceError('local_model_unavailable', 'The local answer time budget expired. Free resources or retry shortly.', 503)
+            return budget
+        policy = 'semantic-abstention-v1' if self.embedding_space == QWEN_SPACE or any(hit.segment.embedding_space == QWEN_SPACE for hit in hits) else 'lexical-abstention-v1'
+        hits = grounded_hits(question, hits)
         if not hits:
             return AnswerResult("I could not find support for that question in this project's tutorial evidence.", True, [],
-                input_tokens=0, output_tokens=0, provider='local-evidence-policy', model='lexical-abstention-v1',
-                prompt_version='lexical-abstention-v1')
+                input_tokens=0, output_tokens=0, provider='local-evidence-policy', model=policy,
+                prompt_version=policy)
         if not self.capacity.acquire(blocking=False):
             raise SourceError('local_model_busy', 'The local model is already answering a question. Retry shortly.', 503)
         try:
-            tags = self._request('/api/tags', timeout=2).get('models')
+            tags = self._request('/api/tags', timeout=remaining(2)).get('models')
             if not isinstance(tags, list) or len(tags) > 100:
                 raise SourceError('invalid_model_answer', 'The local model manifest could not be validated.', 503)
             selected = next((item for item in tags if isinstance(item, dict) and item.get('name') == self.model), None)
@@ -108,7 +117,7 @@ class OllamaAnswerProvider:
                 'format': schema, 'keep_alive': 0,
                 'options': {'temperature': 0, 'num_ctx': 4096, 'num_predict': 256},
                 'messages': [{'role': 'system', 'content': system},
-                             {'role': 'user', 'content': json.dumps({'question': question, 'evidence': evidence}, ensure_ascii=False)}]})
+                             {'role': 'user', 'content': json.dumps({'question': question, 'evidence': evidence}, ensure_ascii=False)}]}, timeout=remaining(self.timeout))
             message = payload.get('message')
             if (payload.get('done') is not True or payload.get('model') != self.model or not isinstance(message, dict)
                     or message.get('role') != 'assistant' or message.get('tool_calls')):

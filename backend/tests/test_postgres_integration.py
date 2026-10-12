@@ -89,7 +89,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:

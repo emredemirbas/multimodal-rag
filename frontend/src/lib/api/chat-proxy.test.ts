@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { chatRequestBody, validateChatIds } from "@/lib/api/chat-proxy";
+import { chatProxyError, chatRequestBody, validateChatIds } from "@/lib/api/chat-proxy";
+import { ApiError } from '@/lib/api/errors';
 
 describe("server-owned chat proxy", () => {
   it("rejects malformed paths, missing origin and cross-origin writes", async () => {
@@ -19,5 +20,14 @@ describe("server-owned chat proxy", () => {
       headers: { "Host": "localhost:3000", "Origin": origin, "Content-Type": "application/json" } });
     expect(await chatRequestBody(make("http://localhost:3000"))).toBe("{}");
     await expect(chatRequestBody(make("http://attacker.example"))).rejects.toMatchObject({ status: 403 });
+  });
+  it('preserves only allowlisted recovery codes without leaking raw errors', async () => {
+    const local = chatProxyError(new ApiError({status:503,code:'local_embeddings_not_installed',message:'private input'}));
+    expect(local.status).toBe(503);
+    expect(await local.json()).toMatchObject({code:'local_embeddings_not_installed'});
+    const unsafe = chatProxyError(new ApiError({status:503,code:'private model input',message:'secret'}));
+    const payload = await unsafe.json();
+    expect(payload.code).toBe('request_failed');
+    expect(JSON.stringify(payload)).not.toMatch(/private|secret/);
   });
 });

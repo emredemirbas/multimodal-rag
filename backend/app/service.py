@@ -106,6 +106,10 @@ class TutorialService:
         project_id: UUID,
         request: TranscriptIngestRequest,
     ) -> SourceIngested:
+        from .embedding_profiles import HASH_SPACE
+        from .sources.contracts import SourceError
+        if self.embedding_provider.space_id != HASH_SPACE:
+            raise SourceError('validation_endpoint_unavailable', 'Use asynchronous uploads for local semantic indexing.', 503)
         self._actor_user_id(principal)
         tenant_id = principal.tenant_id
         self.store.get_project(tenant_id, project_id)
@@ -185,7 +189,6 @@ class TutorialService:
         self, principal: AuthenticatedPrincipal, project_id: UUID, question: str,
         source_ids: list[UUID] | None = None,
     ) -> tuple[QuestionResponse, RetrievalRun]:
-        from .retrieval import RETRIEVAL_VERSION
         from .sources.contracts import SourceError
         self._actor_user_id(principal)
         tenant_id = principal.tenant_id
@@ -195,7 +198,8 @@ class TutorialService:
         for source_id in source_ids or []:
             self.store.get_source(tenant_id, project_id, source_id)
         started = perf_counter()
-        embedding = self.embedding_provider.embed(question)
+        query_batch = self.embedding_provider.embed_query(question)
+        embedding = query_batch.vectors[0]
         hits = self.store.search(
             tenant_id,
             project_id,
@@ -203,9 +207,13 @@ class TutorialService:
             embedding,
             self.retrieval_limit,
             source_ids,
+            embedding_space=self.embedding_provider.space_id,
         )
         retrieved = {hit.segment.id: hit.model_copy(deep=True) for hit in hits}
-        generated = self.answer_provider.answer(question, [hit.model_copy(deep=True) for hit in hits])
+        provider_input = [hit.model_copy(deep=True) for hit in hits]
+        budgeted_answer = getattr(self.answer_provider, 'answer_with_budget', None)
+        generated = (budgeted_answer(question, provider_input, started + 28) if budgeted_answer is not None
+                     else self.answer_provider.answer(question, provider_input))
         result = generated if isinstance(generated, AnswerResult) else AnswerResult(*generated)
         answer, abstained, cited_hits = result.answer, result.abstained, result.cited_hits
         if (len(answer) > 12_000 or not answer.strip() or (abstained and cited_hits) or (not abstained and not cited_hits)
@@ -222,6 +230,10 @@ class TutorialService:
             project_id=project_id,
             embedding_provider=self.embedding_provider.name,
             embedding_model=self.embedding_provider.model,
+            embedding_space=self.embedding_provider.space_id,
+            embedding_dimensions=self.embedding_provider.dimensions,
+            embedding_model_digest=self.embedding_provider.model_digest,
+            embedding_input_tokens=query_batch.input_tokens,
             answer_provider=result.provider or self.answer_provider.name,
             answer_model=result.model or self.answer_provider.model,
             query_sha256=hashlib.sha256(question.encode("utf-8")).hexdigest(),
@@ -231,6 +243,8 @@ class TutorialService:
             latency_ms=latency_ms,
             prompt_version=result.prompt_version or getattr(self.answer_provider, 'prompt_version', 'quoted-evidence-v1'),
             input_tokens=result.input_tokens, output_tokens=result.output_tokens, answer_model_digest=result.model_digest,
+            retrieval_version='semantic-hybrid-rrf-v2' if self.embedding_provider.space_id != 'signed-hash-v1:64' else 'hybrid-rrf-v1',
+            reranker_version='cosine-identifier-v1' if self.embedding_provider.space_id != 'signed-hash-v1:64' else 'identifier-overlap-v1',
         )
         citations = [
             Citation(
@@ -254,7 +268,7 @@ class TutorialService:
             retrieval_run_id=run.id,
             provider=run.answer_provider,
             model=run.answer_model,
-            processing_version=RETRIEVAL_VERSION,
+            processing_version=run.retrieval_version,
             latency_ms=latency_ms,
         ), run
 

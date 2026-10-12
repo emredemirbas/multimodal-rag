@@ -38,7 +38,9 @@ from .models import (
     TranscriptIngestRequest,
 )
 from .postgres import DatabaseUnavailableError, PostgresStore
-from .providers import DeterministicHashEmbeddingProvider, EvidenceExtractiveAnswerProvider
+from .providers import EvidenceExtractiveAnswerProvider
+from .local_embeddings import build_embedding_provider
+from .embedding_profiles import configured_space
 from .service import TutorialService
 from .store import InMemoryStore, ProjectNotFoundError, Store
 from .transcripts import TranscriptParseError
@@ -53,7 +55,7 @@ from .chat.delivery import deliver
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.6.0"
+API_VERSION = "0.7.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -63,8 +65,6 @@ def configure_logging(level: str) -> None:
 
 def build_store(settings: Settings) -> Store:
     if settings.store_backend == "postgres":
-        if settings.embedding_dimensions != 64:
-            raise ValueError("PostgreSQL schema requires 64 embedding dimensions")
         store = PostgresStore(settings.database_url)
         if settings.auto_migrate:
             store.run_migrations()
@@ -120,8 +120,10 @@ def create_app(
         )
         application.state.service = TutorialService(
             active_store,
-            DeterministicHashEmbeddingProvider(active_settings.embedding_dimensions),
-            (OllamaAnswerProvider(active_settings.ollama_base_url, active_settings.ollama_model, active_settings.local_model_timeout)
+            build_embedding_provider(active_settings),
+            (OllamaAnswerProvider(active_settings.ollama_base_url, active_settings.ollama_model,
+                                 active_settings.local_model_timeout,
+                                 embedding_space=configured_space(active_settings.embedding_provider))
              if active_settings.answer_provider == 'ollama' else EvidenceExtractiveAnswerProvider()),
             retrieval_limit=active_settings.retrieval_limit,
         )
@@ -279,7 +281,8 @@ def create_app(
         actor(request, principal)
         provider = service(request).answer_provider
         return {'mode': active_settings.answer_provider, 'provider': provider.name, 'model': provider.model,
-                'retrieval': 'deterministic-hash-and-lexical', 'spend_policy': 'no-paid-provider'}
+                'retrieval': 'local-semantic-and-lexical' if active_settings.embedding_provider == 'ollama' else 'deterministic-hash-and-lexical',
+                'embedding_space': configured_space(active_settings.embedding_provider), 'spend_policy': 'no-paid-provider'}
 
     @app.post("/api/v1/projects", response_model=Project, status_code=201)
     def create_project(
@@ -412,7 +415,7 @@ def create_app(
         request: Request,
         principal: CurrentPrincipal,
     ) -> SourceIngested:
-        if active_settings.environment.strip().lower() not in {"development", "test"}:
+        if active_settings.environment.strip().lower() not in {"development", "test"} or active_settings.embedding_provider != 'hash':
             raise SourceError("validation_endpoint_unavailable", "Use the asynchronous transcript upload endpoint.", 503)
         return service(request).ingest_transcript(principal, project_id, body)
 

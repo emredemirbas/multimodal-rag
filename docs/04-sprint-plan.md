@@ -115,6 +115,11 @@ selection, independent dataset review and the agreed Alpha 1 quality threshold
 remain open; this is not full provider-backed Alpha 1 approval. See
 `docs/sprint3/implementation-plan.md` and `docs/sprint3/validation-record.md`.
 
+Free-local follow-ups add optional Qwen3 4B answers (ADR 0015) and separately
+versioned Qwen3 Embedding 0.6B semantic search (ADR 0016). Default CI/demo remains
+hash/extractive. See `docs/sprint3/semantic-search-validation.md`; this does not
+establish a representative independent quality threshold or complete media work.
+
 Deliver:
 
 - text embeddings and exact vector search;

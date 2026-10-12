@@ -8,6 +8,7 @@ x-api-environment: &api-environment
   DEVELOPMENT_AUTH_TOKEN: ${DEVELOPMENT_AUTH_TOKEN:?set DEVELOPMENT_AUTH_TOKEN in .env}
   DATABASE_URL: postgresql://${POSTGRES_USER:-tutorial}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-tutorial}
   EMBEDDING_DIMENSIONS: "64"
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
   LOG_LEVEL: INFO
   S3_ENDPOINT: http://minio:9000
   S3_BUCKET: tutorial-artifacts

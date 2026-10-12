@@ -7,7 +7,11 @@ export function validateChatIds(...values: string[]): void {
   if (values.some((value) => !UUID_PATTERN.test(value))) throw new ApiError({ status: 404 });
 }
 export function chatProxyError(error: unknown): NextResponse {
-  return NextResponse.json({ message: publicErrorMessage(error) }, {
+  const safeCodes = new Set(['local_model_unavailable', 'local_model_not_installed', 'local_model_busy', 'invalid_model_answer',
+    'local_embeddings_unavailable', 'local_embeddings_not_installed', 'local_embeddings_busy', 'embedding_model_changed',
+    'invalid_embeddings', 'embedding_input_limit', 'request_timeout', 'project_archived', 'idempotency_conflict', 'message_too_large']);
+  const code = error instanceof ApiError && safeCodes.has(error.code) ? error.code : 'request_failed';
+  return NextResponse.json({ code, message: publicErrorMessage(error) }, {
     status: error instanceof ApiError ? error.status : 502, headers: { "Cache-Control": "no-store" },
   });
 }

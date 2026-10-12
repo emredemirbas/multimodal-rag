@@ -3,6 +3,12 @@
 Current target: free local portfolio mode (ADR 0015), superseding the managed
 model/hosted beta deployment default. Optional Ollama runs as a separate local
 process/container; default offline demos and CI require no model download.
+
+Optional semantic retrieval uses Qwen3 Embedding 0.6B behind the same local-only
+boundary (ADR 0016). Index identity includes approved manifest, 1024 dimensions
+and query-template version. Document embeddings run in the ingestion process;
+queries are bounded API requests. Incompatible active generations are excluded
+before distance calculation, not silently blended into either retrieval channel.
 The production evolution sections remain future considerations, not current work.
 
 ## Architecture style

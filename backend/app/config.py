@@ -23,6 +23,7 @@ class Settings:
     database_url: str = "postgresql://tutorial:tutorial@postgres:5432/tutorial"
     log_level: str = "INFO"
     embedding_dimensions: int = 64
+    embedding_provider: str = 'hash'
     retrieval_limit: int = 4
     auto_migrate: bool = True
     auth_mode: str = "development"
@@ -46,6 +47,8 @@ class Settings:
 
     def __post_init__(self) -> None:
         from .local_model import checked_local_url
+        if self.embedding_provider not in {'hash', 'ollama'} or self.embedding_dimensions != 64:
+            raise ValueError('Use hash (64-D) or local Ollama (fixed 1024-D); custom dimensions are disabled')
         if self.answer_provider not in {'extractive', 'ollama'}:
             raise ValueError('Only extractive and local Ollama answers are supported; no paid provider is configured')
         checked_local_url(self.ollama_base_url)
@@ -89,6 +92,7 @@ class Settings:
             ),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             embedding_dimensions=int(os.getenv("EMBEDDING_DIMENSIONS", "64")),
+            embedding_provider=os.getenv('EMBEDDING_PROVIDER', 'hash'),
             retrieval_limit=int(os.getenv("RETRIEVAL_LIMIT", "4")),
             auto_migrate=_environment_flag("APP_AUTO_MIGRATE", True),
             auth_mode=os.getenv("AUTH_MODE", "development"),

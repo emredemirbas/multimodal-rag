@@ -17,8 +17,18 @@ afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
   it("labels local generation and keeps the retrieval limitation visible", () => {
     render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[]} initialHistory={null} archived={false} answerMode="ollama" />);
-    expect(screen.getByText(/Local Ollama answer mode/)).toHaveTextContent("deterministic hash/lexical baseline");
+    expect(screen.getByText(/Local Ollama answer mode/)).toHaveTextContent("no paid/cloud provider");
+    expect(screen.getByText(/Retrieval still uses/)).toHaveTextContent("deterministic hash/lexical baseline");
     expect(screen.queryByText(/Offline extractive baseline/)).not.toBeInTheDocument();
+  });
+  it('labels semantic retrieval and excludes incompatible indexes without hiding saved citations', () => {
+    const old = { id: project, filename: 'old.vtt', status: 'ready', generation: 1, active_generation: 1, segment_count: 1, provider: 'upload', failure_code: null, job: null, reindex_required: true };
+    render(<ChatWorkspace projectId={project} sources={[old]} initialConversations={[conversation]} initialHistory={{conversation,turns:[turn]}} archived={false} answerMode='ollama' retrievalMode='local-semantic-and-lexical' />);
+    expect(screen.getByText(/Local semantic search:/)).toHaveTextContent('Qwen3 Embedding 0.6B');
+    expect(screen.getByText(/Some sources require reindexing/)).toBeVisible();
+    expect(screen.queryByRole('option', {name:'old.vtt'})).not.toBeInTheDocument();
+    expect(screen.getByRole('link', {name:/tutorial.vtt/})).toBeVisible();
+    expect(screen.queryByText(/Retrieval still uses/)).not.toBeInTheDocument();
   });
   it("offers actionable local-model recovery while retaining the same retry key", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({code:"local_model_not_installed"}),{status:503,headers:{"Content-Type":"application/json"}})).mockResolvedValueOnce(response());

@@ -20,6 +20,8 @@ export interface SourceItem {
   failure_code: string | null;
   kind?: string;
   playlist_truncated?: boolean;
+  active_embedding_space?: string | null;
+  reindex_required?: boolean;
 }
 
 export interface PlaylistItem {
@@ -77,6 +79,7 @@ export function parseSourceList(value: unknown): SourceItem[] {
   if (!Array.isArray(payload.items)) throw new Error("Invalid source list");
   return payload.items.map((item) => {
     const source = record(item);
+    if (source.reindex_required !== undefined && typeof source.reindex_required !== 'boolean') throw new Error('Invalid reindex state');
     const rawJob = source.job === null ? null : record(source.job);
     if (rawJob && (!JOB_STATES.includes(string(rawJob.status)) || integer(rawJob.progress_percent) > 100)) throw new Error("Invalid processing state");
     const job: ProcessingJob | null = rawJob ? {
@@ -91,6 +94,8 @@ export function parseSourceList(value: unknown): SourceItem[] {
       failure_code: source.failure_code === null ? null : string(source.failure_code),
       ...(source.kind === undefined ? {} : { kind: string(source.kind) }),
       playlist_truncated: playlistTruncated(source),
+      active_embedding_space: source.active_embedding_space == null ? null : string(source.active_embedding_space),
+      reindex_required: source.reindex_required === true,
     };
   });
 }

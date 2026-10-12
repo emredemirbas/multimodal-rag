@@ -106,6 +106,7 @@ class EvidenceSegment(BaseModel):
     end_ms: int = Field(gt=0)
     text: str
     embedding: list[float]
+    embedding_space: str = 'signed-hash-v1:64'
     processing_version: str = "sprint0-v1"
     generation: int = 1
     frame_id: UUID | None = None
@@ -170,6 +171,7 @@ class RetrievalHit(BaseModel):
     segment: EvidenceSegment
     source_filename: str
     score: float
+    semantic_similarity: float | None = None
 
 
 class RetrievalRun(BaseModel):
@@ -178,6 +180,10 @@ class RetrievalRun(BaseModel):
     project_id: UUID
     embedding_provider: str
     embedding_model: str
+    embedding_space: str = 'signed-hash-v1:64'
+    embedding_dimensions: int = 64
+    embedding_model_digest: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
+    embedding_input_tokens: int | None = Field(default=None, ge=0)
     answer_provider: str
     answer_model: str
     query_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")

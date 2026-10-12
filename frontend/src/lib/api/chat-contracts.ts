@@ -12,6 +12,13 @@ export interface ChatTurn {
 export interface History { conversation: Conversation; turns: ChatTurn[] }
 export interface Evidence extends Citation { text: string }
 export type AnswerMode = "extractive" | "ollama" | "unavailable";
+export type RetrievalMode = "deterministic-hash-and-lexical" | "local-semantic-and-lexical" | "unavailable";
+
+export function parseRetrievalMode(value: unknown): RetrievalMode {
+  const row = record(value);
+  if (row.retrieval !== 'deterministic-hash-and-lexical' && row.retrieval !== 'local-semantic-and-lexical') throw new Error('Invalid retrieval mode');
+  return row.retrieval;
+}
 
 export function parseAnswerMode(value: unknown): AnswerMode {
   const row = record(value);

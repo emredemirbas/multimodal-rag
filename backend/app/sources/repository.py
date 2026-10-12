@@ -11,6 +11,7 @@ from ..config import Settings
 from ..models import AuthorizationMode, EvidenceSegment
 from ..postgres import PostgresStore
 from ..store import ProjectNotFoundError
+from ..embedding_profiles import HASH_SPACE, configured_space
 from .chunking import PROCESSING_VERSION, decode_transcript
 from .contracts import Cleanup, Job, ManagedSource, Registration, SourceError, SourceList
 from .adapters import TranscriptAdapter, YouTubeAdapter
@@ -34,8 +35,13 @@ class SourceRepository:
             raise ProjectNotFoundError('project not found')
         return row
 
-    @staticmethod
-    def _source(connection, tenant: str, project: UUID, source: UUID) -> ManagedSource:
+    def _managed_source(self, row: dict) -> ManagedSource:
+        source = ManagedSource.model_validate(row)
+        source.reindex_required = (source.kind == 'transcript' and source.active_generation is not None
+                                   and source.active_embedding_space != configured_space(self.settings.embedding_provider))
+        return source
+
+    def _source(self, connection, tenant: str, project: UUID, source: UUID) -> ManagedSource:
         row = connection.execute(
             '''SELECT s.*, to_jsonb(j) AS job FROM sources s
                LEFT JOIN LATERAL (
@@ -48,7 +54,7 @@ class SourceRepository:
         ).fetchone()
         if row is None:
             raise ProjectNotFoundError('source not found')
-        return ManagedSource.model_validate(row)
+        return self._managed_source(row)
 
     def get_source(self, tenant: str, project: UUID, source: UUID) -> ManagedSource:
         self.store.get_project(tenant, project)
@@ -68,7 +74,7 @@ class SourceRepository:
                    WHERE s.tenant_id=%s AND s.project_id=%s AND s.deleted_at IS NULL
                    ORDER BY s.created_at DESC, s.id''', (tenant, project),
             ).fetchall()
-            return SourceList(items=[ManagedSource.model_validate(row) for row in rows], playlist_items=read_items(connection, tenant, project))
+            return SourceList(items=[self._managed_source(row) for row in rows], playlist_items=read_items(connection, tenant, project))
 
     def get_job(self, tenant: str, project: UUID, job: UUID) -> Job:
         self.store.get_project(tenant, project)
@@ -359,7 +365,7 @@ class SourceRepository:
                 store_snapshot(connection, tenant, project, source, claim['generation'], metadata)
             connection.execute(
                 '''INSERT INTO processing_versions (tenant_id,project_id,source_id,generation,processing_version,
-                   embedding_provider,embedding_model,embedding_dimensions) VALUES (%s,%s,%s,%s,%s,'none','none',0)
+                   embedding_provider,embedding_model,embedding_dimensions,embedding_space) VALUES (%s,%s,%s,%s,%s,'none','none',0,NULL)
                    ON CONFLICT DO NOTHING''', (tenant, project, source, claim['generation'], f"youtube-metadata-v1:g{claim['generation']}"),
             )
             connection.execute(
@@ -371,8 +377,8 @@ class SourceRepository:
             )
             self._finish_attempt(connection, tenant, project, job, 'succeeded', None)
             connection.execute(
-                '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms)
-                   VALUES (%s,%s,%s,%s,%s,'youtube','data-api-v3',0,0,%s) ON CONFLICT DO NOTHING''',
+                '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms,embedding_space)
+                   VALUES (%s,%s,%s,%s,%s,'youtube','data-api-v3',0,0,%s,NULL) ON CONFLICT DO NOTHING''',
                 (tenant, project, source, job, claim['generation'], duration_ms),
             )
             return True
@@ -445,38 +451,44 @@ class SourceRepository:
         else:
             self._fail_unclaimed(connection, claim, error.code, error.detail)
 
-    def complete(self, claim: dict, segments: list[EvidenceSegment], provenance: list[tuple[int, int]], provider: str, model: str, duration_ms: int) -> bool:
+    def complete(self, claim: dict, segments: list[EvidenceSegment], provenance: list[tuple[int, int]], provider: str, model: str, duration_ms: int,
+                 *, embedding_space: str = HASH_SPACE, dimensions: int = 64, model_digest: str | None = None, input_tokens: int | None = None) -> bool:
         tenant, project, source, job = (claim[key] for key in ('tenant_id', 'project_id', 'source_id', 'id'))
         generation = claim['generation']
+        if not segments or any(segment.embedding_space != embedding_space or len(segment.embedding) != dimensions
+                               or segment.tenant_id != tenant or segment.project_id != project or segment.source_id != source for segment in segments):
+            raise SourceError('invalid_embeddings', 'The indexing evidence could not be validated.', 503)
         with self.store._connect() as connection:
             if not self._fenced(connection, claim):
                 return False
             version = f'{PROCESSING_VERSION}:g{generation}'
             connection.execute(
                 '''INSERT INTO processing_versions (tenant_id,project_id,source_id,generation,processing_version,
-                   embedding_provider,embedding_model,embedding_dimensions) VALUES (%s,%s,%s,%s,%s,%s,%s,64)
-                   ON CONFLICT DO NOTHING''', (tenant, project, source, generation, version, provider, model),
+                   embedding_provider,embedding_model,embedding_dimensions,embedding_space,embedding_model_digest)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   ON CONFLICT DO NOTHING''', (tenant, project, source, generation, version, provider, model, dimensions, embedding_space, model_digest),
             )
             for segment, (cue_start, cue_end) in zip(segments, provenance, strict=True):
                 connection.execute(
                     '''INSERT INTO content_segments (tenant_id,project_id,id,source_id,modality,start_ms,end_ms,text,
-                       embedding,processing_version,generation,cue_start,cue_end)
-                       VALUES (%s,%s,%s,%s,'transcript',%s,%s,%s,%s::vector,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
+                       embedding,processing_version,generation,cue_start,cue_end,embedding_space)
+                       VALUES (%s,%s,%s,%s,'transcript',%s,%s,%s,%s::vector,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
                     (tenant, project, segment.id, source, segment.start_ms, segment.end_ms, segment.text,
-                     self.store._vector_literal(segment.embedding), version, generation, cue_start, cue_end),
+                     self.store._vector_literal(segment.embedding), version, generation, cue_start, cue_end, embedding_space),
                 )
             connection.execute(
-                "UPDATE sources SET status='ready',active_generation=%s,processing_version=%s,segment_count=%s,failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
-                (generation, version, len(segments), tenant, project, source),
+                "UPDATE sources SET status='ready',active_generation=%s,active_embedding_space=%s,processing_version=%s,segment_count=%s,failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
+                (generation, embedding_space, version, len(segments), tenant, project, source),
             )
             connection.execute(
                 "UPDATE processing_jobs SET status='succeeded',stage='ready',progress_percent=100,lease_token=NULL,lease_expires_at=NULL,finished_at=now(),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, job),
             )
             self._finish_attempt(connection, tenant, project, job, 'succeeded', None)
             connection.execute(
-                '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
-                (tenant, project, source, job, generation, provider, model, sum(len(segment.text) for segment in segments), len(segments), duration_ms),
+                '''INSERT INTO usage_events (tenant_id,project_id,source_id,job_id,generation,provider,model,input_characters,segment_count,duration_ms,
+                   embedding_space,model_digest,input_tokens) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
+                (tenant, project, source, job, generation, provider, model, sum(len(segment.text) for segment in segments), len(segments), duration_ms,
+                 embedding_space,model_digest,input_tokens),
             )
             return True
 

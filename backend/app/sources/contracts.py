@@ -40,6 +40,8 @@ class ManagedSource(Source):
     metadata: dict = Field(default_factory=dict)
     parent_playlist_source_id: UUID | None = None
     playlist_snapshot_generation: int | None = None
+    active_embedding_space: str | None = None
+    reindex_required: bool = False
 
 
 class PlaylistMetadataItem(BaseModel):

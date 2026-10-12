@@ -61,6 +61,7 @@ class Store(Protocol):
         query_embedding: list[float],
         limit: int,
         source_ids: list[UUID] | None = None,
+        *, embedding_space: str = 'signed-hash-v1:64',
     ) -> list[RetrievalHit]: ...
     def save_retrieval_run(self, run: RetrievalRun) -> None: ...
 
@@ -298,6 +299,7 @@ class InMemoryStore:
         query_embedding: list[float],
         limit: int,
         source_ids: list[UUID] | None = None,
+        *, embedding_space: str = 'signed-hash-v1:64',
     ) -> list[RetrievalHit]:
         from .providers import content_tokens
         from .retrieval import CANDIDATES_PER_CHANNEL, fuse_and_rerank
@@ -306,7 +308,8 @@ class InMemoryStore:
             self.get_source(tenant_id, project_id, source_id)
         matches: list[RetrievalHit] = []
         for segment in self._segments:
-            if segment.tenant_id != tenant_id or segment.project_id != project_id:
+            if (segment.tenant_id != tenant_id or segment.project_id != project_id
+                    or segment.embedding_space != embedding_space or len(segment.embedding) != len(query_embedding)):
                 continue
             if source_ids and segment.source_id not in source_ids:
                 continue
@@ -315,7 +318,7 @@ class InMemoryStore:
                 continue
             score = cosine_similarity(query_embedding, segment.embedding)
             matches.append(
-                RetrievalHit(segment=segment, source_filename=source.filename, score=score)
+                RetrievalHit(segment=segment, source_filename=source.filename, score=score, semantic_similarity=score)
             )
         terms = content_tokens(query_text)
         lexical = sorted(
@@ -323,7 +326,7 @@ class InMemoryStore:
             key=lambda hit: (-len(terms & content_tokens(hit.segment.text)), str(hit.segment.id)),
         )[:CANDIDATES_PER_CHANNEL]
         semantic = sorted(matches, key=lambda hit: (-hit.score, str(hit.segment.id)))[:CANDIDATES_PER_CHANNEL]
-        return fuse_and_rerank(query_text, [lexical, semantic], limit)
+        return fuse_and_rerank(query_text, [lexical, semantic], limit, semantic_mode=embedding_space != 'signed-hash-v1:64')
 
     def save_retrieval_run(self, run: RetrievalRun) -> None:
         self.get_project(run.tenant_id, run.project_id)

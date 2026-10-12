@@ -22,8 +22,10 @@ official YouTube video/playlist metadata never downloads audiovisual content.
 Sprint 3 adds a labelled offline extractive chat baseline with persisted SSE
 delivery, source filters, hybrid rank fusion/reranking and inspectable stable
 timestamp citations. Optional Ollama/Qwen3 4B now provides real local answers;
-the default remains a keyless extractive demo. Retrieval still uses the honest
-64-D hash/lexical infrastructure baseline. Binary media/ASR stays disabled.
+the default remains a keyless extractive demo. Optional Qwen3 Embedding 0.6B adds
+real local multilingual semantic retrieval; default retrieval stays 64-D hash/
+lexical. Old indexes are never mixed with the 1024-D model space. Binary media/ASR
+stays disabled.
 The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
 Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
@@ -44,8 +46,9 @@ validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sp
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
 Sprint 2 hosted CI passed for `d0ba720` after replacing the removed MinIO image.
-The owner committed Sprint 3 as `e31d186`. Current Sprint 4 changes have not been
-committed/pushed; no hosted CI result for these new changes is claimed.
+The owner committed playlists/local answers as `feb762e`. The semantic slice is
+locally validated; its hosted CI result has not yet been verified. Evidence is recorded in
+[`docs/sprint3/semantic-search-validation.md`](docs/sprint3/semantic-search-validation.md).
 
 ## Run locally
 
@@ -130,7 +133,7 @@ The adapter has a one-call capacity gate and a 24-second deadline; retry if the
 machine is busy. It unloads the model after each answer to limit idle RAM and
 transient prompt retention. Weights remain in the `ollama_data` volume.
 
-Retrieval is still hash/lexical, not learned semantic search. Questions need
+In the default retrieval mode, search is hash/lexical, not learned semantic. Questions need
 matching identifiers/terms: weak matches abstain before invoking the model and
 are labelled `local-evidence-policy`, not falsely attributed to Qwen. Generated
 answers use only retrieved citation IDs, but reasoning can still be wrong;
@@ -139,7 +142,7 @@ inspect the evidence. Saved history is not implicit context. ASR/OCR is disabled
 Return to the lightweight demo without editing credentials:
 
 ```bash
-ANSWER_PROVIDER=extractive docker compose up -d api
+ANSWER_PROVIDER=extractive EMBEDDING_PROVIDER=hash docker compose up -d api ingestion-worker scheduler
 docker compose stop ollama
 ```
 
@@ -151,6 +154,54 @@ source .env
 set +a
 python3 scripts/smoke_local_model.py
 ```
+
+### Optional local semantic search
+
+```bash
+docker compose --profile local-ai up --build -d ollama
+docker compose exec ollama ollama pull qwen3-embedding:0.6b
+EMBEDDING_PROVIDER=ollama ANSWER_PROVIDER=ollama docker compose --profile local-ai up --build -d api ingestion-worker scheduler frontend
+```
+
+This explicit download adds about 639 MB of public weights. Queries and uploads
+never pull models. The approved manifest is pinned in the application; a different
+manifest fails safely rather than corrupting an index. Keep API and worker on the
+same `EMBEDDING_PROVIDER`. To persist the choice across normal Compose startup,
+set `EMBEDDING_PROVIDER=ollama` and `ANSWER_PROVIDER=ollama` in your ignored `.env`;
+do not copy the example over an existing configuration or change credentials.
+
+For existing sources, use **Reprocess source**, wait for success and reload the
+workspace. Validation-only sources without jobs need a fresh transcript upload.
+The UI labels incompatible indexes and excludes them from search. Old saved
+citations remain inspectable; failed reprocessing does not remove prior evidence.
+Switching back to hash also requires explicit reprocessing for current search.
+
+Search uses an English query instruction, exact project-filtered 1024-D vectors,
+full-text candidates and a small identifier boost. The experimental raw-cosine
+0.40 guard is not a confidence/faithfulness score: valid paraphrases may still be
+rejected, and related-but-unsupported questions can still require model abstention.
+This is not a broad model-quality certification. Source IDs/generations are always
+validated. `ANSWER_PROVIDER=extractive` can use the same semantic index while
+returning only literal evidence quotes without running the answer model.
+
+CPU safety limits: eight chunks/batch, 128 chunks/input, a 70-second embedding
+attempt budget (existing 90/120-second task limits), six-second query inference,
+and a shared 28-second retrieval/answer budget (answer inference at most 24 seconds).
+The model receives the time remaining after query retrieval. Split long
+transcripts when the worker reports its limit. Unknown usage stays null; local
+token/model/space attribution is recorded and billed API cost is zero.
+
+With semantic mode enabled, run the explicit owned-project probe:
+
+```bash
+set -a
+source .env
+set +a
+python3 scripts/smoke_semantic_search.py
+```
+
+For default regression smoke scripts below, use hash/extractive mode. CI exercises
+fake local embedding HTTP and real database/worker recovery, without model downloads.
 
 Stop the stack without deleting data:
 
@@ -277,7 +328,7 @@ Source ingestion and recovery:
 - `GET /api/v1/projects/{project_id}/cleanup/{cleanup_id}`
 - `POST /api/v1/projects/{project_id}/cleanup/{cleanup_id}/retry`
 
-Deprecated Sprint 0 validation compatibility endpoint (development/test only;
+Deprecated Sprint 0 validation compatibility endpoint (development/test hash mode only;
 the product UI uses queued uploads):
 
 - `POST /api/v1/projects/{project_id}/sources/transcripts`
@@ -297,6 +348,7 @@ Operational endpoints:
 - `GET /health/ready`
 - `GET /health` (compatibility alias)
 - `GET /metrics`
+- `GET /api/v1/runtime` (authenticated mode/index configuration, no secrets)
 
 Every project-owned repository operation is scoped by tenant and project. An
 unknown, deleted, or differently scoped project returns the same safe `404`
@@ -313,7 +365,7 @@ shape.
 - Deterministic tests plus rubric-grounded AI feedback
 - Private single-user projects
 - Docker Compose for local development
-- Managed model APIs behind application-owned provider interfaces
+- Default keyless demo and optional free local models behind application-owned interfaces
 
 ## Core stack
 

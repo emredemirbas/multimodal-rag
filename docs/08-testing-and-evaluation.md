@@ -58,6 +58,13 @@ Track:
 
 Do not rely solely on LLM-as-judge. Use human labels for the core benchmark and deterministic checks for citation ownership/timestamp relationships.
 
+Optional semantic mode has an explicit real-model/real-worker smoke with English
+and Turkish paraphrases, unsupported questions, stable timestamps, reprocessing
+and owned-project cleanup. Report it separately from the 19-question deterministic
+regression and synthetic HTTP/isolation tests. A small successful smoke and its
+experimental cosine floor do not establish representative recall or faithfulness.
+CI does not start/download local weights. See `sprint3/semantic-search-validation.md`.
+
 ## Ingestion evaluation
 
 - transcript word/error quality on technical vocabulary;
@@ -140,4 +147,3 @@ Before private beta:
 - cost and rate limits are active;
 - observability covers ingestion, retrieval, generation, and grading;
 - known model-quality limitations are documented.
-

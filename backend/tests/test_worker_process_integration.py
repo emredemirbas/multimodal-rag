@@ -66,6 +66,7 @@ def test_actual_worker_death_recovery_and_duplicate_delivery(ingestion):
            'S3_ENDPOINT': settings.s3_endpoint, 'S3_ACCESS_KEY': settings.s3_access_key,
            'S3_SECRET_KEY': settings.s3_secret_key, 'CELERY_BROKER_URL': broker,
            'AUTH_MODE': 'development', 'DEVELOPMENT_AUTH_TOKEN': 'probe-development-token',
+           'EMBEDDING_PROVIDER': 'hash', 'ANSWER_PROVIDER': 'extractive',
            'PROBE_PREFIX': prefix, 'PROBE_QUEUE': queue}
     workers = []
 

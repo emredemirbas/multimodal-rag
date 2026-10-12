@@ -67,6 +67,17 @@ A content segment should retain:
 
 Do not store an embedding without the model identifier and dimension/version metadata.
 
+Migration 0007 preserves old 64-D evidence and adds immutable embedding-space
+identity to segments, processing versions, usage and retrieval attribution.
+The vector column permits separately filtered 64/1024-D rows; a dimension/space
+constraint rejects incompatible writes. Exact distance runs only after a
+MATERIALIZED tenant/project/active-generation/source/space/dimension filter.
+Model manifest, query-template version and dimensions define the semantic space.
+Source inventory exposes `active_embedding_space` and computed `reindex_required`;
+runtime exposes configured retrieval mode/space. Old evidence inspection does not
+require the current space. Local query and document token counts are separate from
+answer tokens. Unknown counts remain null; zero billed API cost is explicit.
+
 ### Chat
 
 - `conversations`

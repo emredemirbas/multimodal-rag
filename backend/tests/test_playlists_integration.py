@@ -247,6 +247,7 @@ def test_actual_three_workers_obey_two_slots_and_resume_ten_videos(playlist):
         'DATABASE_URL': repo.store.database_url, 'S3_ENDPOINT': settings.s3_endpoint,
         'S3_ACCESS_KEY': settings.s3_access_key, 'S3_SECRET_KEY': settings.s3_secret_key,
         'CELERY_BROKER_URL': broker, 'AUTH_MODE': 'development', 'DEVELOPMENT_AUTH_TOKEN': 'probe-development-token',
+        'EMBEDDING_PROVIDER': 'hash', 'ANSWER_PROVIDER': 'extractive',
         'PROBE_PREFIX': prefix, 'PROBE_QUEUE': queue, 'PROBE_PAUSE': '0', 'PROBE_DELAY': '1', 'PLAYLIST_CONCURRENCY': '2'}
     workers = []
 
