@@ -1,12 +1,14 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 
 import { metadataSourceAction, sourceCommandAction, uploadSourceAction } from "@/app/actions/sources";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { isProcessing, parsePlaylistItems, parseSourceList, type CleanupTicket, type PlaylistItem, type SourceItem } from "@/lib/api/source-contracts";
 import { CleanupStatus } from "@/components/sources/cleanup-status";
 import { INITIAL_SOURCE_ACTION } from "@/lib/source-action-state";
+import { transcriptHref } from "@/lib/api/transcript-contracts";
 
 const FAILURE_MESSAGES: Record<string, string> = {
   invalid_transcript: "Check cue timestamps and text, then upload a corrected SRT/VTT file.",
@@ -249,6 +251,8 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
         {source.active_generation !== null && source.active_generation !== source.generation ? <p>Previously indexed generation {source.active_generation} remains available{source.reindex_required ? ' for saved citation inspection' : ''} until replacement succeeds.</p> : null}
         <div className="form-actions">
+          {source.active_generation !== null && (source.kind === undefined || source.kind === "transcript") ?
+            <Link className="button button--secondary" prefetch={false} href={transcriptHref(projectId, source.id, source.active_generation)}>Read transcript</Link> : null}
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
           {source.job && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
           {source.job && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label="Reprocess source" onCompleted={refresh} /> : null}

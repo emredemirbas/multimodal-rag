@@ -5,6 +5,7 @@ import { parseEvidence, timestamp } from "@/lib/api/chat-contracts";
 import { UUID_PATTERN } from "@/lib/api/source-contracts";
 import { ApiError, publicErrorMessage } from "@/lib/api/errors";
 import { ApiErrorState } from "@/components/ui/api-state";
+import { transcriptHref } from "@/lib/api/transcript-contracts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,6 +26,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ proje
     <p>{timestamp(evidence.start_ms)}–{timestamp(evidence.end_ms)} · {evidence.modality} · generation {evidence.generation}</p>
     <blockquote className="evidence-text">{evidence.text}</blockquote>
     <p className="muted">Processing version: {evidence.processing_version}</p>
+    {evidence.modality === "transcript" ? <Link prefetch={false} href={transcriptHref(projectId, evidence.source_id, evidence.generation)}>Read this transcript generation</Link> : null}
     <p>This is retained tutorial evidence, not an external documentation citation. No playable video was uploaded; timestamps identify the original tutorial interval.</p>
   </article>;
 }

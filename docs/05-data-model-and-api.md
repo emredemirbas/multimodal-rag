@@ -89,6 +89,10 @@ transaction. Cancel preserves it for retry; reprocess discards unfinished stagin
 source/project cascades remove it. Usage aggregates accepted batch tokens and
 delivery durations, not queue waiting time. See ADR 0017.
 
+Migration 0009 is index-only: a partial chronological transcript index under
+tenant/project/source/generation accelerates published timeline browsing. No
+evidence is modified, recomputed or duplicated.
+
 ### Chat
 
 - `conversations`
@@ -217,6 +221,20 @@ recovery; a separate GET stream and citation-feedback command remain outlines,
 not implemented endpoints. `GET /projects/{project_id}/evidence/{segment_id}`
 returns scoped stable text, timestamps, source and processing generation.
 The stateless JSON `/questions` API also accepts optional source IDs.
+
+`GET /projects/{project_id}/sources/{source_id}/transcript` returns published
+transcript segments ordered by `(start_ms,end_ms,id)`, never frames or private
+checkpoints. The first request selects `active_generation`; subsequent requests
+must pin `generation` when `page > 1` (otherwise 422). Each page has at most 50
+items with the existing evidence contract, total count/pages, source state and
+active versus selected generation. Unknown/deleted/foreign sources, unpublished
+generations and nonexistent pages return 404. Pending/metadata sources return an
+honest empty first page when no generation is requested. Valid archived projects
+and retained older successful generations are readable, independently of configured
+embedding space. No model, object-store read, original download or usage event is
+needed. Reads use a consistent read-only snapshot without a project write lock.
+The 2,000-page browse ceiling covers legacy one-segment/cue validation data;
+durable processing remains capped at 10,000 chunks. No ingestion cap is raised.
 
 Optional local generation adds migration 0006 for actual token counts and a model
 manifest lookup digest on retrieval/turn records; prompt versions distinguish

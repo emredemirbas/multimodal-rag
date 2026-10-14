@@ -57,6 +57,7 @@ describe("source management", () => {
     expect(screen.queryByLabelText("SRT / VTT transcript")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry processing" })).toBeVisible();
     expect(screen.getByText(/Previously indexed generation 1 remains available/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Read transcript" })).toHaveAttribute("href", `/projects/${projectId}/sources/${source.id}/transcript?generation=1&page=1`);
     fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
     expect(screen.getByRole("dialog", { name: "Delete “tutorial.vtt”?" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Keep source" }));
@@ -94,6 +95,7 @@ describe("source management", () => {
     render(<SourcesWorkspace projectId={projectId} initialSources={[{...source,active_embedding_space:'signed-hash-v1:64',reindex_required:true}]} archived={false} />);
     expect(screen.getByText(/Reindex required:/)).toHaveTextContent('Old citations remain inspectable');
     expect(screen.getByRole('button', {name:'Reprocess source'})).toBeVisible();
+    expect(screen.getByRole('link', {name:'Read transcript'})).toBeVisible();
   });
   it('announces automatic continuation separately from a failed retry', () => {
     const pending = {...source,status:'processing',job:{...source.job!,status:'pending' as const,stage:'waiting_continuation',processed_segments:64,total_segments:129,delivery_count:1,progress_percent:67}};

@@ -1,15 +1,16 @@
 import Link from "next/link";
 
 interface ApiErrorStateProps {
+  title?: string;
   message: string;
   retryHref: string;
   reference?: string | null;
 }
 
-export function ApiErrorState({ message, retryHref, reference }: ApiErrorStateProps) {
+export function ApiErrorState({ title = "Projects could not load", message, retryHref, reference }: ApiErrorStateProps) {
   return (
     <div className="state-panel state-panel--error" role="alert">
-      <h2>Projects could not load</h2>
+      <h2>{title}</h2>
       <p>{message}</p>
       {reference ? <p className="error-reference">Reference: {reference}</p> : null}
       <Link className="button button--secondary" href={retryHref}>

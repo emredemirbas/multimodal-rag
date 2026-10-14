@@ -120,6 +120,11 @@ versioned Qwen3 Embedding 0.6B semantic search (ADR 0016). Default CI/demo remai
 hash/extractive. See `docs/sprint3/semantic-search-validation.md`; this does not
 establish a representative independent quality threshold or complete media work.
 
+The 2026-10-14 evidence-UX follow-up adds direct, version-pinned transcript
+browsing without model calls. See `docs/sprint3/transcript-viewer-validation.md`;
+it completes an earlier source/evidence usability slice, not multimodal/assignment
+scope or a new quality certification.
+
 Deliver:
 
 - text embeddings and exact vector search;

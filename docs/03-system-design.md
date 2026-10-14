@@ -16,6 +16,12 @@ The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the
 full generation is promoted atomically. LangGraph is not involved in queue work.
 
+Published transcript browsing is a separate read-only source/evidence boundary.
+Fixed chronological pages pin a successful processing generation and never read
+private staging or invoke models. Each request uses one repeatable-read snapshot;
+reprocessing cannot mix generations across pages. The scoped timeline index in
+migration 0009 accelerates this navigation without changing vector search.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.

@@ -110,6 +110,7 @@ jobs:
           python3 scripts/smoke_sprint1.py
           python3 scripts/smoke_sprint2.py
           python3 scripts/smoke_sprint3.py
+          python3 scripts/smoke_transcript_viewer.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

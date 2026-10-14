@@ -47,6 +47,7 @@ from .transcripts import TranscriptParseError
 from .artifacts.storage import ArtifactStore, S3ArtifactStore
 from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration, Registration, SourceCommand, SourceError, SourceList
 from .sources.repository import SourceRepository
+from .sources.transcript import MAX_PAGES, TranscriptPage, TranscriptRepository
 from .sources.upload_limit import UploadLimitMiddleware
 from .local_model import OllamaAnswerProvider
 from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
@@ -55,7 +56,7 @@ from .chat.delivery import deliver
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
-API_VERSION = "0.8.0"
+API_VERSION = "0.9.0"
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -433,6 +434,17 @@ def create_app(
             actor(request, principal)
             return sources(request).get_source(principal.tenant_id, project_id, source_id)
         return service(request).get_source(principal, project_id, source_id)
+
+    @app.get("/api/v1/projects/{project_id}/sources/{source_id}/transcript", response_model=TranscriptPage)
+    def read_transcript(project_id: UUID, source_id: UUID, request: Request, response: Response, principal: CurrentPrincipal,
+                        generation: int | None = Query(default=None, ge=1, le=2_147_483_647),
+                        page: int = Query(default=1, ge=1, le=MAX_PAGES)):
+        store = request.app.state.store
+        if not isinstance(store, PostgresStore):
+            raise SourceError("transcript_not_configured", "Transcript browsing requires PostgreSQL.", 503)
+        response.headers["Cache-Control"] = "no-store"
+        return TranscriptRepository(store).read(principal.tenant_id, project_id, actor(request, principal),
+                                               source_id, generation=generation, page=page)
 
     @app.post(
         "/api/v1/projects/{project_id}/questions",

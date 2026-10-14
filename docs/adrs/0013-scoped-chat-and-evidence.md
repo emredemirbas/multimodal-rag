@@ -66,3 +66,15 @@ LangGraph tutoring, assignments and grading are not added by this decision.
 References: [RRF paper](https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf),
 [PostgreSQL 16 text search](https://www.postgresql.org/docs/16/textsearch-controls.html),
 [FastAPI streaming response](https://fastapi.tiangolo.com/advanced/custom-response/#streamingresponse).
+
+## Evidence UX follow-up (2026-10-14)
+
+The owner authorized continued development. Extend stable evidence inspection with
+read-only published-transcript browsing: 50 chronological segments per page,
+explicit generation on subsequent pages, older successful evidence retained after
+reprocessing, and no model/artifact calls. A repeatable-read snapshot keeps source,
+count and rows consistent without a project write lock. Source/project deletion
+and membership scope still apply to every subsequent request. Private checkpoints
+and metadata/frame rows cannot become transcript text. Migration 0009 adds only a
+scoped partial timeline index. This does not change history/prompt policy, allow
+new media or settle model quality. See `../sprint3/transcript-viewer-plan.md`.

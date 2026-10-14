@@ -30,6 +30,10 @@ The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
 Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
 
+Published transcripts can also be browsed directly in chronological, version-
+pinned pages, without asking a question or invoking a model. Private unfinished
+indexing batches are never exposed as evidence.
+
 ## Read first
 
 1. [`docs/01-product-brief.md`](docs/01-product-brief.md)
@@ -123,6 +127,13 @@ question to replay it without another logical turn. Default answers are quoted
 transcript excerpts; the optional local model explains conservatively matched
 evidence. Neither mode is a general-purpose conversational tutor.
 Deleting a source also removes saved turns quoting that source.
+
+In **Source management**, choose **Read transcript** on an indexed subtitle.
+Browse 50 timestamped segments per page and use **Inspect evidence** for the
+stable citation record. Paging retains the same generation after reprocessing;
+an older-generation notice offers **Open latest published transcript** explicitly.
+Reading still works when a source uses a different search index or the project is
+archived. Subtitle uploads have no playable video; no playback URL is invented.
 
 ## Optional real local AI (no API key or service bill)
 
@@ -290,6 +301,7 @@ set +a
 python3 scripts/smoke_sprint1.py
 python3 scripts/smoke_sprint2.py
 python3 scripts/smoke_sprint3.py
+python3 scripts/smoke_transcript_viewer.py
 ```
 
 Smoke checks verify project lifecycle plus actual queued upload/indexing,
@@ -297,6 +309,12 @@ reprocessing, safe failure/retry, citations and complete artifact cleanup of the
 own temporary projects. The process-death integration test owns an isolated DB
 schema, Redis key prefix and Celery process; it never kills the normal worker or
 flushes shared Redis. CI runs these against its ephemeral Compose stack.
+
+The transcript-viewer smoke also runs in optional semantic mode: it uses the
+configured ingestion worker but makes no answer-generation calls. It verifies
+53 segments across two pages, production SSR, escaped text, preserved generations,
+archive reads and its own full cleanup. See
+[`docs/sprint3/transcript-viewer-validation.md`](docs/sprint3/transcript-viewer-validation.md).
 
 Record synthetic retrieval measurements from the repository root:
 
@@ -360,6 +378,7 @@ Chat and evidence (PostgreSQL required):
 - `GET /api/v1/projects/{project_id}/conversations/{conversation_id}`
 - `POST /api/v1/projects/{project_id}/conversations/{conversation_id}/messages` (question, source IDs, key; SSE)
 - `GET /api/v1/projects/{project_id}/evidence/{segment_id}`
+- `GET /api/v1/projects/{project_id}/sources/{source_id}/transcript` (published segments; optional `generation`, fixed 50/page; pages after 1 require a generation)
 - `POST /api/v1/projects/{project_id}/questions` (stateless JSON answer, optional source IDs)
 
 Operational endpoints:

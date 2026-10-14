@@ -72,6 +72,13 @@ simply redoing all inference. Check private staging visibility, scope/lease/mode
 parser fences, failed/cancelled replacement, atomic promotion and deletion.
 Native `scripts/smoke_semantic_search.py --long` is explicit and never pulls weights.
 
+Published transcript browsing has separate ordering/pagination, tied-timestamp,
+legacy >10,000 segment, read-snapshot deletion race, archive, membership/tenant/
+project/source and unpublished-generation tests. Verify old pages/evidence remain
+stable across reprocessing/index-space changes; staging and frames stay excluded.
+The production SSR smoke checks 53 segments, pinned page links, literal hostile
+text, version recovery and owned-data cleanup, with no answer generation.
+
 ## Ingestion evaluation
 
 - transcript word/error quality on technical vocabulary;
