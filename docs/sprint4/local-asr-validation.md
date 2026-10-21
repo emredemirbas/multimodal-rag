@@ -44,9 +44,11 @@ disabled**. No general ASR quality or full multimodal completion is claimed.
   form or application upload route was added. No schema/migration was needed for
   this stateless slice; existing SRT/VTT limits/data are unchanged.
 - Compose configuration/diff checks pass. CI now builds the optional image and
-  checks kernel isolation without downloading Whisper weights. The hosted CI
-  result for this slice has not yet been verified; local checks are not a hosted
-  CI result.
+  checks kernel isolation without downloading Whisper weights. The first
+  [hosted run for `32489e1`](https://github.com/emredemirbas/multimodal-rag/actions/runs/39650520144)
+  passed both backend jobs but failed the frontend Vite dependency audit; the
+  dependent image/isolation job was skipped. See `vite-security-validation.md`
+  for the scoped patch and its separate local verification.
 
 ## Native evidence and limitations
 
