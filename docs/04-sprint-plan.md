@@ -171,6 +171,12 @@ Exit:
 - visual benchmark questions retrieve relevant frames;
 - duplicate frames are suppressed.
 
+The 2026-10-21 local WAV ASR foundation (ADR 0018) is an earlier media slice, not
+full Sprint 4 completion: restricted validation, immutable local weights and
+isolated stateless inference are implemented first. Product audio upload remains
+disabled until durable media jobs, original cleanup and the source UI are delivered.
+See `docs/sprint4/local-asr-plan.md` and its validation record.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

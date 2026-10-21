@@ -22,6 +22,14 @@ private staging or invoke models. Each request uses one repeatable-read snapshot
 reprocessing cannot mix generations across pages. The scoped timeline index in
 migration 0009 accelerates this navigation without changing vector search.
 
+ADR 0018 adds an optional private, stateless ASR foundation for the approved WAV
+scope. It has no application credentials or published port, and denies new sockets/
+outbound connect after binding its listener. Fresh resource-bounded filtered child
+processes receive <=30s PCM only. Model downloads are explicit and weights are
+read-only during inference. This foundation is not yet a media queue/ingestion
+workflow: no audio upload, raw retention, partial index or new database record is
+enabled until the dedicated worker/cleanup follow-up is complete.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.

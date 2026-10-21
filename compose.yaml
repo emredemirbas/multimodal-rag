@@ -27,6 +27,55 @@ x-api-image: &api-image
     context: ./backend
 
 services:
+  asr:
+    profiles: [local-asr]
+    image: multimodal-tutorial-workspace-asr:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.asr
+    networks: [asr-private]
+    volumes:
+      - asr-models:/models:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    mem_limit: 2g
+    memswap_limit: 2g
+    cpus: 2.0
+    pids_limit: 64
+    ulimits:
+      core: 0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8090/health/ready',timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  asr-model-install:
+    profiles: [asr-setup]
+    image: multimodal-tutorial-workspace-asr:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.asr
+    command: [python, -m, app.asr.install_model]
+    volumes:
+      - asr-models:/models
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 32
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    restart: "no"
+
   ollama:
     profiles: [local-ai]
     build:
@@ -252,7 +301,12 @@ services:
       - DAC_OVERRIDE
 
 volumes:
+  asr-models:
   ollama_data:
   postgres-data:
   redis-data:
   minio-data:
+
+networks:
+  asr-private:
+    internal: true

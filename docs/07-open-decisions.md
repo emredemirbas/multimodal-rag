@@ -57,17 +57,23 @@ not block subtitle uploads or allowlisted metadata adapters.
 
 | Decision | Proposed default | Status |
 |---|---|---|
-| Managed transcription provider | Application-owned ASR interface; provider, region and retention settings to be selected | Open |
-| Authorized binary media limits | Explicit file size, duration, format and spend limits | Open |
-| Binary input retention | Avoid by default; explicitly authorize any temporary original-media storage | Open |
+| Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
+| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; uploads remain disabled pending durable workflow |
+| Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; tracked lifecycle not enabled until ingestion follow-up |
 
 The implementation order and current assumptions are recorded in
 `docs/sprint2/implementation-plan.md`. No ASR vendor or original-media retention
 permission is implied by the subtitle-upload milestone.
 
 Sprint 2 implements explicit permitted-transcript retention for retries and
-complete source/project deletion (ADR 0012). ASR, original binary input retention
-and limits remain open and their capability remains disabled.
+complete source/project deletion (ADR 0012). The owner continued after the concrete
+WAV/retention proposal on 2026-10-21; that interpretation and the narrower encoding
+were surfaced in chat. ADR 0018 records the accepted local WAV scope. Only the
+stateless validation/inference foundation is delivered first. Application audio
+upload remains disabled until dedicated jobs, scoped staging, atomic derived
+transcript adoption and observable terminal/deletion cleanup are implemented.
+Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
+frame retention and broader binary-media limits remain unapproved.
 
 ## Decide before the provider-backed Alpha 1 release
 
@@ -76,9 +82,10 @@ local GitHub portfolio, not a production beta (ADR 0015). The selected answer
 path is optional local Ollama/Qwen3 4B. Keep deterministic retrieval honest and
 record actual local-model tests; this decision is not a managed-service quality
 certification. Optional local semantic embeddings now use Qwen3 Embedding 0.6B
-in a separately versioned 1024-D space (ADR 0016); local ASR/vision remains a follow-up
-slice, with no paid endpoint or cloud fallback. Binary input limits/retention
-and dedicated media isolation still need their implementation boundaries.
+in a separately versioned 1024-D space (ADR 0016). Local ASR foundation now has the
+restricted WAV scope and isolated model process in ADR 0018; durable media ingestion
+and original cleanup are a follow-up, not an enabled capability. Vision remains
+unimplemented. No paid endpoint or cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic
 cap with checkpointed work under the already accepted transcript input limits.

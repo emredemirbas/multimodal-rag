@@ -90,6 +90,16 @@ text, version recovery and owned-data cleanup, with no answer generation.
 - recovery from rate limits, missing captions, deleted videos, and partial playlists;
 - cost per processed hour.
 
+### Local ASR foundation
+
+The local WAV ASR foundation adds strict RIFF/PCM limits, fake local HTTP identity/
+timeline/output/capacity/error tests, atomic/hash-checked setup tests and an actual
+inherited kernel seccomp probe. CI builds the optional image and checks isolation
+without Whisper weights. Native speech recognition is explicit and separately
+reported; it is not a broad quality benchmark. Audio registration, original
+retention/terminal cleanup and media queue authorization remain required follow-up
+coverage before enabling product uploads (ADR 0018).
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

@@ -30,6 +30,11 @@ The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
 Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
 
+An optional isolated Whisper-base foundation now validates restricted WAV inputs
+and transcribes short PCM windows locally. **Audio upload in the application is
+still disabled** until its dedicated queue and original-audio cleanup workflow are
+implemented. This is not full ASR ingestion or multimodal completion (ADR 0018).
+
 Published transcripts can also be browsed directly in chronological, version-
 pinned pages, without asking a question or invoking a model. Private unfinished
 indexing batches are never exposed as evidence.
@@ -134,6 +139,39 @@ stable citation record. Paging retains the same generation after reprocessing;
 an older-generation notice offers **Open latest published transcript** explicitly.
 Reading still works when a source uses a different search index or the project is
 archived. Subtitle uploads have no playable video; no playback URL is invented.
+
+## Optional local ASR foundation (operator verification only)
+
+This is a private model boundary, not a product upload feature. It supports WAV
+signed 16-bit PCM / 16 kHz / mono, at most 20 MB and 10 minutes in the validator;
+each model request is at most 30 seconds. Future jobs must enforce rights, scope,
+resumability and terminal original cleanup before accepting audio in the app.
+
+Explicit setup downloads about 148 MB of public multilingual Whisper-base files
+from a pinned revision, verifies every SHA-256 and retains only reusable weights:
+
+```bash
+docker compose build asr
+docker compose --profile asr-setup run --rm --no-deps asr-model-install
+docker compose --profile local-asr up -d --wait --wait-timeout 120 asr
+```
+
+Verify an **owned/authorized <=30-second** supported WAV, without printing recognized
+text or storing it in application data:
+
+```bash
+docker compose --profile local-asr run --rm -T --no-deps --entrypoint python asr \
+  -m app.asr.smoke --language en < /absolute/path/to/owned-probe.wav
+```
+
+Use `--language tr` or `auto` as appropriate. This only verifies the model boundary;
+it does not create a project/source or replace the normal transcript upload path.
+The service has no published port, app credentials or user-data mount. It denies
+new sockets/outbound connections after binding its listener, uses fresh bounded
+model children, and sends no audio to a cloud/paid provider. It requires Linux
+seccomp support; missing isolation/weights fail closed. It is not a learner-code
+sandbox. Ordinary startup and CI do not fetch Whisper weights. Existing `.env`
+settings are unchanged. See [scope and follow-up](docs/sprint4/local-asr-plan.md).
 
 ## Optional real local AI (no API key or service bill)
 

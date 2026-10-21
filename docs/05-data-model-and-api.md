@@ -172,6 +172,13 @@ Tenant
 
 Use `/api/v1`. Exact payloads should be generated from Pydantic models and exposed through OpenAPI.
 
+ADR 0018's local WAV/Whisper foundation is a stateless private model boundary,
+not a new application endpoint or data model. Audio registration, original-audio
+records/terminal cleanup and media jobs are not enabled; only SRT/VTT product
+uploads are accepted. Add scoped migrations and lifecycle APIs in the follow-up
+before exposing audio ingestion. No project-owned rows are created by a native
+operator inference probe.
+
 ### Projects
 
 - `POST /projects`

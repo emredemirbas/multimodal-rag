@@ -103,6 +103,12 @@ jobs:
         run: docker compose config --quiet
       - name: Build deployable development images
         run: docker compose build api frontend ingestion-worker scheduler minio minio-permissions
+      - name: Build optional local ASR image without Whisper weights
+        run: docker compose build asr
+      - name: Verify ASR kernel isolation without model downloads
+        run: >-
+          docker compose --profile local-asr run --rm --no-deps --entrypoint python asr
+          -c "from app.asr.isolation import block_outbound_sockets; block_outbound_sockets(); print('PASS: ASR outbound sockets blocked')"
       - name: Start the complete development stack
         run: docker compose up -d --wait --wait-timeout 120
       - name: Exercise the Compose application
