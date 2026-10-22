@@ -102,6 +102,18 @@ Only complete validated runs can return a derived VTT; this does not publish an
 artifact/index or complete a job. Source/project deletion cascades private text.
 No current application route creates ASR jobs or accepts original audio.
 
+Migrations 0011/0012 add scoped `audio_inputs`, cleanup ownership, ASR completion/
+downstream-job metadata and ASR origin FKs on retained artifacts and processing
+versions. Originals use a separate prefix and one-hour processing eligibility;
+`cleanup_id` immediately retires them, while `deleted_at` is set only on confirmed
+object cleanup. Raw originals are not `source_artifacts`. A complete derived VTT
+is retained there, and a new ordinary indexing job is created atomically with ASR
+completion/raw retirement. Accepted audio frames and actual model duration are
+attributed to the ASR job separately from embedding usage; unknown tokens stay null.
+An internal source begins as `audio` and becomes `transcript` with explicit
+machine-generated/input-kind/profile metadata after adoption. Reindex generations
+retain their origin ASR-run FK. No public WAV API payload is enabled yet.
+
 ### Chat
 
 - `conversations`
@@ -183,10 +195,10 @@ Use `/api/v1`. Exact payloads should be generated from Pydantic models and expos
 
 ADR 0018's local WAV/Whisper foundation is a stateless private model boundary,
 not a new application endpoint. Its private checkpoint follow-up adds migration
-0010 but no public payload. Audio registration, original-audio
-records/terminal cleanup and media jobs are not enabled; only SRT/VTT product
-uploads are accepted. Add scoped migrations and lifecycle APIs in the follow-up
-before exposing audio ingestion. No project-owned rows are created by a native
+0010 but no public payload. Its subsequent private backend workflow adds internal
+registration, original retirement and media jobs (0011/0012), not a public upload
+route. Only SRT/VTT product uploads are accepted until the bounded authenticated
+API/BFF/form and provenance/inspection slice is complete. No project-owned rows are created by a native
 operator inference probe.
 
 ### Projects

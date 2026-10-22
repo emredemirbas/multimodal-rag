@@ -17,5 +17,8 @@ EXPOSE 8000
 FROM runtime AS ingestion-worker
 CMD ["celery", "-A", "app.jobs.worker:celery_app", "worker", "--hostname=ingestion@%h", "--queues=ingestion", "--concurrency=2", "--loglevel=INFO"]
 
+FROM runtime AS media-worker
+CMD ["celery", "-A", "app.jobs.media_worker:celery_app", "worker", "--hostname=media@%h", "--queues=media", "--concurrency=1", "--loglevel=INFO"]
+
 FROM runtime AS api
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

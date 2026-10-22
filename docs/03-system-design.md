@@ -35,7 +35,16 @@ It pins input/model/language/assembly identity, fences each operation using the
 existing job lease and actor/project scope, and assembles only complete validated
 windows into an immutable VTT. It does not call a model, adopt an object, activate
 evidence or create an application audio job. Ordinary ingestion workers do not
-claim ASR jobs; queue routing/worker and original cleanup remain follow-up work.
+claim ASR jobs. Queue routing/worker and original cleanup were that component's
+follow-up, implemented by the next private backend slice below.
+
+The next private backend slice (ADR 0019) implements that dedicated media worker,
+fixed outbox routing and temporary-original lifecycle. One validated window per
+delivery checkpoints progress and requeues without a failure attempt. Complete
+VTT adoption uses a unique reserved object prefix and a post-PUT authorization
+fence; ASR completion, provenance/usage, indexing-job creation and raw retirement
+commit together. Original eligibility expires after one hour; the scheduler
+observably retries physical cleanup. Public WAV upload/UI remains disabled.
 
 ## Architecture style
 

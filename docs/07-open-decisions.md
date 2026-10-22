@@ -70,9 +70,12 @@ complete source/project deletion (ADR 0012). The owner continued after the concr
 WAV/retention proposal on 2026-10-21; that interpretation and the narrower encoding
 were surfaced in chat. ADR 0018 records the accepted local WAV scope. Only the
 stateless validation/inference foundation and private checkpoint/VTT components
-are delivered first; see `sprint4/asr-checkpoints-plan.md`. Application audio
-upload remains disabled until dedicated jobs, scoped staging, atomic derived
-transcript adoption and observable terminal/deletion cleanup are implemented.
+are delivered first; see `sprint4/asr-checkpoints-plan.md`. The subsequent private
+backend slice implements dedicated jobs, original retirement and VTT handoff
+(ADR 0019). Original processing eligibility expires after one hour as a surfaced
+safety limit; physical deletion is separately confirmed/retried by the scheduler.
+Application audio upload remains disabled until bounded authenticated API/BFF/form,
+machine-generated provenance/inspection and owned-audio end-to-end checks are complete.
 Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
 frame retention and broader binary-media limits remain unapproved.
 
@@ -84,8 +87,8 @@ path is optional local Ollama/Qwen3 4B. Keep deterministic retrieval honest and
 record actual local-model tests; this decision is not a managed-service quality
 certification. Optional local semantic embeddings now use Qwen3 Embedding 0.6B
 in a separately versioned 1024-D space (ADR 0016). Local ASR foundation now has the
-restricted WAV scope and isolated model process in ADR 0018; durable media ingestion
-and original cleanup are a follow-up, not an enabled capability. Vision remains
+restricted WAV scope and isolated model process in ADR 0018. ADR 0019 adds private
+durable jobs and original cleanup, not an enabled public upload capability. Vision remains
 unimplemented. No paid endpoint or cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic

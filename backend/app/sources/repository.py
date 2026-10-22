@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from psycopg.types.json import Jsonb
 
 from ..artifacts.storage import ArtifactStore, object_prefix
+from ..artifacts.audio import retire_audio
 from ..config import Settings
 from ..models import AuthorizationMode, EvidenceSegment
 from ..postgres import PostgresStore
@@ -208,6 +209,8 @@ class SourceRepository:
                 job = connection.execute('SELECT * FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND id=%s', (tenant, project, receipt['job_id'])).fetchone()
                 return Registration(source=current, job=Job.model_validate(job), deduplicated=True)
             job = current.job
+            if command in {'retry', 'reprocess'} and current.kind == 'audio' and job.status in {'failed', 'cancelled', 'succeeded'}:
+                raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
             if command == 'cancel':
                 if job.status not in {'pending', 'running', 'retrying', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only unfinished processing can be cancelled.', 409)
@@ -217,6 +220,7 @@ class SourceRepository:
                 )
                 self._finish_attempt(connection, tenant, project, job.id, 'cancelled', None)
                 connection.execute("UPDATE sources SET status='cancelled',updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, source))
+                retire_audio(connection, tenant, project, source)
             elif command == 'retry':
                 if job.status not in {'failed', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only failed or cancelled processing can be retried.', 409)
@@ -399,7 +403,10 @@ class SourceRepository:
                ON s.tenant_id=j.tenant_id AND s.project_id=j.project_id AND s.id=j.source_id
                WHERE j.tenant_id=%s AND j.project_id=%s AND j.source_id=%s AND j.id=%s
                AND j.status='running' AND j.lease_token=%s AND j.lease_expires_at>now()
-               AND j.generation=%s AND s.generation=j.generation AND s.deleted_at IS NULL FOR UPDATE OF j''',
+               AND j.generation=%s AND s.generation=j.generation AND s.deleted_at IS NULL
+               AND NOT EXISTS (SELECT 1 FROM audio_inputs a WHERE a.tenant_id=j.tenant_id AND a.project_id=j.project_id
+                   AND a.job_id=j.id AND a.source_id=j.source_id AND a.generation=j.generation
+                   AND (a.cleanup_id IS NOT NULL OR a.expires_at<=now())) FOR UPDATE OF j''',
             (tenant, project, source, job, claim['lease_token'], claim['generation']),
         ).fetchone()
         return row is not None
@@ -434,6 +441,7 @@ class SourceRepository:
             (code, detail, tenant, project, job),
         )
         connection.execute("UPDATE sources SET status='failed',failure_code=%s,failure_detail=%s,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (code, detail, tenant, project, source))
+        retire_audio(connection, tenant, project, source, job)
 
     def fail(self, claim: dict, error: SourceError) -> bool:
         import random
@@ -490,6 +498,12 @@ class SourceRepository:
         tenant, project, source, job = (claim[key] for key in ('tenant_id', 'project_id', 'source_id', 'id'))
         generation, version = claim['generation'], f"{PROCESSING_VERSION}:g{claim['generation']}"
         connection.execute(
+            '''UPDATE processing_versions v SET asr_job_id=a.asr_job_id FROM source_artifacts a
+               WHERE a.tenant_id=v.tenant_id AND a.project_id=v.project_id AND a.source_id=v.source_id
+               AND v.tenant_id=%s AND v.project_id=%s AND v.source_id=%s AND v.generation=%s''',
+            (tenant, project, source, generation),
+        )
+        connection.execute(
             "UPDATE sources SET status='ready',active_generation=%s,active_embedding_space=%s,processing_version=%s,segment_count=%s,failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
             (generation, embedding_space, version, segment_count, tenant, project, source),
         )
@@ -540,6 +554,12 @@ class SourceRepository:
                 '''SELECT coalesce(sum(next_window),0) AS windows,coalesce(sum(completed_frames),0) AS frames,
                           coalesce(sum(model_duration_ms),0) AS duration FROM asr_runs''',
             ).fetchone()
+            originals = connection.execute(
+                '''SELECT count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at>now()) AS available,
+                          count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at<=now()) AS expired,
+                          count(*) FILTER (WHERE cleanup_id IS NOT NULL AND deleted_at IS NULL) AS cleanup_pending,
+                          count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted FROM audio_inputs''',
+            ).fetchone()
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
                  '# TYPE tutorial_artifact_cleanup gauge', '# TYPE tutorial_embedding_checkpoint_segments gauge',
@@ -550,6 +570,9 @@ class SourceRepository:
                       '# TYPE tutorial_asr_staged_input_frames gauge', f'tutorial_asr_staged_input_frames {asr["frames"]}',
                       '# TYPE tutorial_asr_staged_model_duration_seconds gauge',
                       f'tutorial_asr_staged_model_duration_seconds {float(asr["duration"])/1000}'])
+        lines.append('# TYPE tutorial_audio_originals gauge')
+        for status in ('available', 'expired', 'cleanup_pending', 'deleted'):
+            lines.append(f'tutorial_audio_originals{{status="{status}"}} {originals[status]}')
         for row in jobs:
             lines.append(f'tutorial_processing_jobs{{status="{row["status"]}"}} {row["count"]}')
         for row in attempts:

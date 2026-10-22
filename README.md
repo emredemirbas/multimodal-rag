@@ -173,11 +173,20 @@ seccomp support; missing isolation/weights fail closed. It is not a learner-code
 sandbox. Ordinary startup and CI do not fetch Whisper weights. Existing `.env`
 settings are unchanged. See [scope and follow-up](docs/sprint4/local-asr-plan.md).
 
-The next private component adds migration 0010 for scoped, resumable ASR windows
+The first private durable component adds migration 0010 for scoped, resumable ASR windows
 and deterministic complete-run VTT assembly. It does not retain original audio,
-call the model, publish partial evidence or enable a WAV API/form. A dedicated
-media worker, original cleanup and atomic transcript adoption remain required.
+call the model, publish partial evidence or enable a WAV API/form. The private
+backend follow-up below supplies worker execution, original cleanup and adoption.
 See [checkpoint scope](docs/sprint4/asr-checkpoints-plan.md).
+
+The private backend follow-up adds a dedicated optional `media-worker`, one-window
+queue continuations, temporary-original retirement/cleanup and atomic VTT handoff
+to ordinary indexing (migrations 0011/0012). Original processing eligibility lasts
+at most one hour; physical deletion is separately confirmed/retried by the scheduler.
+Reindexing retains the VTT and ASR provenance, not the original audio. The existing
+application still rejects WAV: bounded authenticated upload and machine-generated
+inspection UI are the remaining step, not enabled by running the private worker.
+See [media workflow](docs/sprint4/media-worker-plan.md).
 
 ## Optional real local AI (no API key or service bill)
 

@@ -44,6 +44,11 @@ VTT assembly; see `asr-checkpoints-plan.md`. It does not execute ASR jobs, store
 original audio or adopt/publish the returned VTT. The rest of slice B below remains
 required before enabling WAV upload.
 
+The subsequent private backend component implements the dedicated worker,
+temporary-original lifecycle and VTT/indexing handoff (ADR 0019), recorded in
+`media-worker-plan.md`. Authenticated upload/BFF/form and user-facing provenance/
+inspection remain the final product-enablement step; current WAV uploads stay closed.
+
 - Dedicated media queue/worker, scoped jobs and migration-backed temporary audio
   artifacts/window checkpoints with actor/lease/generation fences.
 - Atomic derived transcript adoption into the existing indexing pipeline; no

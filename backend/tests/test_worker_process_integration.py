@@ -20,6 +20,31 @@ WORKER_CODE = '''
 import os,time
 from app.jobs.worker import celery_app
 from app.artifacts.storage import S3ArtifactStore
+if os.environ.get('PROBE_MEDIA') == '1':
+    import psycopg
+    from app.jobs.media_worker import celery_app
+    from app.jobs import media_processing
+    from app.asr.checkpoints import AsrCheckpoints
+    from app.asr.contracts import TranscriptionSlice
+    from app.asr.profile import identity
+    class FixtureSpeech:
+        def transcribe(self,pcm,language):
+            with psycopg.connect(os.environ['DATABASE_URL']) as connection:
+                ordinal=connection.execute('SELECT next_window FROM asr_runs WHERE tenant_id=%s AND project_id=%s AND job_id=%s',
+                    (os.environ['PROBE_TENANT'],os.environ['PROBE_PROJECT'],os.environ['PROBE_JOB'])).fetchone()[0]
+                connection.execute('INSERT INTO probe_asr_calls(tenant_id,project_id,job_id,ordinal) VALUES(%s,%s,%s,%s)',
+                    (os.environ['PROBE_TENANT'],os.environ['PROBE_PROJECT'],os.environ['PROBE_JOB'],ordinal))
+            return TranscriptionSlice.model_validate({**identity(),'input_frames':len(pcm)//2,'requested_language':language,
+                'language':'en','language_probability':.9,'duration_ms':17,
+                'segments':[{'start_ms':0,'end_ms':900,'text':'GET /health reports service health.'}]})
+    media_processing.build_transcription_provider=lambda settings: FixtureSpeech()
+    if os.environ.get('PROBE_ASR_PAUSE') == '1':
+        save=AsrCheckpoints.save
+        def save_and_pause(self,*args,**kwargs):
+            saved=save(self,*args,**kwargs)
+            if saved: time.sleep(120)
+            return saved
+        AsrCheckpoints.save=save_and_pause
 celery_app.conf.broker_transport_options = {**celery_app.conf.broker_transport_options, 'global_keyprefix': os.environ['PROBE_PREFIX']}
 if os.environ.get('PROBE_SEMANTIC') == '1':
     import re,psycopg

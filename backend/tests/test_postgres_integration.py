@@ -89,7 +89,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:
@@ -175,9 +175,8 @@ async def test_postgres_api_auth_and_every_project_operation_are_tenant_scoped(
 
 @pytest.mark.integration
 @pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
-def test_postgres_pgvector_cited_answer() -> None:
-    assert DATABASE_URL is not None
-    store = PostgresStore(DATABASE_URL)
+def test_postgres_pgvector_cited_answer(isolated_postgres_url: str) -> None:
+    store = PostgresStore(isolated_postgres_url)
     store.run_migrations()
     service = TutorialService(
         store,
@@ -238,7 +237,7 @@ def test_postgres_pgvector_cited_answer() -> None:
 
         job_id = uuid4()
         attempt_id = uuid4()
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(isolated_postgres_url) as connection:
             connection.execute(
                 """
                 INSERT INTO processing_jobs (
@@ -268,7 +267,7 @@ def test_postgres_pgvector_cited_answer() -> None:
         with pytest.raises(LookupError):
             service.get_project(principal, project.id)
 
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(isolated_postgres_url) as connection:
             for table in (
                 "sources",
                 "content_segments",
@@ -291,7 +290,7 @@ def test_postgres_pgvector_cited_answer() -> None:
             ).fetchone()[0]
             assert delete_audits == 1
     finally:
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(isolated_postgres_url) as connection:
             connection.execute(
                 "DELETE FROM projects WHERE tenant_id = %s AND id = %s",
                 (tenant_id, project.id),

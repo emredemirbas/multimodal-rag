@@ -54,7 +54,8 @@ class S3ArtifactStore:
     def put(self, key: str, content: bytes) -> None:
         try:
             self.ensure_bucket()
-            self.client.put_object(Bucket=self.bucket, Key=key, Body=content, ContentType='text/plain; charset=utf-8')
+            content_type = 'audio/wav' if key.endswith('/input.wav') else 'text/plain; charset=utf-8'
+            self.client.put_object(Bucket=self.bucket, Key=key, Body=content, ContentType=content_type)
         except (ClientError, BotoCoreError):
             raise self._unavailable() from None
 
@@ -64,7 +65,7 @@ class S3ArtifactStore:
             with response['Body'] as body:
                 content = body.read(limit + 1)
             if len(content) > limit:
-                raise SourceError('invalid_artifact', 'The stored transcript exceeds the upload limit.')
+                raise SourceError('invalid_artifact', 'The stored artifact exceeds its size limit.')
             return content
         except (ClientError, BotoCoreError):
             raise self._unavailable() from None

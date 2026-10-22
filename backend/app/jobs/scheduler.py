@@ -8,7 +8,9 @@ from ..artifacts.storage import S3ArtifactStore
 from ..config import Settings
 from ..postgres import PostgresStore
 from ..sources.repository import SourceRepository
+from ..sources.media import retire_unusable_audio
 from .dispatch import cleanup_once, dispatch_once, redeliver_unclaimed
+from .queue import delivery_route
 from .worker import celery_app
 
 
@@ -26,18 +28,20 @@ def main():
     signal.signal(signal.SIGINT, stop)
 
     def publish(row):
-        celery_app.send_task('tutorial.process_transcript', args=[row['tenant_id'], str(row['project_id']),
-                              str(row['source_id']), str(row['job_id']), row['generation']], queue='ingestion', expires=600)
+        task, queue = delivery_route(row['job_type'])
+        celery_app.send_task(task, args=[row['tenant_id'], str(row['project_id']),
+                              str(row['source_id']), str(row['job_id']), row['generation']], queue=queue, expires=600)
 
     while not stopping:
         try:
+            retired = retire_unusable_audio(repository)
             recovered = repository.recover_leases()
             redeliver_unclaimed(repository)
             sent = dispatch_once(repository, publish)
             cleaned = cleanup_once(repository)
             Path('/tmp/ingestion-scheduler-heartbeat').touch()
-            if recovered or sent or cleaned:
-                logging.info(json.dumps({'event': 'scheduler_cycle', 'published': sent, 'recovered': recovered, 'cleaned': cleaned}))
+            if recovered or sent or cleaned or retired:
+                logging.info(json.dumps({'event': 'scheduler_cycle', 'published': sent, 'recovered': recovered, 'cleaned': cleaned, 'retired_audio': retired}))
         except Exception:
             logging.error(json.dumps({'event': 'scheduler_unavailable', 'code': 'dependency_unavailable'}))
         for _ in range(30):

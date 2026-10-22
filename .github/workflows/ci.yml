@@ -103,8 +103,8 @@ jobs:
         run: docker compose config --quiet
       - name: Build deployable development images
         run: docker compose build api frontend ingestion-worker scheduler minio minio-permissions
-      - name: Build optional local ASR image without Whisper weights
-        run: docker compose build asr
+      - name: Build optional ASR and media worker images without Whisper weights
+        run: docker compose build asr media-worker
       - name: Verify ASR kernel isolation without model downloads
         run: >-
           docker compose --profile local-asr run --rm --no-deps --entrypoint python asr

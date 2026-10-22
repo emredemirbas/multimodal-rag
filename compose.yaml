@@ -27,6 +27,51 @@ x-api-image: &api-image
     context: ./backend
 
 services:
+  media-worker:
+    profiles: [local-asr]
+    build:
+      context: ./backend
+      target: media-worker
+    environment:
+      APP_ENV: development
+      APP_STORE: postgres
+      APP_AUTO_MIGRATE: "false"
+      # Settings validation only; this trusted worker has no HTTP/auth endpoint.
+      DEVELOPMENT_AUTH_TOKEN: media-worker-is-not-an-api-service
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tutorial}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-tutorial}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: tutorial-artifacts
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tutorial}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
+      ASR_BASE_URL: http://asr:8090
+    networks: [default, asr-private]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      asr:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "celery -A app.jobs.media_worker:celery_app inspect ping --timeout=3 -d media@$$HOSTNAME | grep -q pong"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
   asr:
     profiles: [local-asr]
     image: multimodal-tutorial-workspace-asr:local

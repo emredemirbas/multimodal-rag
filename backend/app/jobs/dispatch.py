@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from ..sources.repository import SourceRepository
+from ..artifacts.audio import record_audio_deleted
 
 
 def dispatch_once(repository: SourceRepository, publish, *, limit: int = 20) -> int:
@@ -13,7 +14,8 @@ def dispatch_once(repository: SourceRepository, publish, *, limit: int = 20) -> 
                    AND (lease_expires_at IS NULL OR lease_expires_at<now())
                    ORDER BY available_at LIMIT %s FOR UPDATE SKIP LOCKED
                ) UPDATE outbox_events o SET lease_token=%s,lease_expires_at=now()+interval '30 seconds'
-               FROM due WHERE o.tenant_id=due.tenant_id AND o.project_id=due.project_id AND o.id=due.id RETURNING o.*''',
+               FROM due WHERE o.tenant_id=due.tenant_id AND o.project_id=due.project_id AND o.id=due.id RETURNING o.*,
+               (SELECT j.job_type FROM processing_jobs j WHERE j.tenant_id=o.tenant_id AND j.project_id=o.project_id AND j.id=o.job_id) AS job_type''',
             (limit, token),
         ).fetchall()
     sent = 0
@@ -83,8 +85,10 @@ def cleanup_once(repository: SourceRepository) -> int:
             )
         return 0
     with repository.store._connect() as connection:
-        connection.execute(
-            "UPDATE artifact_cleanup SET status='completed',failure_code=NULL,completed_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s AND lease_token=%s",
+        completed = connection.execute(
+            "UPDATE artifact_cleanup SET status='completed',failure_code=NULL,completed_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE tenant_id=%s AND project_id=%s AND id=%s AND lease_token=%s RETURNING id",
             (row['tenant_id'], row['project_id'], row['id'], token),
-        )
+        ).fetchone()
+        if completed:
+            record_audio_deleted(connection, row)
     return 1

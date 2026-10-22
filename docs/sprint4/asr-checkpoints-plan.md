@@ -31,5 +31,7 @@ and deterministic derived-VTT assembly, not the whole media ingestion workflow.
 No API/BFF/form accepts WAV, no new audio retention is started, and no live user
 source is created by this delivery. The dedicated media worker/queue, durable raw
 artifact cleanup, atomic derived-object adoption and machine-generated source UI
-remain required before the application can enable audio upload. No new paid
-service, model download, broader media input, commit or push is implied.
+remain required before the application can enable audio upload. The subsequent
+private backend slice implements jobs/cleanup/adoption; see `media-worker-plan.md`.
+No new paid service, model download or broader media input is implied. On
+2026-10-22 the owner authorized future tested, scoped commit/push delivery.

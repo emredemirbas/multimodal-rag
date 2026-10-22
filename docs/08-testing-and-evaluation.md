@@ -108,6 +108,16 @@ input fails honestly and that the existing API still rejects WAV. Its lease-expi
 test is not a real ASR-worker SIGKILL or end-to-end media-ingestion claim; those
 require the later queue, original-retention/cleanup and atomic-adoption slice.
 
+The private media-backend slice now adds those queue/lifecycle components and a
+separate actual SIGKILL probe: after one saved ASR window, kill only the test-owned
+media worker, recover its lease, and resume through dedicated media and ingestion
+queues. Count fixture inference per window, verify stable provenance, ordinary
+index activation, raw MinIO deletion and complete project cleanup. Inference is a
+controlled fixture, not native speech-quality evidence. Also cover post-PUT
+revocation, unique-candidate orphan cleanup, TTL, cleanup failure/exhaustion/retry
+and cross-scope cleanup FK rejection. All vector/ingestion tests use isolated
+schemas; never run application migrations as an incidental test setup step.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

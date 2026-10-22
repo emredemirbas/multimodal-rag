@@ -182,6 +182,12 @@ complete-run VTT assembly (migration 0010). This is not a connected audio upload
 workflow: dedicated media execution, raw cleanup, atomic transcript adoption and
 UI remain open. See `docs/sprint4/asr-checkpoints-plan.md`.
 
+The 2026-10-22 private backend continuation adds dedicated media jobs, bounded
+window delivery/recovery, temporary-original cleanup and atomic VTT/indexing
+handoff (ADR 0019). This completes the backend component, not the public audio
+feature: authenticated bounded upload, user-facing provenance/inspection and native
+owned-audio end-to-end verification remain required before enabling WAV in the app.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

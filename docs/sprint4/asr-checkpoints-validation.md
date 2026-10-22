@@ -52,18 +52,22 @@ workflow**, an ASR quality benchmark or full Sprint 4 completion.
 - `git diff --check` passes. Ignored `.env` remains unchanged with mode 0600.
 
 No user project, shared queue, existing service or volume was deleted/restarted.
-PostgreSQL fixtures create/drop only their isolated schemas and owned namespaces;
-WAV fixtures exist in test memory only. The temporary packaging containers use
+New PostgreSQL checkpoint fixtures create/drop only isolated schemas and owned
+namespaces; WAV fixtures exist in test memory only. The temporary packaging containers use
 `--rm`, no credentials, no mounts and no network. No model download, paid API or
-native ASR request was needed. The current migration was verified in isolated
-test databases, not applied to the user's running application database.
+native ASR request was needed. Correction discovered on 2026-10-22: the older
+vector-answer test still used the configured application database and applied
+additive migration 0010 there during the full suite. The media follow-up isolates
+that legacy probe; the checkpoint component's own fixtures were already isolated.
+No existing user source/object was removed and no migration history was rewritten.
 
 The new ASR lease-expiry test is **not** an actual media-worker SIGKILL test or
 proof of end-to-end audio processing. Existing real-worker tests protect the
 unchanged subtitle/indexing pipeline. Native recognition limits in
 `local-asr-validation.md` remain unchanged. No new word/timestamp accuracy is claimed.
-The hosted result for this component has not yet been verified; the successful
-hosted run for `fb37596` does not cover these checkpoint changes.
+Checkpoint commit `a3f7da1` subsequently passed all four jobs in
+[hosted CI](https://github.com/emredemirbas/multimodal-rag/actions/runs/39769170318).
+That run does not cover the subsequent media-worker changes.
 
 ## Required next step
 

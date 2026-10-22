@@ -113,22 +113,26 @@ class AsrCheckpoints:
         with self.repository.store._connect() as connection:
             if not self.repository._fenced(connection, claim):
                 return None
-            run = self._run(connection, claim)
-            rows = connection.execute(
-                '''SELECT * FROM asr_windows WHERE tenant_id=%s AND project_id=%s AND job_id=%s
-                   AND source_id=%s AND generation=%s ORDER BY ordinal''', self._scope(claim),
-            ).fetchall()
-            if (run['next_window'] != run['window_count'] or run['completed_frames'] != run['input_frames']
-                    or len(rows) != run['window_count']):
-                raise SourceError('asr_checkpoint_incomplete', 'All audio windows must be saved before assembling a transcript.', 409)
-            results = []
-            for ordinal, row in enumerate(rows):
-                result = validated_slice(row['result'])
-                if (row['ordinal'] != ordinal or result_digest(result) != row['result_sha256']
-                        or row['input_frames'] != result.input_frames or result.requested_language != run['requested_language']):
-                    raise SourceError('invalid_asr_checkpoint', 'The saved speech results failed integrity verification.', 503)
-                results.append(result)
-            derived = assemble_vtt(results, run['input_frames'])
-            if derived.segments != run['segment_count'] or derived.model_duration_ms != run['model_duration_ms']:
-                raise SourceError('invalid_asr_checkpoint', 'The saved speech usage failed integrity verification.', 503)
-            return derived
+            return self._assemble(connection, claim)
+
+    def _assemble(self, connection, claim: dict) -> DerivedTranscript:
+        """Caller already holds the live project/job fence in this transaction."""
+        run = self._run(connection, claim)
+        rows = connection.execute(
+            '''SELECT * FROM asr_windows WHERE tenant_id=%s AND project_id=%s AND job_id=%s
+               AND source_id=%s AND generation=%s ORDER BY ordinal''', self._scope(claim),
+        ).fetchall()
+        if (run['next_window'] != run['window_count'] or run['completed_frames'] != run['input_frames']
+                or len(rows) != run['window_count']):
+            raise SourceError('asr_checkpoint_incomplete', 'All audio windows must be saved before assembling a transcript.', 409)
+        results = []
+        for ordinal, row in enumerate(rows):
+            result = validated_slice(row['result'])
+            if (row['ordinal'] != ordinal or result_digest(result) != row['result_sha256']
+                    or row['input_frames'] != result.input_frames or result.requested_language != run['requested_language']):
+                raise SourceError('invalid_asr_checkpoint', 'The saved speech results failed integrity verification.', 503)
+            results.append(result)
+        derived = assemble_vtt(results, run['input_frames'])
+        if derived.segments != run['segment_count'] or derived.model_duration_ms != run['model_duration_ms']:
+            raise SourceError('invalid_asr_checkpoint', 'The saved speech usage failed integrity verification.', 503)
+        return derived

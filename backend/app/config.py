@@ -44,9 +44,12 @@ class Settings:
     ollama_base_url: str = 'http://ollama:11434'
     ollama_model: str = 'qwen3:4b'
     local_model_timeout: int = 24
+    asr_base_url: str = 'http://asr:8090'
 
     def __post_init__(self) -> None:
         from .local_model import checked_local_url
+        from .asr.client import checked_asr_url
+        checked_asr_url(self.asr_base_url)
         if self.embedding_provider not in {'hash', 'ollama'} or self.embedding_dimensions != 64:
             raise ValueError('Use hash (64-D) or local Ollama (fixed 1024-D); custom dimensions are disabled')
         if self.answer_provider not in {'extractive', 'ollama'}:
@@ -117,4 +120,5 @@ class Settings:
             ollama_base_url=os.getenv('OLLAMA_BASE_URL', 'http://ollama:11434'),
             ollama_model=os.getenv('OLLAMA_MODEL', 'qwen3:4b'),
             local_model_timeout=int(os.getenv('LOCAL_MODEL_TIMEOUT', '24')),
+            asr_base_url=os.getenv('ASR_BASE_URL', 'http://asr:8090'),
         )
