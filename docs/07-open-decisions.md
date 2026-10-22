@@ -69,7 +69,8 @@ Sprint 2 implements explicit permitted-transcript retention for retries and
 complete source/project deletion (ADR 0012). The owner continued after the concrete
 WAV/retention proposal on 2026-10-21; that interpretation and the narrower encoding
 were surfaced in chat. ADR 0018 records the accepted local WAV scope. Only the
-stateless validation/inference foundation is delivered first. Application audio
+stateless validation/inference foundation and private checkpoint/VTT components
+are delivered first; see `sprint4/asr-checkpoints-plan.md`. Application audio
 upload remains disabled until dedicated jobs, scoped staging, atomic derived
 transcript adoption and observable terminal/deletion cleanup are implemented.
 Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original

@@ -30,6 +30,13 @@ read-only during inference. This foundation is not yet a media queue/ingestion
 workflow: no audio upload, raw retention, partial index or new database record is
 enabled until the dedicated worker/cleanup follow-up is complete.
 
+The first durable follow-up is private ASR window staging (migration 0010).
+It pins input/model/language/assembly identity, fences each operation using the
+existing job lease and actor/project scope, and assembles only complete validated
+windows into an immutable VTT. It does not call a model, adopt an object, activate
+evidence or create an application audio job. Ordinary ingestion workers do not
+claim ASR jobs; queue routing/worker and original cleanup remain follow-up work.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.

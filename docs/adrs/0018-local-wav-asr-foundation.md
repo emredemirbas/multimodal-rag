@@ -52,6 +52,16 @@ Report native model tests separately. A short synthetic voice probe is not a bro
 ASR/timestamp or multilingual quality guarantee. Default CI/startup downloads no
 weights and cannot accept binary audio. See `../sprint4/local-asr-plan.md`.
 
+The first slice-B component adds migration 0010 private ASR windows and complete-run
+VTT assembly under the existing live actor/project/job/generation/lease fences.
+Pin original SHA-256/frames, model and assembly profile and language; reject drift,
+duplicate/out-of-order writes and incomplete/corrupted output. Keep accepted window
+counts/model durations separate from published usage/evidence. All-silent input
+must not invent speech. This component stores no original WAV, calls no model and
+creates no public upload/job; original cleanup, dedicated queue execution and atomic
+derived-object adoption remain required before exposing audio. See
+`../sprint4/asr-checkpoints-plan.md`.
+
 References: [official implementation](https://github.com/SYSTRAN/faster-whisper),
 [pinned public model](https://huggingface.co/Systran/faster-whisper-base/tree/a80717a3a48b1b28aa687bca146cb7301feae1b1),
 [libseccomp rules](https://man7.org/linux/man-pages/man3/seccomp_rule_add.3.html).

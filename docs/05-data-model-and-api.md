@@ -93,6 +93,15 @@ Migration 0009 is index-only: a partial chronological transcript index under
 tenant/project/source/generation accelerates published timeline browsing. No
 evidence is modified, recomputed or duplicated.
 
+Migration 0010 adds private `asr_runs`/`asr_windows`, tied by composite FK to
+tenant/project/job/source/generation. Runs pin the original digest/frame count,
+requested language, approved model/engine/profile and VTT assembly version.
+At most twenty strict windows advance an ordered cursor with accepted input
+frames/model duration and payload checksums. No token counts are fabricated.
+Only complete validated runs can return a derived VTT; this does not publish an
+artifact/index or complete a job. Source/project deletion cascades private text.
+No current application route creates ASR jobs or accepts original audio.
+
 ### Chat
 
 - `conversations`
@@ -173,7 +182,8 @@ Tenant
 Use `/api/v1`. Exact payloads should be generated from Pydantic models and exposed through OpenAPI.
 
 ADR 0018's local WAV/Whisper foundation is a stateless private model boundary,
-not a new application endpoint or data model. Audio registration, original-audio
+not a new application endpoint. Its private checkpoint follow-up adds migration
+0010 but no public payload. Audio registration, original-audio
 records/terminal cleanup and media jobs are not enabled; only SRT/VTT product
 uploads are accepted. Add scoped migrations and lifecycle APIs in the follow-up
 before exposing audio ingestion. No project-owned rows are created by a native

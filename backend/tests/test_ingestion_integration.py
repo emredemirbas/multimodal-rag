@@ -208,6 +208,13 @@ async def test_upload_api_bounds_validation_isolation_and_safe_errors(ingestion)
         assert (await client.post(path, headers=headers, data={'idempotency_key': 'http-upload-1'}, files={'file': ('tutorial.vtt', TRANSCRIPT, 'text/vtt')})).status_code == 422
         assert (await client.post(path, headers=headers, data=data, files={'file': ('tutorial.vtt', b'\xff', 'text/vtt')})).json()['code'] == 'invalid_encoding'
         assert (await client.post(path, headers=headers, data=data, files={'file': ('tutorial.vtt', b'x' * 2_020_000, 'text/vtt')})).status_code == 413
+        # Private ASR staging must not silently enable product binary uploads.
+        from test_wav import wav_bytes
+        for content_type in ['audio/wav', 'application/octet-stream']:
+            response = await client.post(path, headers=headers, data=data, files={'file': ('owned.wav', wav_bytes(), content_type)})
+            assert response.status_code == 422
+        with repository.store._connect() as connection:
+            assert connection.execute('SELECT count(*) AS n FROM asr_runs').fetchone()['n'] == 0
         foreign = {**headers, 'X-Authenticated-Tenant': 'http-foreign'}
         assert (await client.post(path, headers=foreign, data=data, files={'file': ('tutorial.vtt', TRANSCRIPT, 'text/vtt')})).status_code == 404
         response = await client.post(path, headers=headers, data=data, files={'file': ('tutorial.vtt', TRANSCRIPT, 'text/vtt')})

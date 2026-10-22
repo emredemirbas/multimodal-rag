@@ -273,7 +273,8 @@ class SourceRepository:
                 raise ProjectNotFoundError('cleanup not found')
             return Cleanup.model_validate(row)
 
-    def claim_job(self, tenant: str, project: UUID, source: UUID, job: UUID, generation: int) -> dict | None:
+    def claim_job(self, tenant: str, project: UUID, source: UUID, job: UUID, generation: int,
+                  *, job_types: tuple[str, ...] = ('transcript', 'metadata')) -> dict | None:
         with self.store._connect() as connection:
             try:
                 self._project(connection, tenant, project)
@@ -282,8 +283,8 @@ class SourceRepository:
                 return None
             row = connection.execute(
                 '''SELECT * FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND id=%s
-                   AND generation=%s AND status IN ('pending','retrying') AND available_at<=now() FOR UPDATE''',
-                (tenant, project, source, job, generation),
+                   AND generation=%s AND job_type=ANY(%s) AND status IN ('pending','retrying') AND available_at<=now() FOR UPDATE''',
+                (tenant, project, source, job, generation, list(job_types)),
             ).fetchone()
             if not row or current.generation != generation:
                 return None
@@ -535,12 +536,20 @@ class SourceRepository:
             waiting = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_capacity' AND status IN ('pending','retrying')").fetchone()['count']
             continuations = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_continuation' AND status='pending'").fetchone()['count']
             checkpoints = connection.execute('SELECT count(*) AS count FROM embedding_checkpoints').fetchone()['count']
+            asr = connection.execute(
+                '''SELECT coalesce(sum(next_window),0) AS windows,coalesce(sum(completed_frames),0) AS frames,
+                          coalesce(sum(model_duration_ms),0) AS duration FROM asr_runs''',
+            ).fetchone()
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
                  '# TYPE tutorial_artifact_cleanup gauge', '# TYPE tutorial_embedding_checkpoint_segments gauge',
                  '# TYPE tutorial_embedding_continuations_pending gauge']
         lines.append(f'tutorial_embedding_checkpoint_segments {checkpoints}')
         lines.append(f'tutorial_embedding_continuations_pending {continuations}')
+        lines.extend(['# TYPE tutorial_asr_saved_windows gauge', f'tutorial_asr_saved_windows {asr["windows"]}',
+                      '# TYPE tutorial_asr_staged_input_frames gauge', f'tutorial_asr_staged_input_frames {asr["frames"]}',
+                      '# TYPE tutorial_asr_staged_model_duration_seconds gauge',
+                      f'tutorial_asr_staged_model_duration_seconds {float(asr["duration"])/1000}'])
         for row in jobs:
             lines.append(f'tutorial_processing_jobs{{status="{row["status"]}"}} {row["count"]}')
         for row in attempts:

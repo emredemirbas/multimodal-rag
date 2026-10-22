@@ -173,6 +173,12 @@ seccomp support; missing isolation/weights fail closed. It is not a learner-code
 sandbox. Ordinary startup and CI do not fetch Whisper weights. Existing `.env`
 settings are unchanged. See [scope and follow-up](docs/sprint4/local-asr-plan.md).
 
+The next private component adds migration 0010 for scoped, resumable ASR windows
+and deterministic complete-run VTT assembly. It does not retain original audio,
+call the model, publish partial evidence or enable a WAV API/form. A dedicated
+media worker, original cleanup and atomic transcript adoption remain required.
+See [checkpoint scope](docs/sprint4/asr-checkpoints-plan.md).
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

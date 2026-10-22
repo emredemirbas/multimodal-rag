@@ -39,6 +39,11 @@ failure, retained derived transcript. Re-transcription then requires re-upload.
 
 ## Slice B: durable product ingestion (follow-up, required before enabling upload)
 
+The first private component is scoped PostgreSQL window checkpoints and complete
+VTT assembly; see `asr-checkpoints-plan.md`. It does not execute ASR jobs, store
+original audio or adopt/publish the returned VTT. The rest of slice B below remains
+required before enabling WAV upload.
+
 - Dedicated media queue/worker, scoped jobs and migration-backed temporary audio
   artifacts/window checkpoints with actor/lease/generation fences.
 - Atomic derived transcript adoption into the existing indexing pipeline; no

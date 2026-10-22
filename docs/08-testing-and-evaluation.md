@@ -100,6 +100,14 @@ reported; it is not a broad quality benchmark. Audio registration, original
 retention/terminal cleanup and media queue authorization remain required follow-up
 coverage before enabling product uploads (ADR 0018).
 
+The private checkpoint component separately tests actual PostgreSQL staging,
+concurrent saves, lease-loss/retry, scope/membership/cancellation/deletion fences,
+input/profile/language drift, output integrity and deterministic timestamp-preserving
+VTT assembly. Staging never becomes retrieval/citation evidence. Verify all-silent
+input fails honestly and that the existing API still rejects WAV. Its lease-expiry
+test is not a real ASR-worker SIGKILL or end-to-end media-ingestion claim; those
+require the later queue, original-retention/cleanup and atomic-adoption slice.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

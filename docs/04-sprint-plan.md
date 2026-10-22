@@ -177,6 +177,11 @@ isolated stateless inference are implemented first. Product audio upload remains
 disabled until durable media jobs, original cleanup and the source UI are delivered.
 See `docs/sprint4/local-asr-plan.md` and its validation record.
 
+The next component adds private, resumable PostgreSQL ASR checkpoints and
+complete-run VTT assembly (migration 0010). This is not a connected audio upload
+workflow: dedicated media execution, raw cleanup, atomic transcript adoption and
+UI remain open. See `docs/sprint4/asr-checkpoints-plan.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks
