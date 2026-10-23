@@ -203,6 +203,12 @@ video/frames/OCR/vision and the Sprint 4 multimodal exit criteria remain open.
 See `docs/sprint4/audio-upload-validation.md` for actual native pipeline evidence
 versus recognition-quality limits; software fixtures alone do not pass that gate.
 
+The same-day quality-tooling follow-up adds explicit local single-clip WER/CER,
+literal identifier, silence and cue-boundary timing diagnostics with declared
+label provenance. It does not constitute a reviewed benchmark or full Alpha 2;
+video/frame/OCR scope and quality thresholds remain open. See
+`docs/sprint4/asr-evaluation-guide.md` and `asr-evaluation-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

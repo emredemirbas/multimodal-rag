@@ -1,0 +1,18 @@
+{
+  "schema_version": "asr-result-v1",
+  "audio_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "result": {
+    "provider": "faster-whisper-local",
+    "model": "whisper-base",
+    "revision": "a80717a3a48b1b28aa687bca146cb7301feae1b1",
+    "profile": "local-whisper-base-v1:345860e60bc3a7b6f4930e6473ff42cff8ad987f4471d5c2ae0e970cd532e6eb",
+    "engine": "faster-whisper:1.2.1/ctranslate2:4.8.2",
+    "network_policy": "outbound-denied",
+    "input_frames": 48000,
+    "requested_language": "en",
+    "language": "en",
+    "language_probability": 0.9,
+    "duration_ms": 100,
+    "segments": [{"start_ms": 0, "end_ms": 2500, "text": "Use fastapi health check"}]
+  }
+}

@@ -160,6 +160,17 @@ Native production-BFF smoke uses fixture metadata (not a live YouTube import),
 authored synthetic speech and a shared cap of one; count native inference events
 to distinguish same-key replay/reindex from retranscription.
 
+### Local ASR quality diagnostics
+
+The local single-clip ASR evaluator now separates normalized WER/CER, literal
+identifier recall, silence hallucination and unique-phrase enclosing-cue timing
+coverage/error. It binds native references to exact WAV bytes before inference;
+offline input binding is only declared. Arithmetic, Unicode/Turkish, exhaustive
+small distance-oracle, missing/ambiguous timing, invalid JSON/work limits and safe
+CLI/native-probe tests are synthetic software evidence, not a reviewed corpus.
+See `sprint4/asr-evaluation-guide.md`. No quality threshold, automatic enablement,
+representative speaker/technical benchmark or word-level alignment is implied.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

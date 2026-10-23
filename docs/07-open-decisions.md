@@ -84,6 +84,12 @@ pipeline/keyword evidence and enablement status are separately recorded in
 Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
 frame retention and broader binary-media limits remain unapproved.
 
+The same-day single-clip evaluation tool adds explicit operator-owned labels and
+content-free word/character, identifier and cue-boundary diagnostics. Native input
+binding checks exact WAV bytes before inference; offline fixtures are only declared
+synthetic data. See `sprint4/asr-evaluation-guide.md`. It selects no quality/release
+threshold, reviews no representative corpus and does not enable the upload flag.
+
 ## Decide before the provider-backed Alpha 1 release
 
 These managed-service release gates are deferred: the owner now targets a free

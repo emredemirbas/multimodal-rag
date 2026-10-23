@@ -234,6 +234,13 @@ limitation. See [upload validation](docs/sprint4/audio-upload-validation.md),
 [media workflow](docs/sprint4/media-worker-plan.md) and
 [inspection validation](docs/sprint4/media-inspection-validation.md).
 
+For explicit speech-quality measurements, use the separate
+[offline/native ASR evaluation guide](docs/sprint4/asr-evaluation-guide.md).
+It compares operator-owned labels with word/character errors, literal technical
+identifiers and timing coverage without printing transcripts or writing app data.
+The included deliberately imperfect JSON example needs no model or services; it
+is synthetic, not representative speech-quality evidence. WAV opt-in stays off.
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

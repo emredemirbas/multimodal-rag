@@ -1,10 +1,13 @@
 """Explicit stateless model probe. Reads an operator-owned <=30s WAV on stdin."""
 import argparse
+import hashlib
 import json
+from pathlib import Path
 import re
 import sys
 
 from .client import LocalAsrProvider
+from .evaluate import EvaluationRun, evaluate, load_reference, verify_audio
 from .wav import MAX_WAV_BYTES, SLICE_FRAMES, pcm_slice, validate_wav
 
 
@@ -17,17 +20,28 @@ def synthetic_health_terms(text: str) -> bool:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--language", choices=["auto", "en", "tr"], default="en")
-    parser.add_argument("--synthetic-health-check", action="store_true", help="Require health and endpoint/end point in an explicitly generated synthetic fixture, without printing text.")
+    diagnostic = parser.add_mutually_exclusive_group()
+    diagnostic.add_argument("--synthetic-health-check", action="store_true", help="Require health and endpoint/end point in an explicitly generated synthetic fixture, without printing text.")
+    diagnostic.add_argument("--reference", type=Path, help="Read an explicitly mounted local reference JSON; report content-free quality diagnostics, not quality approval.")
     options = parser.parse_args()
     content = sys.stdin.buffer.read(MAX_WAV_BYTES + 1)
     wav = validate_wav("operator-owned-probe.wav", content)
     if wav.frames > SLICE_FRAMES:
-        raise ValueError("Use a probe of at most 30 seconds; product ingestion is not enabled")
+        raise ValueError("Use a probe of at most 30 seconds")
+    reference = load_reference(options.reference) if options.reference else None
+    if reference is not None:
+        verify_audio(reference, content, wav.frames)
     result = LocalAsrProvider().transcribe(pcm_slice(content, wav, 0), options.language)
     if options.synthetic_health_check:
         recognized = " ".join(segment.text.lower() for segment in result.segments)
         if not synthetic_health_terms(recognized):
             raise ValueError("The owned synthetic fixture was not recognized as expected")
+    if reference is not None:
+        report = evaluate(reference, EvaluationRun(schema_version="asr-result-v1",
+            audio_sha256=hashlib.sha256(content).hexdigest(), result=result))
+        report["input_binding"] = "verified-wav-bytes"
+        print(json.dumps(report, sort_keys=True, indent=2, allow_nan=False))
+        return
     print(json.dumps({"outcome": "passed", "model": result.model, "revision": result.revision,
         "duration_ms": result.duration_ms, "input_frames": result.input_frames, "segment_count": len(result.segments),
         "language": result.language, "synthetic_check": options.synthetic_health_check,
