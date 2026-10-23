@@ -11,6 +11,8 @@ import { INITIAL_SOURCE_ACTION } from "@/lib/source-action-state";
 import { transcriptHref } from "@/lib/api/transcript-contracts";
 import { AsrProvenance } from "@/components/sources/asr-provenance";
 import { AudioRetentionStatus } from "@/components/sources/audio-retention-status";
+import { AudioUpload } from '@/components/sources/audio-upload';
+import type { AudioCapability } from '@/lib/api/audio-contracts';
 
 const FAILURE_MESSAGES: Record<string, string> = {
   invalid_transcript: "Check cue timestamps and text, then upload a corrected SRT/VTT file.",
@@ -53,7 +55,7 @@ function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
   </div>;
 }
 
-function AddSource({ projectId, sources, playlistItems, onCompleted }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void> }) {
+function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnabled }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void>; audioEnabled: boolean }) {
   const [state, action] = useActionState(uploadSourceAction, INITIAL_SOURCE_ACTION);
   const [metadataState, metadataAction] = useActionState(metadataSourceAction, INITIAL_SOURCE_ACTION);
   const [uploadKey, setUploadKey] = useState("");
@@ -78,7 +80,7 @@ function AddSource({ projectId, sources, playlistItems, onCompleted }: { project
             setFileSelected(Boolean(file));
             setFileError(file && (file.size === 0 || file.size > 2_000_000) ? "Choose a non-empty file of at most 2 MB." : "");
           }} />
-        <p id={`${id}-file-help`} className="field-hint">UTF-8 text, up to 2 MB. Audio/video uploads are not yet available.</p>
+        <p id={`${id}-file-help`} className="field-hint">UTF-8 text, up to 2 MB. {audioEnabled ? 'Use the separate experimental form below for supported WAV. Video/compressed audio uploads are not supported.' : 'Audio/video uploads are not yet available.'}</p>
       </div>
       <div className="field">
         <label htmlFor={`${id}-playlist-item`}>Transcript belongs to</label>
@@ -162,8 +164,8 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
   </>;
 }
 
-export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "" }: {
-  projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string;
+export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false } }: {
+  projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string; audioCapability?: AudioCapability | null;
 }) {
   const [sources, setSources] = useState(initialSources);
   const [playlistItems, setPlaylistItems] = useState(initialPlaylistItems);
@@ -215,7 +217,11 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
   }, [working, cleaningAudio, projectId, refresh]);
 
   return <div className="stack stack--large">
-    {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} />}
+    {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <>
+      <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} audioEnabled={audioCapability?.enabled === true} />
+      {audioCapability?.enabled ? <AudioUpload projectId={projectId} onCompleted={refresh} /> :
+        <p className="field-hint">{audioCapability === null ? 'Audio upload availability could not be verified. Reload this page; transcript uploads remain available.' : 'Experimental local WAV upload is off. The operator must explicitly install ASR weights, start local-asr and opt in before audio can be uploaded. Transcript uploads need none of these steps.'}</p>}
+    </>}
     <div className="form-actions">
       <h3 ref={heading} tabIndex={-1}>Sources</h3>
       <button className="button button--secondary" type="button" onClick={() => { void refresh(); }}>Refresh sources</button>

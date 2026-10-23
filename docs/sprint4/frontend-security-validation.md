@@ -59,6 +59,11 @@ Hosted CI is a separate check, not inferred from either local runtime. This reco
 contains the pre-push evidence for the corrective commit; its new hosted result
 must be checked independently.
 
+Follow-up: corrective commit `d491796` passed all four jobs in
+[run 39959500922](https://github.com/emredemirbas/multimodal-rag/actions/runs/39959500922)
+(backend tests, backend integration, frontend and production images). This confirms
+that corrective commit only, not subsequent audio-upload work.
+
 No application code, schema, authorization policy, media scope or paid provider
 changes. WAV uploads remain disabled. No backend tests are rerun locally for this
 frontend-only dependency fix; hosted CI independently exercises them. Application

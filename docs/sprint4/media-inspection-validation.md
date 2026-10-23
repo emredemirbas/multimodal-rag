@@ -92,3 +92,9 @@ separately reported owned-audio native end-to-end check, and upload/recovery/del
 verification are still required before enabling audio uploads. The previous
 synthetic native keyword-quality failure remains a limitation. Vision/OCR and
 assignment/grading are not delivered by this slice.
+
+Follow-up (2026-10-23): the separate opt-in upload API/BFF/form and native authored-
+speech pipeline are now implemented and locally verified in
+`audio-upload-validation.md` (ADR 0020). WAV still defaults off; explicit operator
+setup/opt-in is required. This does not retroactively make this inspection-only
+commit an upload implementation or resolve its earlier vocabulary-quality limit.

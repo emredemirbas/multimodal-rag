@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import json
 import logging
 from time import perf_counter
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, File, Form, Query, Request, Response, Security, UploadFile
@@ -49,6 +49,10 @@ from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration
 from .sources.repository import SourceRepository
 from .sources.transcript import MAX_PAGES, TranscriptPage, TranscriptRepository
 from .sources.upload_limit import UploadLimitMiddleware
+from .sources.audio_upload import AUDIO_FORM_FIELDS, AudioCapability
+from .sources.media import MediaRepository
+from .asr.contracts import Language
+from .asr.wav import MAX_WAV_BYTES
 from .local_model import OllamaAnswerProvider
 from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
 from .chat.repository import ChatRepository
@@ -111,14 +115,13 @@ def create_app(
     active_settings = settings or Settings.from_env()
     configure_logging(active_settings.log_level)
     metrics = Metrics()
+    active_authenticator = authenticator or build_authenticator(active_settings)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         active_store = store or build_store(active_settings)
         application.state.store = active_store
-        application.state.authenticator = authenticator or build_authenticator(
-            active_settings
-        )
+        application.state.authenticator = active_authenticator
         application.state.service = TutorialService(
             active_store,
             build_embedding_provider(active_settings),
@@ -141,7 +144,8 @@ def create_app(
         description="Authenticated project and asynchronous transcript ingestion API",
         lifespan=lifespan,
     )
-    app.add_middleware(UploadLimitMiddleware, limit=active_settings.upload_limit_bytes + 16_384)
+    app.add_middleware(UploadLimitMiddleware, limit=active_settings.upload_limit_bytes + 16_384,
+                       audio_upload_enabled=active_settings.audio_upload_enabled, authenticator=active_authenticator)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -362,6 +366,38 @@ def create_app(
             return await run_in_threadpool(repository.register, principal.tenant_id, project_id, actor_id,
                                           filename=file.filename or "", content=content, rights=authorization_mode,
                                           idempotency_key=idempotency_key, playlist_item_id=playlist_item_id)
+        finally:
+            await file.close()
+
+    @app.get('/api/v1/ingestion/capabilities', response_model=AudioCapability)
+    def ingestion_capabilities(request: Request, response: Response, principal: CurrentPrincipal) -> AudioCapability:
+        actor(request, principal)
+        response.headers['Cache-Control'] = 'no-store'
+        return AudioCapability(enabled=active_settings.audio_upload_enabled and request.app.state.sources is not None)
+
+    @app.post('/api/v1/projects/{project_id}/sources/audio', response_model=Registration, status_code=202)
+    async def upload_audio(
+        project_id: UUID, request: Request, response: Response, principal: CurrentPrincipal,
+        file: Annotated[UploadFile, File()],
+        authorization_mode: Annotated[AuthorizationMode, Form()],
+        language: Annotated[Language, Form()],
+        idempotency_key: Annotated[str, Form(min_length=8, max_length=128, pattern=r'^[a-zA-Z0-9_-]+$')],
+        retention_acknowledged: Annotated[Literal['accepted'], Form()],
+    ) -> Registration:
+        try:
+            if not active_settings.audio_upload_enabled:
+                raise SourceError('audio_upload_disabled', 'Local audio upload is not enabled.', 503)
+            form = await request.form()
+            if set(form) != AUDIO_FORM_FIELDS or len(form.multi_items()) != len(AUDIO_FORM_FIELDS):
+                raise SourceError('validation_error', 'Send one WAV file, rights, language, request key and retention acknowledgement.')
+            if file.content_type not in {'audio/wav', 'audio/x-wav', 'audio/wave', 'application/octet-stream'}:
+                raise SourceError('invalid_audio_type', 'Upload a supported WAV file, not video or compressed media.')
+            repository = sources(request)
+            content = await file.read(MAX_WAV_BYTES + 1)
+            actor_id = await run_in_threadpool(actor, request, principal)
+            response.headers['Cache-Control'] = 'no-store'
+            return await run_in_threadpool(MediaRepository(repository).register, principal.tenant_id, project_id, actor_id,
+                filename=file.filename or '', content=content, rights=authorization_mode, language=language, idempotency_key=idempotency_key)
         finally:
             await file.close()
 

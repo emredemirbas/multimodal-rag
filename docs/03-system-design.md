@@ -52,7 +52,17 @@ origin; processing-version links identify evidence/citation origin even after
 reindexing. Mutable metadata never decides a machine-generated label. The UI
 separates expiry/retirement from confirmed physical deletion, follows cleanup after
 index completion and uses the existing authorized failed-cleanup retry boundary.
-Upload API/BFF/form and native owned-audio verification still gate public WAV input.
+The subsequent experimental upload boundary (ADR 0020) connects that workflow:
+authenticated `GET /api/v1/ingestion/capabilities` plus multipart
+`POST /api/v1/projects/{project_id}/sources/audio`, with a separate same-origin
+browser Route Handler and gated form. `AUDIO_UPLOAD_ENABLED=false` by default;
+capability means configured availability, not model health. Audio wire reads are
+bounded before multipart parsing (20 MB + 16 KiB, 30 seconds); API authentication
+and flag checks precede body consumption. The BFF validates fields and returns
+only a scoped receipt. Actual PCM/duration validation remains in the repository.
+No inline ASR, subtitle/chat limit increase or schema change. Native verification
+and its recognition-quality limitations are recorded separately in
+`sprint4/audio-upload-validation.md`.
 
 ## Architecture style
 

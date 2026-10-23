@@ -74,6 +74,21 @@ describe("source management", () => {
     expect(screen.getByRole("button", { name: "Process transcript" })).toBeDisabled();
   });
 
+  it.each([undefined, null, { enabled: false }])('fails closed when audio capability is off or unavailable (%s)', (capability) => {
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} audioCapability={capability} />);
+    expect(screen.queryByRole('form', { name: 'Upload authorized WAV' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('SRT / VTT transcript')).toBeRequired();
+  });
+  it('offers a separate opt-in audio form without widening subtitles and hides both on archived projects', () => {
+    const { rerender } = render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} audioCapability={{ enabled: true }} />);
+    expect(screen.getByRole('form', { name: 'Upload authorized WAV' })).toBeVisible();
+    fireEvent.change(screen.getByLabelText('SRT / VTT transcript'), { target: { files: [new File(['x'.repeat(2_000_001)], 'large.vtt', { type: 'text/vtt' })] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('at most 2 MB');
+    rerender(<SourcesWorkspace projectId={projectId} initialSources={[]} archived audioCapability={{ enabled: true }} />);
+    expect(screen.queryByRole('form', { name: 'Upload authorized WAV' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('SRT / VTT transcript')).not.toBeInTheDocument();
+  });
+
   it("shows progress and polls only active visible jobs, stopping when ready", async () => {
     const pending = { ...source, status: "processing", job: { ...source.job!, status: "running" as const, stage: "embedding", progress_percent: 50 } };
     render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false} />);

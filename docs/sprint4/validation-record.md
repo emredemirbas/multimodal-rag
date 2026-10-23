@@ -134,3 +134,15 @@ retention/region/spend policy, binary input limits, FFmpeg isolation, meaningful
 frame selection/OCR/alignment, visual citations and reviewed benchmarks remain
 open. No arbitrary download, learned semantic model, external docs, assignment
 or grading feature is added. See ADR 0014 and the open decision log.
+
+## Subsequent local WAV upload slice (2026-10-23)
+
+The initial playlist record above is historical, not the current complete feature
+inventory. ADRs 0018–0020 and `audio-upload-validation.md` now record restricted
+local WAV validation/inference, private resumable media jobs, versioned unreviewed
+provenance, original retirement/cleanup and the experimental authenticated upload
+API/BFF/form. WAV remains off by default with explicit weight/worker setup and
+operator opt-in. The new slice passes 268 backend and 98 frontend tests plus a
+separate native authored-speech BFF/queue/index/SSR/cleanup probe in a disposable
+stack. These are not broad speech-quality, vision/OCR, assignment/grading or full
+multimodal exit-criterion approval. Retain the previous failed vocabulary probe.

@@ -100,7 +100,8 @@ At most twenty strict windows advance an ordered cursor with accepted input
 frames/model duration and payload checksums. No token counts are fabricated.
 Only complete validated runs can return a derived VTT; this does not publish an
 artifact/index or complete a job. Source/project deletion cascades private text.
-No current application route creates ASR jobs or accepts original audio.
+This checkpoint component alone did not expose original audio. ADR 0020's later
+opt-in upload route now calls the durable registration boundary described below.
 
 Migrations 0011/0012 add scoped `audio_inputs`, cleanup ownership, ASR completion/
 downstream-job metadata and ASR origin FKs on retained artifacts and processing
@@ -112,7 +113,7 @@ completion/raw retirement. Accepted audio frames and actual model duration are
 attributed to the ASR job separately from embedding usage; unknown tokens stay null.
 An internal source begins as `audio` and becomes `transcript` with explicit
 machine-generated/input-kind/profile metadata after adoption. Reindex generations
-retain their origin ASR-run FK. No public WAV API payload is enabled yet.
+retain their origin ASR-run FK. The later ADR 0020 API is disabled by default.
 
 The read-only media-inspection slice exposes nullable typed `asr_origin` on managed
 sources, transcript pages, evidence and answer/history citations. Source origin
@@ -126,8 +127,9 @@ Managed sources also expose nullable `audio_retention` with `processing_expires_
 `cleanup_id`, `deleted_at` and status `temporary`, `expired`, `cleanup_pending`,
 `cleanup_failed` or `deleted`. Expiry/retirement does not imply physical deletion;
 only confirmed cleanup sets `deleted_at`. Existing actor-owned cleanup retry
-authorization is unchanged. No schema migration or WAV upload endpoint is added.
-See `sprint4/media-inspection-validation.md`.
+authorization is unchanged. Inspection required no schema migration; the subsequent
+experimental upload also reuses this schema (ADR 0020).
+See `sprint4/media-inspection-validation.md` and `sprint4/audio-upload-validation.md`.
 
 ### Chat
 
@@ -212,9 +214,10 @@ ADR 0018's local WAV/Whisper foundation is a stateless private model boundary,
 not a new application endpoint. Its private checkpoint follow-up adds migration
 0010 but no public payload. Its subsequent private backend workflow adds internal
 registration, original retirement and media jobs (0011/0012), not a public upload
-route. Only SRT/VTT product uploads are accepted until the bounded authenticated
-API/BFF/form and provenance/inspection slice is complete. No project-owned rows are created by a native
-operator inference probe.
+route. The subsequent bounded authenticated API/BFF/form (ADR 0020) reuses that
+repository and leaves WAV disabled by default. The original stateless operator
+probe creates no project rows; the separate end-to-end probe uses a disposable
+project/stack and deletes its own sources, data and objects.
 
 ### Projects
 
@@ -228,8 +231,11 @@ operator inference probe.
 
 ### Sources
 
+- `GET /ingestion/capabilities` (authenticated, no-store; configured WAV availability
+  and fixed limits, not model readiness)
 - `POST /projects/{project_id}/sources`
 - `POST /projects/{project_id}/sources/uploads`
+- `POST /projects/{project_id}/sources/audio` (experimental, opt-in, 202)
 - `GET /projects/{project_id}/sources`
 - `GET /projects/{project_id}/sources/{source_id}`
 - `POST /projects/{project_id}/sources/{source_id}/retry`
@@ -238,6 +244,23 @@ operator inference probe.
 - `DELETE /projects/{project_id}/sources/{source_id}`
 - `GET /projects/{project_id}/jobs/{job_id}`
 - `GET /projects/{project_id}/events` for SSE progress
+
+WAV multipart requires exactly `file`, `authorization_mode` (`owner_upload`,
+`authorized_upload`, `licensed_content`), `language` (`auto`, `en`, `tr`),
+`idempotency_key` (8–128 ASCII letters/digits/underscore/hyphen) and
+`retention_acknowledged=accepted`. Authenticate and check `AUDIO_UPLOAD_ENABLED`
+before consuming the body; count actual bytes before parsing. The file limit is
+20,000,000 bytes, wire limit 20,016,384 bytes, 600-second signed-16 PCM/16 kHz/mono.
+The existing 2 MB SRT/VTT endpoint is unchanged. Invalid formats, extra/duplicate
+fields, foreign scope and archived projects create no accepted source/job.
+
+The browser uses a separate same-origin `POST /api/projects/{project_id}/sources/audio`
+Route Handler, not a larger Server Action. It verifies the capability, input and
+upstream project/source/job identities; only `{project_id, source_id, job_id,
+deduplicated}` reaches the form. Responses are no-store. An interrupted delivery
+can already be registered: resend the unchanged file/fields/key or refresh sources.
+Changing the draft rotates the key. Local consent is an explicit form requirement,
+not a separate persisted legal-consent version or verification of ownership.
 
 Implemented transcript-first contract (ADR 0012): upload/metadata registration
 and processing commands return `202` with source/job IDs. Progress uses an

@@ -21,6 +21,7 @@ x-api-environment: &api-environment
   OLLAMA_BASE_URL: http://ollama:11434
   OLLAMA_MODEL: qwen3:4b
   LOCAL_MODEL_TIMEOUT: "24"
+  AUDIO_UPLOAD_ENABLED: ${AUDIO_UPLOAD_ENABLED:-false}
 
 x-api-image: &api-image
   build:

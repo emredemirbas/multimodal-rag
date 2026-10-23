@@ -194,6 +194,15 @@ authorized retry. It does not open WAV upload. Authenticated bounded API/BFF/for
 and a separately reported native owned-audio end-to-end probe remain the next gate;
 see `docs/sprint4/media-inspection-validation.md`.
 
+The next 2026-10-23 slice connects experimental authorized WAV upload through a
+bounded authenticated API, separate same-origin BFF and accessible opt-in form
+(ADR 0020). Rights, language and temporary-retention consent are explicit;
+uncertain delivery retains its request key. The flag remains false by default,
+with explicit local model/worker setup. This is still only the WAV sub-slice:
+video/frames/OCR/vision and the Sprint 4 multimodal exit criteria remain open.
+See `docs/sprint4/audio-upload-validation.md` for actual native pipeline evidence
+versus recognition-quality limits; software fixtures alone do not pass that gate.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

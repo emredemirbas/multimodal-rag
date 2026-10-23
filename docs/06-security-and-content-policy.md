@@ -85,6 +85,18 @@ Controls:
 - antivirus/malware scanning where appropriate;
 - never render active uploaded HTML directly.
 
+The experimental WAV boundary additionally authenticates/checks the operator flag
+before body consumption, bounds actual wire bytes and unfinished-read time before
+multipart parsing, and uses a separate same-origin BFF without exposing its token.
+It requires explicit rights/language/temporary-retention fields and rejects unknown
+or duplicate fields. The API validates RIFF/PCM structure without a native decoder;
+only bounded PCM reaches the existing credential-free isolated local ASR service.
+Capability is configuration, not model readiness. Originals expire for processing
+after one hour and are physically deleted through observable retryable cleanup;
+expiry or browser abort must not be represented as confirmed deletion/cancellation.
+No arbitrary URL fetch, cloud fallback or broader media retention is authorized
+(ADRs 0018–0020).
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.
@@ -158,4 +170,3 @@ Project deletion must cover PostgreSQL rows, embeddings, objects, caches, queued
 - no privileged workloads;
 - no Docker socket mounts;
 - automated rebuilds for patched base images.
-

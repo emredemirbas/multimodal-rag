@@ -58,7 +58,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 | Decision | Proposed default | Status |
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
-| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; private workflow delivered 2026-10-22, public uploads still disabled |
+| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -76,8 +76,11 @@ backend slice implements dedicated jobs, original retirement and VTT handoff
 safety limit; physical deletion is separately confirmed/retried by the scheduler.
 The read-only machine-generated provenance/inspection slice is now implemented
 (2026-10-23): typed per-version origin, explicit accuracy caveats and original-audio
-cleanup status. Application audio upload remains disabled until bounded
-authenticated API/BFF/form and owned-audio end-to-end checks are complete.
+cleanup status. The subsequent bounded authenticated API/BFF/form is implemented
+behind `AUDIO_UPLOAD_ENABLED=false` (ADR 0020); explicit pinned-weight/local-asr
+setup and operator opt-in are required. Capability is not model health. Native
+pipeline/keyword evidence and enablement status are separately recorded in
+`sprint4/audio-upload-validation.md`, retaining the earlier vocabulary failure.
 Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
 frame retention and broader binary-media limits remain unapproved.
 
@@ -90,7 +93,8 @@ record actual local-model tests; this decision is not a managed-service quality
 certification. Optional local semantic embeddings now use Qwen3 Embedding 0.6B
 in a separately versioned 1024-D space (ADR 0016). Local ASR foundation now has the
 restricted WAV scope and isolated model process in ADR 0018. ADR 0019 adds private
-durable jobs and original cleanup, not an enabled public upload capability. Vision remains
+durable jobs and original cleanup; ADR 0020 adds the separately gated WAV upload
+boundary, not default enablement or general speech-quality approval. Vision remains
 unimplemented. No paid endpoint or cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic

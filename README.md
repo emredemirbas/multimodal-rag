@@ -25,15 +25,16 @@ timestamp citations. Optional Ollama/Qwen3 4B now provides real local answers;
 the default remains a keyless extractive demo. Optional Qwen3 Embedding 0.6B adds
 real local multilingual semantic retrieval; default retrieval stays 64-D hash/
 lexical. Old indexes are never mixed with the 1024-D model space. Binary media/ASR
-stays disabled.
+is off by default; the restricted local WAV path below is an experimental opt-in.
 The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
 Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
 
-An optional isolated Whisper-base foundation now validates restricted WAV inputs
-and transcribes short PCM windows locally. **Audio upload in the application is
-still disabled** until its dedicated queue and original-audio cleanup workflow are
-implemented. This is not full ASR ingestion or multimodal completion (ADR 0018).
+Optional isolated Whisper-base now connects authorized restricted WAV upload to
+a dedicated media queue, resumable transcription, retained VTT/indexing, versioned
+unreviewed provenance and tracked original-audio cleanup. **`AUDIO_UPLOAD_ENABLED`
+defaults to false**; explicit model/worker setup and operator opt-in are required.
+This is not video/OCR/vision or full multimodal completion (ADRs 0018–0020).
 
 Published transcripts can also be browsed directly in chronological, version-
 pinned pages, without asking a question or invoking a model. Private unfinished
@@ -140,13 +141,12 @@ an older-generation notice offers **Open latest published transcript** explicitl
 Reading still works when a source uses a different search index or the project is
 archived. Subtitle uploads have no playable video; no playback URL is invented.
 
-## Optional local ASR foundation (operator verification only)
+## Optional experimental local WAV transcription
 
-This is a private model boundary, not a product upload feature. It supports WAV
-signed 16-bit PCM / 16 kHz / mono, at most 20 MB and 10 minutes in the validator;
-each model request is at most 30 seconds. The private job backend now enforces
-rights, scope, resumability and terminal original cleanup. Public audio upload
-remains gated by the additional verification and UI boundary described below.
+Disabled by default. Only authorized WAV signed 16-bit PCM / 16 kHz / mono,
+at most 20,000,000 bytes and 10 minutes. No MP3/MP4, video/frame processing,
+arbitrary downloads or paid/cloud fallback. Native inference runs in <=30-second
+windows in a private credential-free service, not in the API or ordinary worker.
 
 Explicit setup downloads about 148 MB of public multilingual Whisper-base files
 from a pinned revision, verifies every SHA-256 and retains only reusable weights:
@@ -174,31 +174,52 @@ seccomp support; missing isolation/weights fail closed. It is not a learner-code
 sandbox. Ordinary startup and CI do not fetch Whisper weights. Existing `.env`
 settings are unchanged. See [scope and follow-up](docs/sprint4/local-asr-plan.md).
 
-The first private durable component adds migration 0010 for scoped, resumable ASR windows
-and deterministic complete-run VTT assembly. It does not retain original audio,
-call the model, publish partial evidence or enable a WAV API/form. The private
-backend follow-up below supplies worker execution, original cleanup and adoption.
-See [checkpoint scope](docs/sprint4/asr-checkpoints-plan.md).
+After explicit weight setup, opt in and start the complete workflow:
 
-The private backend follow-up adds a dedicated optional `media-worker`, one-window
-queue continuations, temporary-original retirement/cleanup and atomic VTT handoff
-to ordinary indexing (migrations 0011/0012). Original processing eligibility lasts
-at most one hour; physical deletion is separately confirmed/retried by the scheduler.
-Reindexing retains the VTT and ASR provenance, not the original audio. The existing
-application still rejects WAV: bounded authenticated upload and the separately
-reported native owned-audio end-to-end check remain required, not enabled by
-running the private worker.
-See [media workflow](docs/sprint4/media-worker-plan.md).
+```bash
+AUDIO_UPLOAD_ENABLED=true docker compose --profile local-asr up --build -d --wait --wait-timeout 120 api frontend media-worker ingestion-worker scheduler
+```
 
-The read-only inspection follow-up labels automatically generated text as **not
-human-reviewed** in source/transcript/evidence/chat views, retaining the exact ASR
-origin across reindexing and older citations. Speech, code identifiers and
-timestamps may be wrong; upload a corrected authorized SRT/VTT as a new source
-when needed. Source management distinguishes original expiry, pending/failed
-cleanup and confirmed deletion, with existing authorized cleanup retry. Reindexing
-uses the retained transcript; it does not transcribe retired audio again or restore
-playback. This UI is preparation for future WAV uploads, not a new ingestion path.
-See [inspection validation](docs/sprint4/media-inspection-validation.md).
+Keep your existing `local-ai` profile active too if using Ollama. To persist the
+choice, set `AUDIO_UPLOAD_ENABLED=true` in the existing ignored `.env` and include
+`local-asr` in its existing profiles; do not replace `.env` or change credentials.
+Capability reports configuration, **not model readiness or accuracy**. Missing
+weights/service fail honestly through the job's bounded retry/failure lifecycle;
+there is no model download on upload and no cloud fallback. Default SRT/VTT works
+without this setup. To hide/reject new WAV uploads again without deleting data:
+
+```bash
+AUDIO_UPLOAD_ENABLED=false docker compose up -d api
+```
+
+Reload an active project and use **Experimental local WAV transcription**. Select
+the recording, ownership/permission statement, language and temporary-retention
+acknowledgement. SRT/VTT keeps its separate 2 MB form; its limit has not increased.
+Follow transcription, indexing and cleanup independently in the source list.
+Stopping upload delivery or losing the connection does not guarantee job
+cancellation. Refresh sources or resend the unchanged draft with the same request
+key; acceptance clears the form. Once queued, use **Cancel processing** to cancel
+work. New/changed draft fields create a new request key.
+
+Original processing eligibility lasts one hour including queue waiting. Success,
+cancellation, permanent failure or expiry retires audio for deletion. Scheduler/
+storage outages can delay physical deletion: only **Original audio deletion
+confirmed** establishes completion. Failed cleanup has its own retry. Derived VTT
+stays until source/project deletion. Reindexing uses that retained text, preserves
+the original ASR origin and does not restore/retranscribe retired audio. A new
+transcription requires a new authorized upload; no original player/download is
+provided. Migrations 0010–0012 supply the existing checkpoint/media schema; the
+upload boundary itself adds no migration or applied-file rewrite.
+
+Automatic source/transcript/evidence/chat text is **not human-reviewed**. Speech,
+code identifiers and timestamps may be wrong. Upload corrected authorized SRT/VTT
+as a new source when necessary; this does not silently rewrite old citations.
+The native authored-speech pipeline and fixed synthetic keyword diagnostic passed
+in a disposable stack, but this is not representative human/technical/multilingual
+or timestamp-quality approval. The earlier `endpoint` keyword failure remains a
+limitation. See [upload validation](docs/sprint4/audio-upload-validation.md),
+[media workflow](docs/sprint4/media-worker-plan.md) and
+[inspection validation](docs/sprint4/media-inspection-validation.md).
 
 ## Optional real local AI (no API key or service bill)
 
@@ -220,7 +241,8 @@ In the default retrieval mode, search is hash/lexical, not learned semantic. Que
 matching identifiers/terms: weak matches abstain before invoking the model and
 are labelled `local-evidence-policy`, not falsely attributed to Qwen. Generated
 answers use only retrieved citation IDs, but reasoning can still be wrong;
-inspect the evidence. Saved history is not implicit context. ASR/OCR is disabled.
+inspect the evidence. Saved history is not implicit context. ASR is a separate
+explicit WAV opt-in; OCR/vision is unimplemented.
 
 Return to the lightweight demo without editing credentials:
 
@@ -421,7 +443,9 @@ Project lifecycle:
 
 Source ingestion and recovery:
 
+- `GET /api/v1/ingestion/capabilities` (authenticated fixed limits/opt-in flag; not model health)
 - `POST /api/v1/projects/{project_id}/sources/uploads` (multipart file, rights, idempotency key)
+- `POST /api/v1/projects/{project_id}/sources/audio` (experimental opt-in; multipart WAV, rights, language, key and retention acknowledgement)
 - `POST /api/v1/projects/{project_id}/sources` (allowlisted YouTube metadata only)
 - `GET /api/v1/projects/{project_id}/sources`
 - `GET /api/v1/projects/{project_id}/sources/{source_id}`

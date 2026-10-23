@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { ApiError, publicErrorMessage } from "@/lib/api/errors";
 import { UUID_PATTERN } from "@/lib/api/source-contracts";
+import { requireSameOrigin } from "@/lib/api/request-origin";
 
 export function validateChatIds(...values: string[]): void {
   if (values.some((value) => !UUID_PATTERN.test(value))) throw new ApiError({ status: 404 });
@@ -17,14 +18,7 @@ export function chatProxyError(error: unknown): NextResponse {
 }
 export async function chatRequestBody(request: Request): Promise<string> {
   // Server credentials must not turn a cross-origin request into an authorized write.
-  const host = request.headers.get("host") ?? new URL(request.url).host;
-  // Next's standalone server canonicalizes request.url to its container hostname.
-  // The browser-facing Host is authoritative for same-origin, not that internal URL.
-  if (/[\s/@\\]/.test(host)) throw new ApiError({ status: 403 });
-  let expectedOrigin: string;
-  try { expectedOrigin = new URL(`${new URL(request.url).protocol}//${host}`).origin; }
-  catch { throw new ApiError({ status: 403 }); }
-  if (request.headers.get("origin") !== expectedOrigin) throw new ApiError({ status: 403 });
+  requireSameOrigin(request);
   if (!request.headers.get("content-type")?.startsWith("application/json")) throw new ApiError({ status: 415 });
   const reader = request.body?.getReader();
   if (!reader) throw new ApiError({ status: 422 });

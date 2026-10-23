@@ -130,6 +130,24 @@ containers with allowlisted test credentials/DSNs and no application volume moun
 schema/queue/object prefixes remain defense in depth. No native-quality claim is
 implied by fixture inference or these read-only views.
 
+The separate opt-in upload boundary tests authentication/disabled rejection before
+body reads, actual chunked-byte bounds despite false Content-Length, slow reads,
+strict rights/language/retention/field counts, actual WAV encoding/duration/size,
+archived/foreign scope, idempotency and durable queue handoff. Browser tests cover
+Origin/Host before forwarding, fail-closed capability, scoped minimal receipts,
+unchanged subtitle/chat limits and safe public errors. Form tests distinguish
+delivery abort from job cancellation, retain the draft/key on uncertainty, verify
+acceptance before reset, and hide uploads on archived/unavailable projects.
+
+Native verification runs in a new disposable Compose project with test credentials,
+fresh data volumes/networks/queues, loopback random ports and only the preinstalled
+public weights shared read-only. Verify >2 MB BFF upload, actual private ASR and
+Celery handoff, production SSR/versioned provenance, raw physical deletion,
+retained-VTT reindex/replay, then complete owned source/project/object cleanup.
+Define synthetic keyword expectations before inference and report mismatches
+separately. No human/technical/multilingual/timestamp quality approval is implied.
+Do not use application volumes or actual `.env` for these broad/native probes.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

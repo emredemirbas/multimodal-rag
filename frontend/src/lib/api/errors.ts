@@ -52,7 +52,7 @@ export function publicErrorMessage(error: unknown): string {
 
   const sourceErrors: Record<string, string> = {
     upload_too_large: "Choose a non-empty transcript file of at most 2 MB.",
-    unsupported_file: "Only text .srt and .vtt files are supported. Audio/video processing is not yet available.",
+    unsupported_file: "This transcript form accepts only text .srt and .vtt files. WAV requires the separate operator-enabled experimental form; video is not supported.",
     invalid_encoding: "Save the transcript as UTF-8, then upload it again.",
     rights_required: "Select the ownership, authorization or license statement that applies to this source.",
     provider_not_configured: "YouTube metadata requires a server-side Data API key. You can upload transcripts without a key.",
@@ -63,6 +63,16 @@ export function publicErrorMessage(error: unknown): string {
     source_limit: "This project has reached its current limit of 200 sources.",
     retry_limit: "Retry limit reached. Correct the problem and upload a new source.",
     playlist_item_busy: "Wait for or cancel this video's current transcript processing before uploading its replacement.",
+    audio_upload_disabled: "Local WAV upload is disabled. Explicit local ASR setup and operator opt-in are required; use an authorized SRT/VTT transcript meanwhile.",
+    invalid_audio_type: "Choose a WAV file. Video, compressed audio and URL downloads are not supported.",
+    audio_too_large: "Choose a non-empty WAV file of at most 20 MB.",
+    audio_duration_limit: "The WAV must be at most 10 minutes long.",
+    unsupported_wav_encoding: "Export the WAV as 16-bit PCM, 16 kHz, mono, then select it again.",
+    invalid_wav: "The WAV structure is invalid or incomplete. Export it again.",
+    invalid_asr_language: "Choose automatic, English or Turkish speech recognition.",
+    invalid_audio_form: "Select one WAV file, ownership, speech language and temporary-retention acknowledgement.",
+    audio_upload_timeout: "Upload delivery timed out. It may already be queued; refresh sources or resend the unchanged file with the same request key.",
+    audio_reupload_required: "The original audio is retired. Transcribing again requires a new authorized upload.",
   };
   if (sourceErrors[error.code]) return sourceErrors[error.code];
 

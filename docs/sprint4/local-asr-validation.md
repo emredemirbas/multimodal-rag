@@ -97,3 +97,10 @@ Only then enable product WAV uploads. The original-retention policy is accepted
 but no product workflow is implied by this stateless service. See ADR 0018 and
 `local-asr-plan.md`. Learner-code execution still requires its separate hardened
 runner; this media boundary is not a code sandbox certification.
+
+Follow-up (2026-10-23): durable media jobs, original retirement/cleanup, typed
+unreviewed provenance and the experimental authenticated upload API/BFF/form are
+now implemented. The separate authored-speech native pipeline is recorded in
+`audio-upload-validation.md`. Default opt-in remains false (ADR 0020). Its passing
+fixed keyword check does not resolve this record's failed `endpoint` diagnostic
+or establish representative speech/timestamp quality.
