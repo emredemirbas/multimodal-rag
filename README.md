@@ -118,13 +118,16 @@ leave it empty to use uploads without external credentials or provider calls.
 After a playlist metadata import, its ordered video list shows missing transcripts
 and per-video progress. In **Transcript belongs to**, select the video described
 by your authorized subtitle; this records your assertion rather than verifying
-alignment against a video. At most two linked transcript jobs run per playlist
-by default (`PLAYLIST_CONCURRENCY=1..4`). Waiting for capacity does not consume a
-processing attempt. A failed video does not discard the other indexed videos.
+alignment against a video. Optional WAV has its own **Audio belongs to** selector.
+At most two combined live ASR/indexing leases run per playlist by default
+(`PLAYLIST_CONCURRENCY=1..4`, shared by API, ingestion and media workers). Waiting
+for capacity does not consume a processing attempt, but still counts toward the
+original audio's one-hour eligibility. A failed video does not discard the other indexed videos.
 Retry it separately or upload corrected subtitles after its job becomes terminal.
 Older metadata imports need **Reprocess source** to populate ordered entries.
 Truncated snapshots are explicitly labelled. Deleting playlist metadata keeps
-separately uploaded transcripts; deleting the project removes both.
+separately uploaded transcripts and authorized audio; pending audio continues under
+its own retention policy. Deleting the project removes all of them.
 
 Use **Chat with tutorial evidence** to ask a self-contained question, optionally
 filter to one indexed source, and inspect each citation. History survives reloads.
@@ -200,6 +203,16 @@ Stopping upload delivery or losing the connection does not guarantee job
 cancellation. Refresh sources or resend the unchanged draft with the same request
 key; acceptance clears the form. Once queued, use **Cancel processing** to cancel
 work. New/changed draft fields create a new request key.
+
+Optionally select a current lesson in **Audio belongs to**. This is your alignment
+assertion, not verified audiovisual matching. A lesson with active ASR or indexing
+cannot receive a different replacement; an unchanged same-key retry can recover
+an accepted upload. Polling/metadata refresh preserves that recovery draft even if
+the selected snapshot disappears. For a genuinely new upload, select a current
+lesson or standalone source. Terminal replacement keeps the previous independent
+source and saved citations. Reindexing or changing a metadata snapshot never
+silently reassigns the original ASR provenance. See
+[WAV/playlist validation](docs/sprint4/audio-playlist-validation.md).
 
 Original processing eligibility lasts one hour including queue waiting. Success,
 cancellation, permanent failure or expiry retires audio for deletion. Scheduler/

@@ -49,7 +49,7 @@ from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration
 from .sources.repository import SourceRepository
 from .sources.transcript import MAX_PAGES, TranscriptPage, TranscriptRepository
 from .sources.upload_limit import UploadLimitMiddleware
-from .sources.audio_upload import AUDIO_FORM_FIELDS, AudioCapability
+from .sources.audio_upload import AUDIO_FORM_FIELDS, AUDIO_OPTIONAL_FIELDS, AudioCapability
 from .sources.media import MediaRepository
 from .asr.contracts import Language
 from .asr.wav import MAX_WAV_BYTES
@@ -383,12 +383,14 @@ def create_app(
         language: Annotated[Language, Form()],
         idempotency_key: Annotated[str, Form(min_length=8, max_length=128, pattern=r'^[a-zA-Z0-9_-]+$')],
         retention_acknowledged: Annotated[Literal['accepted'], Form()],
+        playlist_item_id: Annotated[UUID | None, Form()] = None,
     ) -> Registration:
         try:
             if not active_settings.audio_upload_enabled:
                 raise SourceError('audio_upload_disabled', 'Local audio upload is not enabled.', 503)
             form = await request.form()
-            if set(form) != AUDIO_FORM_FIELDS or len(form.multi_items()) != len(AUDIO_FORM_FIELDS):
+            if (not AUDIO_FORM_FIELDS <= set(form) or set(form) - AUDIO_FORM_FIELDS - AUDIO_OPTIONAL_FIELDS
+                    or len(form.multi_items()) != len(set(form))):
                 raise SourceError('validation_error', 'Send one WAV file, rights, language, request key and retention acknowledgement.')
             if file.content_type not in {'audio/wav', 'audio/x-wav', 'audio/wave', 'application/octet-stream'}:
                 raise SourceError('invalid_audio_type', 'Upload a supported WAV file, not video or compressed media.')
@@ -397,7 +399,8 @@ def create_app(
             actor_id = await run_in_threadpool(actor, request, principal)
             response.headers['Cache-Control'] = 'no-store'
             return await run_in_threadpool(MediaRepository(repository).register, principal.tenant_id, project_id, actor_id,
-                filename=file.filename or '', content=content, rights=authorization_mode, language=language, idempotency_key=idempotency_key)
+                filename=file.filename or '', content=content, rights=authorization_mode, language=language, idempotency_key=idempotency_key,
+                playlist_item_id=playlist_item_id)
         finally:
             await file.close()
 

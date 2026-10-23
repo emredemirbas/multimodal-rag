@@ -160,4 +160,12 @@ describe("source management", () => {
     expect(screen.queryByRole('button', {name:'Retry processing'})).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name:'Cancel processing'})).toBeVisible();
   });
+  it('explains shared slot waiting without implying extra audio lifetime or indexed evidence', () => {
+    const pending = { ...source, kind: 'audio', active_generation: null, audio_retention: audioRetention(),
+      job: { ...source.job!, status: 'pending' as const, stage: 'waiting_capacity', attempt_count: 0 } };
+    render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false} audioCapability={{ enabled: true }} />);
+    expect(screen.getByText(/Playlist processing slots are busy/)).toHaveTextContent('one-hour original-audio eligibility still includes this waiting time');
+    expect(screen.getByText(/Playlist processing slots are busy/)).toHaveTextContent('does not consume a retry');
+    expect(screen.queryByRole('link', { name: 'Read transcript' })).not.toBeInTheDocument();
+  });
 });

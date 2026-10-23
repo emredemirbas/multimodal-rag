@@ -148,6 +148,18 @@ Define synthetic keyword expectations before inference and report mismatches
 separately. No human/technical/multilingual/timestamp quality approval is implied.
 Do not use application volumes or actual `.env` for these broad/native probes.
 
+WAV-to-playlist tests additionally cover concurrent binding/replay, byte-compatible
+standalone hashes, busy ASR/index replacement, scoped/stale item rejection,
+post-PUT revocation/orphan cleanup, snapshot/video identity changes, metadata
+unlinking and complete source/project cleanup. Concurrent mixed-queue claims share
+one cap; committed ASR continuations and downstream indexing must obey it without
+extra failure attempts. Verify configured limits reach media workers as well as
+ordinary workers. UI/BFF checks preserve the selected lesson/key across busy and
+stale polling, reject mismatched association receipts and retain standalone use.
+Native production-BFF smoke uses fixture metadata (not a live YouTube import),
+authored synthetic speech and a shared cap of one; count native inference events
+to distinguish same-key replay/reindex from retranscription.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

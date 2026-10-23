@@ -120,6 +120,14 @@ has its own rights assertion and user-selected video association. The local
 two-job playlist safety cap does not settle beta quotas. No binary retention,
 managed ASR/vision vendor, download permission or full Alpha 2 approval is implied.
 
+The 2026-10-23 WAV follow-up connects the already approved local audio path to those
+same user-selected lesson relationships, not a new media format. The existing
+1–4 `PLAYLIST_CONCURRENCY` safety cap now bounds combined ASR/index live leases,
+with no retry consumed for waiting and no extension of the one-hour raw eligibility.
+Alignment remains user-asserted. Metadata deletion unlinks independent audio rather
+than cancelling it; complete source/project deletion remains authoritative. See
+`sprint4/audio-playlist-validation.md`. Video/frame/OCR decisions remain open.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

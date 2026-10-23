@@ -111,4 +111,34 @@ describe('bounded same-origin audio BFF', () => {
     vi.mocked(requestJson).mockRejectedValueOnce(new ApiError({ status: 422, code: 'validation_error' }));
     expect(await (await post(request())).text()).toContain('temporary-retention acknowledgement');
   });
+  it('forwards only a canonical optional lesson UUID and verifies the returned association', async () => {
+    const item = 'a2345678-1234-1234-1234-123456789abc';
+    const linked = { ...source, parent_playlist_source_id: jobId,
+      metadata: { playlist_item_id: item, video_id: 'video000000', playlist_generation: 1, alignment: 'user_asserted' } };
+    vi.mocked(requestJson).mockResolvedValueOnce({ ...registered, source: linked });
+    const data = form(); data.set('playlist_item_id', item.toUpperCase());
+    expect((await post(request(data))).status).toBe(202);
+    expect((vi.mocked(requestJson).mock.calls[0][1]!.body as FormData).get('playlist_item_id')).toBe(item);
+    for (const patch of [{ metadata: { ...linked.metadata, playlist_item_id: jobId } }, { metadata: { ...linked.metadata, alignment: 'verified' } },
+      { metadata: { ...linked.metadata, video_id: 'invalid' } }, { parent_playlist_source_id: null }]) {
+      expect(() => audioRegistrationReceipt({ ...registered, source: { ...linked, ...patch } }, projectId, item)).toThrow();
+    }
+    expect(() => audioRegistrationReceipt({ ...registered, source: linked }, projectId)).toThrow();
+    // Deleting playlist metadata must not make an accepted independent source unrecoverable.
+    expect(audioRegistrationReceipt({ ...registered, deduplicated: true, source: { ...linked, parent_playlist_source_id: null } }, projectId, item).deduplicated).toBe(true);
+  });
+  it('rejects malformed/duplicate lesson fields and normalizes blank standalone input', async () => {
+    for (const value of ['../foreign', 'not-a-uuid', new File(['x'], 'fake.txt')]) {
+      const data = form(); data.set('playlist_item_id', value);
+      expect((await post(request(data))).status).toBe(422);
+    }
+    const duplicate = form(); duplicate.append('playlist_item_id', projectId); duplicate.append('playlist_item_id', sourceId);
+    expect((await post(request(duplicate))).status).toBe(422);
+    expect(requestJson).not.toHaveBeenCalled();
+    const blank = form(); blank.set('playlist_item_id', '');
+    expect((await post(request(blank))).status).toBe(202);
+    expect((vi.mocked(requestJson).mock.calls[0][1]!.body as FormData).has('playlist_item_id')).toBe(false);
+    vi.mocked(requestJson).mockRejectedValueOnce(new ApiError({ status: 404 }));
+    expect(await (await post(request())).text()).toContain('select a current lesson');
+  });
 });

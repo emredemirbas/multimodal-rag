@@ -101,6 +101,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Compose configuration
         run: docker compose config --quiet
+      - name: Verify shared nondefault playlist lease configuration
+        run: >-
+          PLAYLIST_CONCURRENCY=1 docker compose --profile local-asr config --format json |
+          python3 -c 'import json,sys; services=json.load(sys.stdin)["services"];
+          assert all(str(services[name]["environment"]["PLAYLIST_CONCURRENCY"]) == "1"
+          for name in ("api", "scheduler", "ingestion-worker", "media-worker"));
+          print("PASS: all playlist workers share the nondefault lease limit")'
       - name: Build deployable development images
         run: docker compose build api frontend ingestion-worker scheduler minio minio-permissions
       - name: Build optional ASR and media worker images without Whisper weights

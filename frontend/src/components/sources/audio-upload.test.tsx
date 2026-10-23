@@ -2,11 +2,17 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioUpload } from './audio-upload';
 import { AUDIO_MAX_BYTES } from '@/lib/api/audio-contracts';
+import type { PlaylistItem, SourceItem } from '@/lib/api/source-contracts';
 
 const project = '12345678-1234-1234-1234-123456789abc';
 const receipt = { project_id: project, source_id: '12345678-1234-1234-1234-123456789abd',
   job_id: '12345678-1234-1234-1234-123456789abe', deduplicated: false };
 const file = new File(['RIFF-test'], 'owned.wav', { type: 'audio/wav' });
+const lesson: PlaylistItem = { id: 'a2345678-1234-1234-1234-123456789abc', playlist_source_id: receipt.job_id,
+  generation: 1, position: 2, video_id: 'video000000', title: '<img src=x> Lesson', transcript_source_id: null };
+const source: SourceItem = { id: receipt.source_id, filename: 'owned.wav', status: 'created', generation: 1, active_generation: null,
+  provider: 'upload', segment_count: 0, failure_code: null, job: { id: receipt.job_id, status: 'pending', stage: 'queued',
+    progress_percent: 0, attempt_count: 0, max_attempts: 3, failure_code: null } };
 
 function completeForm() {
   fireEvent.change(screen.getByLabelText('WAV recording'), { target: { files: [file] } });
@@ -51,6 +57,7 @@ describe('experimental authorized WAV form', () => {
     expect(body.get('authorization_mode')).toBe('owner_upload');
     expect(body.get('language')).toBe('en');
     expect(body.get('retention_acknowledged')).toBe('accepted');
+    expect(body.has('playlist_item_id')).toBe(false);
     expect(screen.getByRole('status')).toHaveTextContent('Audio accepted');
     expect(key()).toBe('');
     expect(screen.getByRole('checkbox')).not.toBeChecked();
@@ -104,5 +111,48 @@ describe('experimental authorized WAV form', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Audio accepted, but'));
     expect(screen.getByRole('status')).toHaveTextContent('Audio accepted');
     expect(key()).toBe('');
+  });
+  it('rotates the draft key only on explicit association changes, and resets after accepted upload', async () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    render(<AudioUpload projectId={project} onCompleted={refresh} playlistItems={[lesson]} />);
+    completeForm(); const before = key();
+    fireEvent.change(screen.getByLabelText('Audio belongs to'), { target: { value: lesson.id } });
+    expect(key()).not.toBe(before);
+    expect(screen.getByText(/alignment is not verified/)).toBeVisible();
+    expect(document.querySelector('img')).toBeNull();
+    submit();
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect((vi.mocked(fetch).mock.calls[0][1]!.body as FormData).get('playlist_item_id')).toBe(lesson.id);
+    expect(screen.getByLabelText('Audio belongs to')).toHaveValue('');
+  });
+  it('retains a selected lesson and key across uncertain delivery, busy polling and snapshot removal', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('transport'));
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(<AudioUpload projectId={project} onCompleted={refresh} playlistItems={[lesson]} />);
+    completeForm(); fireEvent.change(screen.getByLabelText('Audio belongs to'), { target: { value: lesson.id } });
+    const selectedKey = key(); submit();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('may already be queued'));
+    rerender(<AudioUpload projectId={project} onCompleted={refresh} playlistItems={[{ ...lesson, transcript_source_id: source.id }]} sources={[source]} />);
+    expect(screen.getByLabelText('Audio belongs to')).toHaveValue(lesson.id);
+    expect(screen.getByRole('option', { name: /Lesson/ })).not.toBeDisabled();
+    expect(key()).toBe(selectedKey);
+    rerender(<AudioUpload projectId={project} onCompleted={refresh} playlistItems={[]} sources={[source]} />);
+    expect(screen.getByLabelText('Audio belongs to')).toHaveValue(lesson.id);
+    expect(screen.getByText(/The snapshot changed/)).toBeVisible();
+    expect(key()).toBe(selectedKey);
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ ...receipt, deduplicated: true }) } as Response);
+    submit();
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    const retried = vi.mocked(fetch).mock.calls[1][1]!.body as FormData;
+    expect(retried.get('playlist_item_id')).toBe(lesson.id);
+    expect(retried.get('idempotency_key')).toBe(selectedKey);
+  });
+  it('disables busy lesson choices for new drafts but not standalone or terminal replacements', () => {
+    const linked = { ...lesson, transcript_source_id: source.id };
+    const { rerender } = render(<AudioUpload projectId={project} onCompleted={vi.fn()} playlistItems={[linked]} sources={[source]} />);
+    expect(screen.getByRole('option', { name: /Lesson/ })).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Standalone source (not a playlist video)' })).not.toBeDisabled();
+    rerender(<AudioUpload projectId={project} onCompleted={vi.fn()} playlistItems={[linked]} sources={[{ ...source, job: { ...source.job!, status: 'failed' } }]} />);
+    expect(screen.getByRole('option', { name: /Lesson/ })).not.toBeDisabled();
   });
 });

@@ -16,6 +16,7 @@ from ..asr.wav import MAX_WAV_BYTES, validate_wav
 from ..models import AuthorizationMode
 from ..store import ProjectNotFoundError
 from .contracts import Job, Registration, SourceCommand, SourceError
+from .playlists import bind_upload, current_item
 from .repository import SourceRepository
 
 
@@ -47,7 +48,8 @@ class MediaRepository:
         ).fetchone()
 
     def register(self, tenant: str, project: UUID, actor: UUID, *, filename: str, content: bytes,
-                 rights: AuthorizationMode, language: Language, idempotency_key: str) -> Registration:
+                 rights: AuthorizationMode, language: Language, idempotency_key: str,
+                 playlist_item_id: UUID | None = None) -> Registration:
         info = validate_wav(filename, content)
         if not isinstance(rights, AuthorizationMode):
             raise SourceError('rights_required', 'Confirm that you own or are authorized to process the audio.')
@@ -58,7 +60,10 @@ class MediaRepository:
         except ValidationError:
             raise SourceError('invalid_idempotency_key', 'Use a valid upload request key.') from None
         digest = hashlib.sha256(content).hexdigest()
-        request_hash = hashlib.sha256(json.dumps(['audio-asr-v1', info.filename, digest, rights.value, language]).encode()).hexdigest()
+        hash_input = ['audio-asr-v1', info.filename, digest, rights.value, language]
+        if playlist_item_id is not None:
+            hash_input.append(str(playlist_item_id))
+        request_hash = hashlib.sha256(json.dumps(hash_input).encode()).hexdigest()
         source, reservation = uuid4(), uuid4()
         prefix = object_prefix(tenant, project, source)
         key = audio_prefix(tenant, project, source, 1) + 'input.wav'
@@ -85,6 +90,7 @@ class MediaRepository:
                     connection.execute('DELETE FROM artifact_cleanup WHERE id=%s AND tenant_id=%s AND project_id=%s', (reservation, tenant, project))
                     adopted = True
                     return Registration(source=repo._source(connection, tenant, project, existing['id']), job=Job.model_validate(original), deduplicated=True)
+                item = current_item(connection, tenant, project, playlist_item_id) if playlist_item_id else None
                 if connection.execute('SELECT count(*) AS n FROM sources WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()['n'] >= 200:
                     raise SourceError('source_limit', 'A project currently supports at most 200 sources.', 429)
                 if not self._reservation(connection, reservation, tenant, project):
@@ -100,6 +106,8 @@ class MediaRepository:
                      'user_asserted' if rights == AuthorizationMode.LICENSED_CONTENT else 'not_applicable',
                      Jsonb({'input_kind': 'audio', 'machine_generated': True, 'requested_language': language})),
                 )
+                if item:
+                    bind_upload(connection, tenant, project, source, item)
                 job = repo._new_job(connection, tenant, project, source, actor, 1, 'asr')
                 connection.execute(
                     '''INSERT INTO audio_inputs (tenant_id,project_id,job_id,source_id,generation,actor_user_id,

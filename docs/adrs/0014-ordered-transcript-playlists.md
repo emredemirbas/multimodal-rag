@@ -55,5 +55,24 @@ require their own decisions and implementation. Live YouTube metadata requires a
 owner-configured server-side API key and has not been inferred from synthetic tests.
 Provider-backed Alpha 1 and independently reviewed quality gates remain open.
 
+## Authorized WAV follow-up (2026-10-23)
+
+The ADR 0020 opt-in WAV route now accepts the same optional current
+`playlist_item_id`. It binds the pending audio source before ASR, then keeps that
+identity through retained-VTT adoption and indexing. The existing relationship
+column `transcript_source_id` also represents this pending authorized audio; only
+indexed complete transcripts count as evidence. Preserve audio metadata when
+adding the user-asserted association; do not replace it with playlist metadata.
+Standalone request hashes remain byte-compatible; only selected items extend them.
+
+The project-locked `PLAYLIST_CONCURRENCY` cap now counts **combined live ASR and
+transcript-indexing leases**, not independent per-queue budgets. All relevant
+Compose processes receive the same value. Waiting/continuations do not consume
+failure retries, and raw eligibility still expires one hour after registration.
+Existing scoped snapshot carry-forward, busy replacement, metadata unlinking and
+independent-source deletion behavior applies to WAV too. No new schema or broader
+media permission. Native/fixture verification and limitations are recorded in
+`../sprint4/audio-playlist-validation.md`.
+
 References: [official playlist item resource](https://developers.google.com/youtube/v3/docs/playlistItems),
 [PostgreSQL 16 scoped foreign-key deletion actions](https://www.postgresql.org/docs/16/ddl-constraints.html).

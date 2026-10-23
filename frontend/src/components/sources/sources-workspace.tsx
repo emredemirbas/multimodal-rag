@@ -99,7 +99,7 @@ function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnable
     </form>
     <details>
       <summary>Import YouTube video / playlist metadata</summary>
-      <p>No video, audio or captions are downloaded. Upload an authorized transcript separately to create indexed evidence. This optional import requires a server-side YouTube Data API key.</p>
+      <p>No video, audio or captions are downloaded. Upload an authorized transcript{audioEnabled ? ' or supported WAV' : ''} separately to create indexed evidence. This optional import requires a server-side YouTube Data API key.</p>
       <form action={metadataAction} className="stack" aria-label="Import YouTube metadata">
         <input type="hidden" name="projectId" value={projectId} />
         <input type="hidden" name="idempotency_key" value={metadataKey} />
@@ -148,7 +148,7 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
       <div className="confirmation-dialog__content">
         <h3 id={`${id}-title`}>Delete “{source.filename}”?</h3>
         <p>Indexed evidence is removed immediately. Retained files are deleted by a tracked cleanup job. This cannot be undone.</p>
-        {source.kind === "youtube_playlist" ? <p>Deleting playlist metadata removes its ordered video list, but keeps separately uploaded transcripts and their evidence.</p> : null}
+        {source.kind === "youtube_playlist" ? <p>Deleting playlist metadata removes its ordered video list, but keeps separately uploaded transcripts, authorized audio and their evidence. Pending audio continues under its own temporary-retention policy.</p> : null}
         <form action={action} className="stack">
           <input type="hidden" name="projectId" value={projectId} />
           <input type="hidden" name="sourceId" value={source.id} />
@@ -219,7 +219,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
   return <div className="stack stack--large">
     {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <>
       <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} audioEnabled={audioCapability?.enabled === true} />
-      {audioCapability?.enabled ? <AudioUpload projectId={projectId} onCompleted={refresh} /> :
+      {audioCapability?.enabled ? <AudioUpload projectId={projectId} onCompleted={refresh} playlistItems={playlistItems} sources={sources} /> :
         <p className="field-hint">{audioCapability === null ? 'Audio upload availability could not be verified. Reload this page; transcript uploads remain available.' : 'Experimental local WAV upload is off. The operator must explicitly install ASR weights, start local-asr and opt in before audio can be uploaded. Transcript uploads need none of these steps.'}</p>}
     </>}
     <div className="form-actions">
@@ -238,12 +238,12 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         <h4>{playlist.filename} · ordered videos</h4>
         <p role="status">{ready} of {items.length} videos have indexed transcripts. {failed} failed transcript jobs.</p>
         {playlist.playlist_truncated ? <p role="status">This metadata snapshot is truncated at the import safety limit; it is not the complete playlist.</p> : null}
-        {failed > 0 ? <p>Other videos remain usable. Retry each failed transcript using its source controls below, or upload corrected subtitles for that video.</p> : null}
+        {failed > 0 ? <p>Other videos remain usable. Use each source’s recovery controls below or upload corrected subtitles. Retired original audio needs a new authorized WAV upload.</p> : null}
         {items.length === 0 ? <p>No ordered videos are available yet. Wait for metadata processing or reprocess an older metadata import to refresh it.</p> : null}
         <ol>
           {items.map((item, index) => <li key={item.id} value={item.position + 1}>
             <p>{item.title} <span className="field-hint">(video {item.video_id})</span></p>
-            <p>{linked[index] ? `${linked[index]!.filename} · ${linked[index]!.job?.stage.replaceAll("_", " ") ?? linked[index]!.status}` : "Authorized transcript required. Select this video in the upload form above."}</p>
+            <p>{linked[index] ? `${linked[index]!.filename} · ${linked[index]!.job?.stage.replaceAll("_", " ") ?? linked[index]!.status}` : audioCapability?.enabled ? "Authorized transcript or supported WAV required. Select this video in its upload form above." : "Authorized transcript required. Select this video in the upload form above."}</p>
           </li>)}
         </ol>
       </section>;
@@ -264,6 +264,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {(source.job.total_segments ?? 0) > 0 ? <p role="status" aria-live="polite">{source.job.processed_segments ?? 0} of {source.job.total_segments} segments saved · {source.job.delivery_count ?? 0} processing deliveries. Completed batches survive retries.</p> : null}
           {source.job.stage === 'waiting_continuation' ? <p>Progress saved. Processing will continue automatically without consuming a retry attempt; no action is needed.</p> : null}
           {source.job.stage === 'waiting_asr_continuation' ? <p>Audio window saved. Transcription continues automatically without consuming a retry attempt. Unfinished windows are not tutorial evidence.</p> : null}
+          {source.job.stage === 'waiting_capacity' ? <p>Playlist processing slots are busy. Waiting does not consume a retry attempt.{source.audio_retention ? ' The one-hour original-audio eligibility still includes this waiting time.' : ''}</p> : null}
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
         {source.status === "metadata_ready" ? <p>Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically.</p> : null}
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}

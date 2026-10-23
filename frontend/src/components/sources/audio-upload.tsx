@@ -2,8 +2,11 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { AUDIO_MAX_BYTES, parseAudioReceipt } from '@/lib/api/audio-contracts';
+import { isProcessing, type PlaylistItem, type SourceItem } from '@/lib/api/source-contracts';
 
-export function AudioUpload({ projectId, onCompleted }: { projectId: string; onCompleted: () => Promise<void> }) {
+export function AudioUpload({ projectId, onCompleted, playlistItems = [], sources = [] }: {
+  projectId: string; onCompleted: () => Promise<void>; playlistItems?: PlaylistItem[]; sources?: SourceItem[];
+}) {
   const id = useId();
   const [key, setKey] = useState('');
   const [selected, setSelected] = useState(false);
@@ -11,6 +14,7 @@ export function AudioUpload({ projectId, onCompleted }: { projectId: string; onC
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const [playlistItemId, setPlaylistItemId] = useState('');
   const controller = useRef<AbortController | null>(null);
   const busy = useRef(false);
   useEffect(() => () => controller.current?.abort(), []);
@@ -20,6 +24,8 @@ export function AudioUpload({ projectId, onCompleted }: { projectId: string; onC
     if (busy.current || !key || !selected || fileError) return;
     const form = event.currentTarget;
     const body = new FormData(form);
+    if (playlistItemId) body.set('playlist_item_id', playlistItemId);
+    else body.delete('playlist_item_id');
     const active = new AbortController();
     controller.current = active; busy.current = true;
     let safeFailure: string | null = null;
@@ -36,7 +42,7 @@ export function AudioUpload({ projectId, onCompleted }: { projectId: string; onC
       const receipt = parseAudioReceipt(value);
       if (receipt.project_id !== projectId) throw new Error();
       setStatus(receipt.deduplicated ? 'This upload was already accepted. Its existing source is shown below.' : 'Audio accepted. Follow transcription, indexing and original cleanup in the source list below.');
-      form.reset(); setSelected(false); setKey(''); setFileError('');
+      form.reset(); setSelected(false); setKey(''); setFileError(''); setPlaylistItemId('');
       await onCompleted().catch(() => setError('Audio accepted, but the source list could not refresh. Use Refresh sources to reconnect.'));
     } catch {
       setStatus('');
@@ -62,6 +68,26 @@ export function AudioUpload({ projectId, onCompleted }: { projectId: string; onC
               setFileError(file && (!file.name.toLowerCase().endsWith('.wav') || !file.size || file.size > AUDIO_MAX_BYTES) ? 'Choose one non-empty WAV file of at most 20 MB.' : '');
             }} />
           <p id={`${id}-file-help`} className="field-hint">The server checks the actual PCM encoding and duration; a .wav filename alone is not sufficient.</p>
+        </div>
+        <div className="field">
+          <label htmlFor={`${id}-playlist`}>Audio belongs to</label>
+          <select id={`${id}-playlist`} name="playlist_item_id" value={playlistItemId} aria-describedby={`${id}-playlist-help`}
+            onChange={(event) => { setPlaylistItemId(event.target.value); setKey(crypto.randomUUID()); }}>
+            <option value="">Standalone source (not a playlist video)</option>
+            {playlistItemId && !playlistItems.some((item) => item.id === playlistItemId)
+              ? <option value={playlistItemId}>Previously selected lesson (snapshot changed)</option> : null}
+            {playlistItems.map((item) => <option key={item.id} value={item.id}
+              disabled={item.id !== playlistItemId && sources.some((source) => source.id === item.transcript_source_id && isProcessing(source))}>
+              {sources.find((source) => source.id === item.playlist_source_id)?.filename ?? 'Playlist'} · {item.position + 1}. {item.title}
+            </option>)}
+          </select>
+          <p id={`${id}-playlist-help`} className="field-hint" aria-live="polite">
+            This is your assertion that the recording describes the selected video; alignment is not verified. Replacing a terminal upload keeps its previous source and citations.
+            {playlistItemId && !playlistItems.some((item) => item.id === playlistItemId)
+              ? ' The snapshot changed. An unchanged retry can recover an already accepted upload; for a new upload select a current lesson or standalone source.' : null}
+            {playlistItems.some((item) => item.id === playlistItemId && sources.some((source) => source.id === item.transcript_source_id && isProcessing(source)))
+              ? ' This lesson is processing. Only an unchanged retry can recover an accepted upload; a different upload must wait or cancel the existing work.' : null}
+          </p>
         </div>
         <div className="field">
           <label htmlFor={`${id}-rights`}>Audio ownership / permission</label>

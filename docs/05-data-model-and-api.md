@@ -37,6 +37,14 @@ refreshes its snapshot; matching item/video identities preserve upload links.
 Metadata-only playlist deletion unlinks, but does not delete, independent uploads.
 See ADR 0014 for concurrency, truncation and migration compatibility.
 
+Experimental WAV registration now uses the same optional current item. The legacy
+`transcript_source_id` column can refer to a pending audio source which becomes a
+transcript only after validated VTT adoption; unpublished speech is never evidence.
+Playlist association metadata merges with audio metadata and remains the original
+user assertion after snapshot refresh/reindex. ASR/index claims share the same
+per-playlist live-lease cap. Metadata deletion unlinks, but does not cancel, the
+independent audio source. Existing FKs/schema suffice; no migration is rewritten.
+
 Suggested source fields:
 
 - `id`, `tenant_id`, `project_id`;
@@ -245,10 +253,12 @@ project/stack and deletes its own sources, data and objects.
 - `GET /projects/{project_id}/jobs/{job_id}`
 - `GET /projects/{project_id}/events` for SSE progress
 
-WAV multipart requires exactly `file`, `authorization_mode` (`owner_upload`,
+WAV multipart requires `file`, `authorization_mode` (`owner_upload`,
 `authorized_upload`, `licensed_content`), `language` (`auto`, `en`, `tr`),
 `idempotency_key` (8–128 ASCII letters/digits/underscore/hyphen) and
-`retention_acknowledged=accepted`. Authenticate and check `AUDIO_UPLOAD_ENABLED`
+`retention_acknowledged=accepted`, each exactly once. One optional `playlist_item_id`
+UUID selects a current same-scope lesson; absence/empty means standalone. Reject
+other or duplicate fields. Authenticate and check `AUDIO_UPLOAD_ENABLED`
 before consuming the body; count actual bytes before parsing. The file limit is
 20,000,000 bytes, wire limit 20,016,384 bytes, 600-second signed-16 PCM/16 kHz/mono.
 The existing 2 MB SRT/VTT endpoint is unchanged. Invalid formats, extra/duplicate
@@ -256,11 +266,18 @@ fields, foreign scope and archived projects create no accepted source/job.
 
 The browser uses a separate same-origin `POST /api/projects/{project_id}/sources/audio`
 Route Handler, not a larger Server Action. It verifies the capability, input and
-upstream project/source/job identities; only `{project_id, source_id, job_id,
+upstream project/source/job identities and the requested playlist association; only `{project_id, source_id, job_id,
 deduplicated}` reaches the form. Responses are no-store. An interrupted delivery
 can already be registered: resend the unchanged file/fields/key or refresh sources.
 Changing the draft rotates the key. Local consent is an explicit form requirement,
 not a separate persisted legal-consent version or verification of ownership.
+
+Association joins the persisted hash only when nonempty, preserving existing
+standalone replay compatibility. Same-key accepted replay is resolved before
+current-item validation, so metadata refresh/deletion does not break recovery.
+A new upload must target a current available item and cannot replace pending ASR
+or indexing. Old source/evidence remains after terminal replacement. UI polling
+must not silently change the selected item or key in an uncertain-delivery draft.
 
 Implemented transcript-first contract (ADR 0012): upload/metadata registration
 and processing commands return `202` with source/job IDs. Progress uses an

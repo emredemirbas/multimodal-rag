@@ -64,6 +64,15 @@ No inline ASR, subtitle/chat limit increase or schema change. Native verificatio
 and its recognition-quality limitations are recorded separately in
 `sprint4/audio-upload-validation.md`.
 
+The WAV/playlist follow-up reuses the existing scoped item/parent relationships.
+Registration binds an optional current lesson atomically with the audio source,
+ASR job and outbox, preserving audio metadata and original association provenance.
+ASR and ordinary indexing claims share one project-locked per-playlist live-lease
+cap; every worker receives the same configuration. Slot waiting keeps bounded
+retry semantics and does not extend original eligibility. BFF receipts verify
+the selected item while uncertain-delivery drafts survive snapshot changes.
+No migration, new provider, format or default enablement; see ADR 0014's follow-up.
+
 ## Architecture style
 
 Start as a modular monolith with separate runtime processes. This preserves clear module boundaries without incurring early microservice coordination costs.

@@ -70,7 +70,7 @@ export function publicErrorMessage(error: unknown): string {
     unsupported_wav_encoding: "Export the WAV as 16-bit PCM, 16 kHz, mono, then select it again.",
     invalid_wav: "The WAV structure is invalid or incomplete. Export it again.",
     invalid_asr_language: "Choose automatic, English or Turkish speech recognition.",
-    invalid_audio_form: "Select one WAV file, ownership, speech language and temporary-retention acknowledgement.",
+    invalid_audio_form: "Select one WAV file, ownership, speech language and temporary-retention acknowledgement; optionally select one current playlist lesson.",
     audio_upload_timeout: "Upload delivery timed out. It may already be queued; refresh sources or resend the unchanged file with the same request key.",
     audio_reupload_required: "The original audio is retired. Transcribing again requires a new authorized upload.",
   };

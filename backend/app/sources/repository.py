@@ -16,7 +16,7 @@ from ..embedding_profiles import HASH_SPACE, configured_space
 from .chunking import PROCESSING_VERSION, decode_transcript
 from .contracts import Cleanup, Job, ManagedSource, Registration, SourceError, SourceList
 from .adapters import TranscriptAdapter, YouTubeAdapter
-from .playlists import current_item, read_items, store_snapshot
+from .playlists import bind_upload, current_item, read_items, store_snapshot
 
 
 # One statement snapshots source/job/origin/retention together. Only explicit
@@ -186,15 +186,7 @@ class SourceRepository:
                        VALUES (%s,%s,%s,%s,%s,%s,'permitted_transcript')''', (tenant, project, source_id, key, digest, len(content)),
                 )
                 if item:
-                    connection.execute(
-                        'UPDATE sources SET parent_playlist_source_id=%s,metadata=%s WHERE tenant_id=%s AND project_id=%s AND id=%s',
-                        (item['playlist_source_id'], Jsonb({'playlist_item_id': str(item['id']), 'video_id': item['video_id'],
-                         'playlist_generation': item['generation'], 'alignment': 'user_asserted'}), tenant, project, source_id),
-                    )
-                    connection.execute(
-                        'UPDATE playlist_items SET transcript_source_id=%s WHERE tenant_id=%s AND project_id=%s AND id=%s',
-                        (source_id, tenant, project, item['id']),
-                    )
+                    bind_upload(connection, tenant, project, source_id, item)
                 job = self._new_job(connection, tenant, project, source_id, actor, 1)
                 self.store._record_audit(connection, tenant_id=tenant, project_id=project, actor_user_id=actor, action='source.created')
                 connection.execute('DELETE FROM artifact_cleanup WHERE id=%s AND tenant_id=%s AND project_id=%s', (reservation, tenant, project))
@@ -315,12 +307,12 @@ class SourceRepository:
             if row['attempt_count'] >= row['max_attempts'] and not row['continuation_pending']:
                 self._fail_unclaimed(connection, row, 'retry_exhausted', 'Processing attempts exhausted; retry after correcting the problem.')
                 return None
-            if current.parent_playlist_source_id and row['job_type'] == 'transcript':
+            if current.parent_playlist_source_id and row['job_type'] in {'transcript', 'asr'}:
                 active = connection.execute(
                     '''SELECT count(*) AS count FROM processing_jobs j JOIN sources s
                        ON s.tenant_id=j.tenant_id AND s.project_id=j.project_id AND s.id=j.source_id
                        WHERE j.tenant_id=%s AND j.project_id=%s AND s.parent_playlist_source_id=%s
-                       AND j.job_type='transcript' AND j.status='running' AND j.lease_expires_at>now()''',
+                       AND j.job_type IN ('transcript','asr') AND j.status='running' AND j.lease_expires_at>now()''',
                     (tenant, project, current.parent_playlist_source_id),
                 ).fetchone()['count']
                 if active >= self.settings.playlist_concurrency:

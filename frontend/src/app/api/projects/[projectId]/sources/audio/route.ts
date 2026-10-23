@@ -14,12 +14,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     requireSameOrigin(request);
     if (!(await getAudioCapability()).enabled) throw new ApiError({ status: 503, code: 'audio_upload_disabled' });
     const form = await audioRequestBody(request);
+    const playlistItemId = form.get('playlist_item_id');
     const payload = await requestJson(`/api/v1/projects/${projectId}/sources/audio`, { method: 'POST', body: form });
-    return NextResponse.json(audioRegistrationReceipt(payload, projectId), { status: 202, headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json(audioRegistrationReceipt(payload, projectId, typeof playlistItemId === 'string' ? playlistItemId : undefined), { status: 202, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     // Public messages are application-owned. Never forward raw parser/provider errors.
     const message = error instanceof ApiError && ['request_timeout', 'upstream_unavailable'].includes(error.code)
       ? 'Upload delivery could not be confirmed. It may already be queued; refresh sources or resend the unchanged file with the same request key.'
+      : error instanceof ApiError && error.status === 404
+        ? 'The project or selected playlist lesson is unavailable. Refresh sources and select a current lesson, or check the project.'
       : publicErrorMessage(error instanceof ApiError && error.code === 'validation_error'
         ? new ApiError({ status: 422, code: 'invalid_audio_form' }) : error);
     return NextResponse.json({ message }, {

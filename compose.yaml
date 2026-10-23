@@ -46,6 +46,7 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
       CELERY_BROKER_URL: redis://redis:6379/0
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
+      PLAYLIST_CONCURRENCY: ${PLAYLIST_CONCURRENCY:-2}
       ASR_BASE_URL: http://asr:8090
     networks: [default, asr-private]
     depends_on:

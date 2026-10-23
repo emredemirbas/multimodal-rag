@@ -120,6 +120,11 @@ the example over local credentials. No API schema/SQL migration rewrite, bucket
 purge or user source deletion. Hosted CI for this change must be checked separately
 after push; the previous security corrective commit passed run `39959500922`.
 
+Hosted follow-up: upload commit `59780b6` passed all four jobs in
+[run 39973110441](https://github.com/emredemirbas/multimodal-rag/actions/runs/39973110441).
+The subsequent optional WAV/playlist association is recorded separately in
+`audio-playlist-validation.md`; this hosted result does not cover later changes.
+
 Vision/OCR/video/frames and reviewed speech quality remain open. Assignment,
 external-document and grading decisions remain later-sprint work. The new WAV path
 is experimental opt-in, not Sprint 4/Alpha 2 completion or production readiness.

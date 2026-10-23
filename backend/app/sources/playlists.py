@@ -2,6 +2,7 @@
 from uuid import UUID, uuid5
 
 from pydantic import ValidationError
+from psycopg.types.json import Jsonb
 
 from ..store import ProjectNotFoundError
 from .contracts import PlaylistItem, PlaylistMetadataItem, SourceError
@@ -37,6 +38,19 @@ def current_item(connection, tenant: str, project: UUID, item: UUID):
         if running and running['status'] in {'pending', 'running', 'retrying'}:
             raise SourceError('playlist_item_busy', 'Wait for or cancel this video’s transcript job before replacing its upload.', 409)
     return row
+
+
+def bind_upload(connection, tenant: str, project: UUID, source: UUID, item: dict):
+    """Adopt a previously checked current item while the caller holds its project lock."""
+    connection.execute(
+        'UPDATE sources SET parent_playlist_source_id=%s,metadata=metadata || %s WHERE tenant_id=%s AND project_id=%s AND id=%s',
+        (item['playlist_source_id'], Jsonb({'playlist_item_id': str(item['id']), 'video_id': item['video_id'],
+         'playlist_generation': item['generation'], 'alignment': 'user_asserted'}), tenant, project, source),
+    )
+    connection.execute(
+        'UPDATE playlist_items SET transcript_source_id=%s WHERE tenant_id=%s AND project_id=%s AND id=%s',
+        (source, tenant, project, item['id']),
+    )
 
 
 def store_snapshot(connection, tenant: str, project: UUID, source: UUID, generation: int, metadata: dict):

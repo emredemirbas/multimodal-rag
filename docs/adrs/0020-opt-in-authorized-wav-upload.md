@@ -39,3 +39,11 @@ technical/multilingual quality certification. Retain the earlier failed `endpoin
 diagnostic. MP3/MP4, video/frame retention, arbitrary downloading and vision/OCR
 remain outside this slice. See `../sprint4/audio-upload-plan.md` and its validation
 record for the verification/enablement gate.
+
+Follow-up (2026-10-23): allow one optional `playlist_item_id` UUID, validated under
+ADR 0014's scoped current-snapshot/busy boundary. Absence/empty means standalone;
+canonical nonempty UUID joins the request hash. Required fields and wire/time/
+auth/Origin limits are unchanged. The BFF also verifies that returned association
+metadata matches the requested lesson; a deduplicated independent source remains
+recoverable after its playlist metadata is deleted. Keep the selected lesson/key
+on uncertain delivery rather than silently changing them during polling.

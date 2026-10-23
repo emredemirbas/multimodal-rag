@@ -13,3 +13,4 @@ class AudioCapability(BaseModel):
 
 
 AUDIO_FORM_FIELDS = {'file', 'authorization_mode', 'language', 'idempotency_key', 'retention_acknowledged'}
+AUDIO_OPTIONAL_FIELDS = {'playlist_item_id'}
