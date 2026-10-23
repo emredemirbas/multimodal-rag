@@ -1,8 +1,10 @@
 # Lint dependency remediation plan
 
 Date: 2026-10-11
-Status: Implemented and validated from clean npm installation; full audit has
-zero findings. All 5 compatibility tests, lint and production build pass.
+Status: Implemented and validated from clean npm installation; full audit had
+zero findings at that milestone. All 5 compatibility tests, lint and production
+build passed. The 2026-10-23 security follow-up advances the exact supported
+plugin to 16.4.2; see `frontend-security-validation.md` for current evidence.
 
 The owner asked to continue after the reported development-only `braces` audit
 blocker. Upstream still has no fixed package version. Do not suppress the finding,

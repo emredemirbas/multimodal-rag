@@ -80,6 +80,11 @@ API/worker Docker-socket integration. Existing application containers were not
 restarted. Hosted CI and native owned-audio quality are separate evidence; do not
 infer either from the local software tests above.
 
+Hosted follow-up: run `39958139717` passed both backend jobs but failed the frontend
+dependency audit (Next.js/Vitest), so its image job did not run. This does not
+invalidate the local behavior checks, but it blocks hosted validation. The scoped
+remediation and separate results are in `frontend-security-validation.md`.
+
 ## Remaining enablement gate
 
 Authenticated bounded WAV API/BFF/form (explicit rights/language/retention), the

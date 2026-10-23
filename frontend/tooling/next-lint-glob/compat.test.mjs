@@ -22,7 +22,7 @@ writeFileSync(path.join(fixture, "not-a-directory"), "owned test fixture\n");
 after(() => rmSync(fixture, { recursive: true, force: true }));
 
 test("only the pinned plugin resolves to the private maintained-library adapter", () => {
-  assert.equal(pluginRequire("../package.json").version, "16.3.8");
+  assert.equal(pluginRequire("../package.json").version, "16.4.2");
   assert.equal(pluginRequire("fast-glob/package.json").name, "@multimodal-rag/next-lint-glob");
   const lock = JSON.parse(readFileSync(path.join(frontend, "package-lock.json"), "utf8"));
   assert.ok(!Object.keys(lock.packages).some((key) => /node_modules\/(braces|micromatch)$/.test(key)));
