@@ -19,6 +19,33 @@ from .adapters import TranscriptAdapter, YouTubeAdapter
 from .playlists import current_item, read_items, store_snapshot
 
 
+# One statement snapshots source/job/origin/retention together. Only explicit
+# projection models below cross the API; no input key, digest or window payload.
+SOURCE_DETAILS = '''SELECT s.*, to_jsonb(j) AS job, to_jsonb(ar) AS asr_origin,
+    CASE WHEN ai.job_id IS NULL THEN NULL ELSE jsonb_build_object(
+        'status', CASE WHEN ai.deleted_at IS NOT NULL THEN 'deleted'
+                       WHEN ac.status='failed' THEN 'cleanup_failed'
+                       WHEN ai.cleanup_id IS NOT NULL THEN 'cleanup_pending'
+                       WHEN ai.expires_at<=now() THEN 'expired' ELSE 'temporary' END,
+        'processing_expires_at',ai.expires_at,'cleanup_id',ai.cleanup_id,'deleted_at',ai.deleted_at
+    ) END AS audio_retention
+    FROM sources s
+    LEFT JOIN LATERAL (
+        SELECT * FROM processing_jobs WHERE tenant_id=s.tenant_id
+        AND project_id=s.project_id AND source_id=s.id
+        ORDER BY generation DESC, created_at DESC LIMIT 1
+    ) j ON true
+    LEFT JOIN source_artifacts a ON a.tenant_id=s.tenant_id AND a.project_id=s.project_id AND a.source_id=s.id
+    LEFT JOIN asr_runs ar ON ar.tenant_id=a.tenant_id AND ar.project_id=a.project_id
+        AND ar.source_id=a.source_id AND ar.job_id=a.asr_job_id AND ar.completed_at IS NOT NULL
+    LEFT JOIN LATERAL (
+        SELECT * FROM audio_inputs WHERE tenant_id=s.tenant_id AND project_id=s.project_id AND source_id=s.id
+        ORDER BY generation DESC LIMIT 1
+    ) ai ON true
+    LEFT JOIN artifact_cleanup ac ON ac.tenant_id=ai.tenant_id AND ac.project_id=ai.project_id AND ac.id=ai.cleanup_id
+'''
+
+
 class SourceRepository:
     """PostgreSQL owns state; Redis messages are disposable delivery hints."""
 
@@ -44,13 +71,7 @@ class SourceRepository:
 
     def _source(self, connection, tenant: str, project: UUID, source: UUID) -> ManagedSource:
         row = connection.execute(
-            '''SELECT s.*, to_jsonb(j) AS job FROM sources s
-               LEFT JOIN LATERAL (
-                   SELECT * FROM processing_jobs WHERE tenant_id=s.tenant_id
-                   AND project_id=s.project_id AND source_id=s.id
-                   ORDER BY generation DESC, created_at DESC LIMIT 1
-               ) j ON true
-               WHERE s.tenant_id=%s AND s.project_id=%s AND s.id=%s AND s.deleted_at IS NULL''',
+            SOURCE_DETAILS + ' WHERE s.tenant_id=%s AND s.project_id=%s AND s.id=%s AND s.deleted_at IS NULL',
             (tenant, project, source),
         ).fetchone()
         if row is None:
@@ -66,13 +87,7 @@ class SourceRepository:
         self.store.get_project(tenant, project)
         with self.store._connect() as connection:
             rows = connection.execute(
-                '''SELECT s.*, to_jsonb(j) AS job FROM sources s
-                   LEFT JOIN LATERAL (
-                       SELECT * FROM processing_jobs WHERE tenant_id=s.tenant_id
-                       AND project_id=s.project_id AND source_id=s.id
-                       ORDER BY generation DESC, created_at DESC LIMIT 1
-                   ) j ON true
-                   WHERE s.tenant_id=%s AND s.project_id=%s AND s.deleted_at IS NULL
+                SOURCE_DETAILS + ''' WHERE s.tenant_id=%s AND s.project_id=%s AND s.deleted_at IS NULL
                    ORDER BY s.created_at DESC, s.id''', (tenant, project),
             ).fetchall()
             return SourceList(items=[self._managed_source(row) for row in rows], playlist_items=read_items(connection, tenant, project))

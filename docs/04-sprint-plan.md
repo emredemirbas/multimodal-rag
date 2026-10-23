@@ -188,6 +188,12 @@ handoff (ADR 0019). This completes the backend component, not the public audio
 feature: authenticated bounded upload, user-facing provenance/inspection and native
 owned-audio end-to-end verification remain required before enabling WAV in the app.
 
+The 2026-10-23 inspection slice adds version-pinned ASR labels to source/transcript/
+evidence/chat and observable original expiry/cleanup/failure/deletion with existing
+authorized retry. It does not open WAV upload. Authenticated bounded API/BFF/form
+and a separately reported native owned-audio end-to-end probe remain the next gate;
+see `docs/sprint4/media-inspection-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

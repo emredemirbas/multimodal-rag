@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from ..chat.contracts import EvidenceView
 from ..postgres import PostgresStore
+from ..provenance import AsrOrigin
 from ..store import ProjectNotFoundError
 from .contracts import SourceError
 
@@ -28,6 +29,7 @@ class TranscriptPage(BaseModel):
     total_segments: int
     total_pages: int
     items: list[EvidenceView]
+    asr_origin: AsrOrigin | None = None
 
 
 class TranscriptRepository:
@@ -75,11 +77,19 @@ class TranscriptRepository:
                    ORDER BY start_ms,end_ms,id LIMIT %s OFFSET %s""",
                 (*scope, PAGE_SIZE, (page - 1) * PAGE_SIZE),
             ).fetchall()
+            origin = connection.execute(
+                '''SELECT to_jsonb(ar) AS origin FROM processing_versions v
+                   JOIN asr_runs ar ON ar.tenant_id=v.tenant_id AND ar.project_id=v.project_id
+                     AND ar.source_id=v.source_id AND ar.job_id=v.asr_job_id AND ar.completed_at IS NOT NULL
+                   WHERE v.tenant_id=%s AND v.project_id=%s AND v.source_id=%s AND v.generation=%s''', scope,
+            ).fetchone()
+            asr_origin = AsrOrigin.model_validate(origin['origin']) if origin else None
             return TranscriptPage(
                 source_id=source, source_filename=row["filename"], source_kind=row["kind"],
                 source_status=row["status"], generation=selected, active_generation=row["active_generation"],
                 processing_version=summary["version"], page=page, total_segments=total, total_pages=pages,
-                items=[EvidenceView(segment_id=item["id"], source_filename=row["filename"],
+                asr_origin=asr_origin,
+                items=[EvidenceView(segment_id=item["id"], source_filename=row["filename"], asr_origin=asr_origin,
                                     **{key: item[key] for key in EvidenceView.model_fields
-                                       if key not in {"segment_id", "source_filename"}}) for item in segments],
+                                       if key not in {"segment_id", "source_filename", "asr_origin"}}) for item in segments],
             )

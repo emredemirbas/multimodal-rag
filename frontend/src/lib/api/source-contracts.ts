@@ -25,6 +25,8 @@ export interface SourceItem {
   playlist_truncated?: boolean;
   active_embedding_space?: string | null;
   reindex_required?: boolean;
+  asr_origin?: AsrOrigin | null;
+  audio_retention?: AudioRetention | null;
 }
 
 export interface PlaylistItem {
@@ -43,7 +45,6 @@ export interface CleanupTicket {
   status: "pending" | "running" | "completed" | "failed";
 }
 
-export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const JOB_STATES = ["pending", "running", "retrying", "succeeded", "failed", "cancelled"];
 
 function record(value: unknown): Record<string, unknown> {
@@ -104,6 +105,8 @@ export function parseSourceList(value: unknown): SourceItem[] {
       playlist_truncated: playlistTruncated(source),
       active_embedding_space: source.active_embedding_space == null ? null : string(source.active_embedding_space),
       reindex_required: source.reindex_required === true,
+      asr_origin: parseAsrOrigin(source.asr_origin),
+      audio_retention: parseAudioRetention(source.audio_retention),
     };
   });
 }
@@ -137,3 +140,6 @@ export function parseCleanup(value: unknown): CleanupTicket {
 export function isProcessing(source: SourceItem): boolean {
   return source.job !== null && ["pending", "running", "retrying"].includes(source.job.status);
 }
+import { UUID_PATTERN } from "@/lib/api/identifiers";
+import { parseAsrOrigin, parseAudioRetention, type AsrOrigin, type AudioRetention } from "@/lib/api/provenance-contracts";
+export { UUID_PATTERN } from "@/lib/api/identifiers";

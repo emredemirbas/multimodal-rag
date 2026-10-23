@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { timestamp } from "@/lib/api/chat-contracts";
 import { transcriptHref, type TranscriptPage } from "@/lib/api/transcript-contracts";
+import { AsrProvenance } from "@/components/sources/asr-provenance";
 
 export function TranscriptViewer({ projectId, transcript }: { projectId: string; transcript: TranscriptPage }) {
   const older = transcript.generation !== null && transcript.generation !== transcript.active_generation;
@@ -8,6 +9,7 @@ export function TranscriptViewer({ projectId, transcript }: { projectId: string;
     <Link href={`/projects/${projectId}`}>Back to project</Link>
     <p className="eyebrow">Published tutorial transcript</p>
     <h1 id="transcript-title">{transcript.source_filename}</h1>
+    <AsrProvenance origin={transcript.asr_origin} />
     {transcript.generation !== null ? <>
       <p>Generation {transcript.generation} · {transcript.total_segments} transcript segments</p>
       <p className="muted">Processing version: {transcript.processing_version}</p>
@@ -19,7 +21,7 @@ export function TranscriptViewer({ projectId, transcript }: { projectId: string;
     <p>This is retained tutorial evidence, not external documentation. No playable video was uploaded; timestamps identify the original tutorial interval. Reading this page makes no model calls.</p>
     {transcript.items.length === 0 ? <div className="state-panel state-panel--compact" role="status">
       <h2>No published transcript yet</h2>
-      <p>{transcript.source_kind === "transcript" ? "Wait for successful processing, or return to the project for progress and recovery controls. Unfinished batches are not tutorial evidence." : "This source contains metadata only. Upload an authorized SRT/VTT transcript to create tutorial evidence."}</p>
+      <p>{transcript.source_kind === "transcript" || transcript.source_kind === "audio" ? "Wait for successful processing, or return to the project for progress and recovery controls. Unfinished batches are not tutorial evidence." : "This source contains metadata only. Upload an authorized SRT/VTT transcript to create tutorial evidence."}</p>
     </div> : <>
       <p>Page {transcript.page} of {transcript.total_pages}</p>
       <ol className="source-list" start={(transcript.page - 1) * transcript.page_size + 1} aria-label="Timestamped transcript segments">

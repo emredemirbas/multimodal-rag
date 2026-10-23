@@ -3,8 +3,19 @@ import { describe, expect, it } from "vitest";
 import { TranscriptViewer } from "@/components/sources/transcript-viewer";
 import { projectId, sourceId, transcriptFixture } from "../../../test-support/transcript-fixture";
 import { transcriptHref } from "@/lib/api/transcript-contracts";
+import { asrOrigin } from "../../../test-support/media-fixture";
 
 describe("transcript viewer", () => {
+  it("labels machine-generated text and keeps ASR identity distinct from reindex generations", () => {
+    render(<TranscriptViewer projectId={projectId} transcript={{ ...transcriptFixture(), generation: 2, active_generation: 2, asr_origin: asrOrigin }} />);
+    expect(screen.getByRole("region", { name: "Automatic transcription provenance" })).toHaveTextContent("not human-reviewed");
+    expect(screen.getByText(/Speech, code identifiers and timestamps may be wrong/)).toBeVisible();
+    expect(screen.getByText(/upload an authorized SRT\/VTT as a new source/)).toBeVisible();
+    expect(screen.getByText(/Generation 2/)).toBeVisible();
+    expect(screen.getByText(/1 \(separate from the search-index generation\)/)).toBeInTheDocument();
+    expect(screen.getByText(asrOrigin.profile)).toBeInTheDocument();
+    expect(document.querySelector("audio,video,iframe")).toBeNull();
+  });
   it("renders timestamps, stable evidence and version-pinned next-page navigation", () => {
     const transcript = transcriptFixture();
     render(<TranscriptViewer projectId={projectId} transcript={transcript} />);

@@ -92,6 +92,11 @@ Prior checkpoint commit `a3f7da1` passed
 This record is local evidence for the subsequent media backend, not a claim that
 its new hosted run has passed.
 
+Follow-up (2026-10-23): private backend commit `f121293` subsequently passed
+[all hosted jobs](https://github.com/emredemirbas/multimodal-rag/actions/runs/39774836975).
+The next read-only inspection component is recorded separately in
+`media-inspection-validation.md`; public WAV upload is still disabled.
+
 ## Next product-enablement step
 
 Implement bounded authenticated WAV API/BFF/form, explicit rights/language/temporary

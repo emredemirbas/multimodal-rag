@@ -6,6 +6,7 @@ import { UUID_PATTERN } from "@/lib/api/source-contracts";
 import { ApiError, publicErrorMessage } from "@/lib/api/errors";
 import { ApiErrorState } from "@/components/ui/api-state";
 import { transcriptHref } from "@/lib/api/transcript-contracts";
+import { AsrProvenance } from "@/components/sources/asr-provenance";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,7 @@ export default async function EvidencePage({ params }: { params: Promise<{ proje
     <Link href={`/projects/${projectId}`}>Back to project</Link>
     <p className="eyebrow">Tutorial evidence</p>
     <h1 id="evidence-title">{evidence.source_filename}</h1>
+    <AsrProvenance origin={evidence.asr_origin} />
     <p>{timestamp(evidence.start_ms)}–{timestamp(evidence.end_ms)} · {evidence.modality} · generation {evidence.generation}</p>
     <blockquote className="evidence-text">{evidence.text}</blockquote>
     <p className="muted">Processing version: {evidence.processing_version}</p>

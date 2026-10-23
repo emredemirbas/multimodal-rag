@@ -119,7 +119,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       "Answer configuration could not be verified. Reload the workspace before relying on the configured model."} Each question is self-contained; saved history is not model context.</p>
     <p className="muted">{retrievalMode === 'local-semantic-and-lexical' ? 'Local semantic search: Qwen3 Embedding 0.6B + exact project-filtered vectors and full-text search. The experimental relevance guard can miss valid questions; inspect citations.' :
       retrievalMode === 'deterministic-hash-and-lexical' ? 'Retrieval still uses the deterministic hash/lexical baseline, not a learned semantic model.' : 'Retrieval configuration could not be verified. Reload the workspace.'}</p>
-    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use Reprocess source below (or reupload validation-only transcripts), then reload this workspace. Saved citations remain inspectable.</p> : null}
+    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use the reindex/reprocess control for each source below (or reupload validation-only transcripts), then reload this workspace. Saved citations remain inspectable.</p> : null}
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {
@@ -145,6 +145,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
             <Link className="citation-link" prefetch={false} href={`/projects/${projectId}/evidence/${citation.segment_id}`}>
               {citation.source_filename} · {timestamp(citation.start_ms)}–{timestamp(citation.end_ms)} · generation {citation.generation}
             </Link>
+            {citation.asr_origin ? <p className="field-hint">Automatically transcribed · not human-reviewed. Speech, code identifiers and timestamps may be wrong; inspect this evidence.</p> : null}
           </li>)}
         </ol> : null}
       </li>)}</ol>}

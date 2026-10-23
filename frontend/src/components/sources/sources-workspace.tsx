@@ -9,6 +9,8 @@ import { isProcessing, parsePlaylistItems, parseSourceList, type CleanupTicket, 
 import { CleanupStatus } from "@/components/sources/cleanup-status";
 import { INITIAL_SOURCE_ACTION } from "@/lib/source-action-state";
 import { transcriptHref } from "@/lib/api/transcript-contracts";
+import { AsrProvenance } from "@/components/sources/asr-provenance";
+import { AudioRetentionStatus } from "@/components/sources/audio-retention-status";
 
 const FAILURE_MESSAGES: Record<string, string> = {
   invalid_transcript: "Check cue timestamps and text, then upload a corrected SRT/VTT file.",
@@ -31,6 +33,11 @@ const FAILURE_MESSAGES: Record<string, string> = {
   checkpoint_incomplete: "The saved index is incomplete. Retry processing; the previous active evidence remains unchanged.",
   checkpoint_no_progress: "Processing could not advance. Free local resources and retry; completed batches are saved.",
   embedding_input_limit: "The local model rejected this input. Split the transcript into smaller files.",
+  audio_expired: "The original audio expired before processing finished. A new transcription requires a new authorized upload.",
+  no_speech_detected: "No speech was detected. No tutorial evidence was invented; check the recording before uploading again.",
+  local_asr_unavailable: "Local transcription is unavailable. Processing retries within its attempt and original-expiry limits.",
+  local_asr_busy: "Local transcription capacity is busy. Saved windows survive automatic retries until the original expires.",
+  audio_integrity: "Original audio integrity verification failed. Upload a new authorized recording.",
 };
 
 function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
@@ -188,14 +195,15 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     heading.current?.focus();
   }, [refresh]);
   const working = sources.some(isProcessing);
+  const cleaningAudio = sources.some((source) => source.audio_retention && ["temporary", "expired", "cleanup_pending"].includes(source.audio_retention.status));
 
   useEffect(() => {
-    if (!working) return;
+    if (!working && !cleaningAudio) return;
     let timer: ReturnType<typeof setInterval> | undefined;
     let stopped = false;
     async function poll() {
       if (document.hidden || stopped) return;
-      if (working) await refresh();
+      await refresh();
     }
     function visibility() {
       clearInterval(timer);
@@ -204,7 +212,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     if (!document.hidden) timer = setInterval(() => { void poll(); }, 5_000);
     document.addEventListener("visibilitychange", visibility);
     return () => { stopped = true; clearInterval(timer); document.removeEventListener("visibilitychange", visibility); };
-  }, [working, projectId, refresh]);
+  }, [working, cleaningAudio, projectId, refresh]);
 
   return <div className="stack stack--large">
     {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} />}
@@ -214,6 +222,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     </div>
     {error ? <p role="alert">{error}</p> : null}
     <p role="status" aria-live="polite">{working ? "Processing continues in the background. This list updates every five seconds while visible." : `${sources.length} source${sources.length === 1 ? "" : "s"}. No processing is currently running.`}</p>
+    {cleaningAudio ? <p className="field-hint">Original audio retention status also refreshes every five seconds while visible. Expiry is not proof of deletion.</p> : null}
     {sources.filter((source) => source.kind === "youtube_playlist").map((playlist) => {
       const items = playlistItems.filter((item) => item.playlist_source_id === playlist.id).sort((a, b) => a.position - b.position);
       const linked = items.map((item) => sources.find((source) => source.id === item.transcript_source_id));
@@ -238,7 +247,9 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
       {sources.map((source) => <li key={source.id} className="source-card stack" aria-label={source.filename}>
         <h4>{source.filename}</h4>
         <p>{source.status.replaceAll("_", " ")} · generation {source.generation} · {source.segment_count} indexed segments</p>
-        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.job ? 'Reprocess source' : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
+        <AsrProvenance origin={source.asr_origin} />
+        {source.audio_retention ? <AudioRetentionStatus projectId={projectId} retention={source.audio_retention} onRefresh={refresh} /> : null}
+        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
           source.active_embedding_space ? <p className="field-hint">Search index: {source.active_embedding_space.startsWith('qwen3-0.6b:') ? 'Qwen3 Embedding 0.6B · 1024 dimensions' : 'Deterministic hash · 64 dimensions'}</p> : null}
         {source.job ? <>
           <label htmlFor={`progress-${source.id}`}>Processing: {source.job.stage.replaceAll("_", " ")} ({source.job.progress_percent}%)</label>
@@ -246,6 +257,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           <p className="field-hint">Attempt {source.job.attempt_count} of {source.job.max_attempts}</p>
           {(source.job.total_segments ?? 0) > 0 ? <p role="status" aria-live="polite">{source.job.processed_segments ?? 0} of {source.job.total_segments} segments saved · {source.job.delivery_count ?? 0} processing deliveries. Completed batches survive retries.</p> : null}
           {source.job.stage === 'waiting_continuation' ? <p>Progress saved. Processing will continue automatically without consuming a retry attempt; no action is needed.</p> : null}
+          {source.job.stage === 'waiting_asr_continuation' ? <p>Audio window saved. Transcription continues automatically without consuming a retry attempt. Unfinished windows are not tutorial evidence.</p> : null}
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
         {source.status === "metadata_ready" ? <p>Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically.</p> : null}
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
@@ -254,8 +266,8 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {source.active_generation !== null && (source.kind === undefined || source.kind === "transcript") ?
             <Link className="button button--secondary" prefetch={false} href={transcriptHref(projectId, source.id, source.active_generation)}>Read transcript</Link> : null}
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
-          {source.job && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
-          {source.job && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label="Reprocess source" onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label={source.asr_origin ? "Reindex retained transcript" : "Reprocess source"} onCompleted={refresh} /> : null}
           <DeleteSource projectId={projectId} source={source} onDeleted={deleted} />
         </div>
       </li>)}

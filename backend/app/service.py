@@ -258,6 +258,7 @@ class TutorialService:
                 score=round(hit.score, 6),
                 processing_version=hit.segment.processing_version,
                 generation=hit.segment.generation,
+                asr_origin=hit.asr_origin,
             )
             for hit in cited_hits
         ]

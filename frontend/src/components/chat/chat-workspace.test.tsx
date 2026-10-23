@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import type { ChatTurn, Conversation } from "@/lib/api/chat-contracts";
+import { asrOrigin } from "../../../test-support/media-fixture";
 
 const project = "12345678-1234-1234-1234-123456789abc";
 const conversation: Conversation = { id: "12345678-1234-1234-1234-123456789abd", project_id: project, title: "Tutorial questions", created_at: "2026-10-02T00:00:00Z" };
@@ -15,6 +16,12 @@ function response() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
+  it("labels automatic evidence in saved history without changing its stable citation link", () => {
+    const generated = { ...turn, response: { ...turn.response, citations: [{ ...turn.response.citations[0], asr_origin: asrOrigin }] } };
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{ conversation, turns: [generated] }} archived />);
+    expect(screen.getByText(/Automatically transcribed · not human-reviewed/)).toBeVisible();
+    expect(screen.getByRole("link", { name: /tutorial.vtt/ })).toHaveAttribute("href", `/projects/${project}/evidence/${turn.response.citations[0].segment_id}`);
+  });
   it("labels local generation and keeps the retrieval limitation visible", () => {
     render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[]} initialHistory={null} archived={false} answerMode="ollama" />);
     expect(screen.getByText(/Local Ollama answer mode/)).toHaveTextContent("no paid/cloud provider");

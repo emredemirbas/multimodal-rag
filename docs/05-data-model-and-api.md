@@ -114,6 +114,21 @@ An internal source begins as `audio` and becomes `transcript` with explicit
 machine-generated/input-kind/profile metadata after adoption. Reindex generations
 retain their origin ASR-run FK. No public WAV API payload is enabled yet.
 
+The read-only media-inspection slice exposes nullable typed `asr_origin` on managed
+sources, transcript pages, evidence and answer/history citations. Source origin
+comes from the retained artifact; each published generation's origin comes from
+its own `processing_versions.asr_job_id` scoped relationship. Mutable source
+metadata is not authoritative. ASR generation can remain 1 while index generations
+advance. Ordinary/legacy subtitles have no inferred machine/human-review claim.
+No raw input key/digest, window result or credentials are exposed by this projection.
+
+Managed sources also expose nullable `audio_retention` with `processing_expires_at`,
+`cleanup_id`, `deleted_at` and status `temporary`, `expired`, `cleanup_pending`,
+`cleanup_failed` or `deleted`. Expiry/retirement does not imply physical deletion;
+only confirmed cleanup sets `deleted_at`. Existing actor-owned cleanup retry
+authorization is unchanged. No schema migration or WAV upload endpoint is added.
+See `sprint4/media-inspection-validation.md`.
+
 ### Chat
 
 - `conversations`

@@ -58,8 +58,8 @@ not block subtitle uploads or allowlisted metadata adapters.
 | Decision | Proposed default | Status |
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
-| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; uploads remain disabled pending durable workflow |
-| Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; tracked lifecycle not enabled until ingestion follow-up |
+| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; private workflow delivered 2026-10-22, public uploads still disabled |
+| Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
 `docs/sprint2/implementation-plan.md`. No ASR vendor or original-media retention
@@ -74,8 +74,10 @@ are delivered first; see `sprint4/asr-checkpoints-plan.md`. The subsequent priva
 backend slice implements dedicated jobs, original retirement and VTT handoff
 (ADR 0019). Original processing eligibility expires after one hour as a surfaced
 safety limit; physical deletion is separately confirmed/retried by the scheduler.
-Application audio upload remains disabled until bounded authenticated API/BFF/form,
-machine-generated provenance/inspection and owned-audio end-to-end checks are complete.
+The read-only machine-generated provenance/inspection slice is now implemented
+(2026-10-23): typed per-version origin, explicit accuracy caveats and original-audio
+cleanup status. Application audio upload remains disabled until bounded
+authenticated API/BFF/form and owned-audio end-to-end checks are complete.
 Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
 frame retention and broader binary-media limits remain unapproved.
 

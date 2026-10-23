@@ -1,9 +1,11 @@
 import { UUID_PATTERN } from "@/lib/api/source-contracts";
+import { parseAsrOrigin, type AsrOrigin } from "@/lib/api/provenance-contracts";
 
 export interface Conversation { id: string; project_id: string; title: string; created_at: string }
 export interface Citation {
   segment_id: string; source_id: string; source_filename: string; start_ms: number; end_ms: number;
   modality: string; processing_version: string; generation: number;
+  asr_origin?: AsrOrigin | null;
 }
 export interface ChatTurn {
   id: string; sequence: number; question: string; source_ids: string[]; created_at: string;
@@ -55,9 +57,10 @@ export function parseConversations(value: unknown): Conversation[] {
 function citation(value: unknown): Citation {
   const row = record(value);
   const start = integer(row.start_ms), end = integer(row.end_ms);
-  if (end <= start || integer(row.generation) < 1) throw new Error("Invalid evidence provenance");
+  const origin = parseAsrOrigin(row.asr_origin);
+  if (end <= start || integer(row.generation) < 1 || (origin !== null && origin.generation > integer(row.generation))) throw new Error("Invalid evidence provenance");
   return { segment_id: id(row.segment_id), source_id: id(row.source_id), source_filename: text(row.source_filename, 255),
-    start_ms: start, end_ms: end, modality: text(row.modality, 30), processing_version: text(row.processing_version, 120), generation: integer(row.generation) };
+    start_ms: start, end_ms: end, modality: text(row.modality, 30), processing_version: text(row.processing_version, 120), generation: integer(row.generation), asr_origin: origin };
 }
 export function parseTurn(value: unknown): ChatTurn {
   const row = record(value), response = record(row.response);

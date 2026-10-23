@@ -118,6 +118,18 @@ revocation, unique-candidate orphan cleanup, TTL, cleanup failure/exhaustion/ret
 and cross-scope cleanup FK rejection. All vector/ingestion tests use isolated
 schemas; never run application migrations as an incidental test setup step.
 
+Machine-generated inspection has separate provenance and lifecycle checks:
+source artifact versus published-generation origin, metadata drift, old
+citations/history across reindexing, ordinary/legacy absence, revoked/foreign/
+deleted reads, expiry versus physical deletion and actor-owned cleanup retry.
+Frontend contracts reject mixed page/segment origins and impossible cleanup
+states. UI tests verify automatic/unreviewed labels, literal untrusted text,
+corrected-subtitle guidance, cleanup-only visibility-aware polling and failure
+recovery. Full local regression additionally uses newly created disposable service
+containers with allowlisted test credentials/DSNs and no application volume mounts;
+schema/queue/object prefixes remain defense in depth. No native-quality claim is
+implied by fixture inference or these read-only views.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

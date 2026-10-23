@@ -1,5 +1,6 @@
 import { parseEvidence, type Evidence } from "@/lib/api/chat-contracts";
 import { UUID_PATTERN } from "@/lib/api/source-contracts";
+import { parseAsrOrigin, type AsrOrigin } from "@/lib/api/provenance-contracts";
 
 export interface TranscriptQuery { generation?: number; page: number }
 export interface TranscriptPage {
@@ -15,6 +16,7 @@ export interface TranscriptPage {
   total_segments: number;
   total_pages: number;
   items: Evidence[];
+  asr_origin?: AsrOrigin | null;
 }
 
 function integer(value: unknown, minimum = 0, maximum = 2_147_483_647): number {
@@ -53,12 +55,14 @@ export function parseTranscriptPage(value: unknown): TranscriptPage {
   const generation = row.generation === null ? null : integer(row.generation, 1);
   const active = row.active_generation === null ? null : integer(row.active_generation, 1);
   const version = row.processing_version === null ? null : text(row.processing_version, 120);
+  const origin = parseAsrOrigin(row.asr_origin);
   const total = integer(row.total_segments, 0, 100_000);
   const pages = integer(row.total_pages, 0, 2_000);
   const page = integer(row.page, 1, Math.max(1, pages));
   if (row.page_size !== 50 || pages !== Math.ceil(total / 50) || row.items.length !== Math.min(50, Math.max(0, total - (page - 1) * 50))
       || (generation !== null && (active === null || generation > active)) || (generation === null && active !== null)
-      || (total > 0 && (generation === null || version === null))) throw new Error("Invalid transcript pagination");
+      || (total > 0 && (generation === null || version === null))
+      || (origin !== null && (generation === null || origin.generation > generation))) throw new Error("Invalid transcript pagination");
   const seen = new Set<string>();
   let characters = 0;
   const items = row.items.map((item) => {
@@ -66,7 +70,8 @@ export function parseTranscriptPage(value: unknown): TranscriptPage {
     const id = evidence.segment_id.toLowerCase();
     characters += evidence.text.length;
     if (evidence.source_id.toLowerCase() !== source.toLowerCase() || evidence.source_filename !== filename || evidence.generation !== generation
-        || evidence.processing_version !== version || evidence.modality !== "transcript" || seen.has(id) || characters > 2_000_000) throw new Error("Invalid transcript provenance");
+        || evidence.processing_version !== version || evidence.modality !== "transcript" || seen.has(id) || characters > 2_000_000
+        || JSON.stringify(evidence.asr_origin) !== JSON.stringify(origin)) throw new Error("Invalid transcript provenance");
     seen.add(id);
     return evidence;
   });
@@ -76,5 +81,5 @@ export function parseTranscriptPage(value: unknown): TranscriptPage {
         || (previous.end_ms === current.end_ms && previous.segment_id.toLowerCase() > current.segment_id.toLowerCase())))) throw new Error("Invalid transcript ordering");
   }
   return { source_id: source, source_filename: filename, source_kind: text(row.source_kind, 30), source_status: text(row.source_status, 30),
-    generation, active_generation: active, processing_version: version, page, page_size: 50, total_segments: total, total_pages: pages, items };
+    generation, active_generation: active, processing_version: version, asr_origin: origin, page, page_size: 50, total_segments: total, total_pages: pages, items };
 }

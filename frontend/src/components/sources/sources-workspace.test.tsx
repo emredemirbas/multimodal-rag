@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
 import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
+import { asrOrigin, audioRetention } from "../../../test-support/media-fixture";
 
 vi.mock("@/app/actions/sources", () => ({ uploadSourceAction: vi.fn(), metadataSourceAction: vi.fn(), sourceCommandAction: vi.fn(), retryCleanupAction: vi.fn() }));
 const projectId = "12345678-1234-1234-1234-123456789abc";
@@ -21,6 +22,45 @@ describe("source management", () => {
     HTMLDialogElement.prototype.close = function () { this.open = false; };
   });
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it("polls original cleanup independently of completed processing, then stops on confirmed deletion", async () => {
+    const pending = { ...source, asr_origin: asrOrigin, audio_retention: audioRetention("cleanup_pending") };
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ items: [{ ...pending, audio_retention: audioRetention("deleted") }] }), { status: 200 }));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false} />);
+    expect(screen.getByText(/Physical deletion is pending/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reindex retained transcript" })).toBeVisible();
+    expect(screen.getByText(/Automatically transcribed from audio/)).toBeVisible();
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    fireEvent(document, new Event("visibilitychange"));
+    await act(async () => { vi.advanceTimersByTime(10_000); });
+    expect(fetch).not.toHaveBeenCalled();
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    await act(async () => { fireEvent(document, new Event("visibilitychange")); });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Original audio deletion confirmed.")).toBeVisible();
+    await act(async () => { vi.advanceTimersByTime(20_000); });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("does not offer unusable retry/reprocess controls for retired original audio", () => {
+    const failed = { ...source, kind: "audio", active_generation: null, status: "failed", audio_retention: audioRetention("cleanup_failed"),
+      job: { ...source.job!, status: "failed" as const, failure_code: "audio_expired" } };
+    render(<SourcesWorkspace projectId={projectId} initialSources={[failed]} archived={true} />);
+    expect(screen.getByRole("button", { name: "Retry original audio cleanup" })).toBeVisible();
+    expect(screen.getByText(/new transcription requires a new authorized upload/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Retry processing" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reprocess source" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Automatic transcription provenance" })).not.toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it("shows automatic audio continuation without publishing unfinished evidence", () => {
+    const pending = { ...source, kind: "audio", active_generation: null, status: "processing", audio_retention: audioRetention(),
+      job: { ...source.job!, status: "pending" as const, stage: "waiting_asr_continuation" } };
+    render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false} />);
+    expect(screen.getByText(/Audio window saved/)).toHaveTextContent("Unfinished windows are not tutorial evidence");
+    expect(screen.getByRole("button", { name: "Cancel processing" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Read transcript" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry processing" })).not.toBeInTheDocument();
+  });
 
   it("has labelled bounded upload, explicit rights, empty and unavailable-media states", () => {
     render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);

@@ -44,7 +44,15 @@ delivery checkpoints progress and requeues without a failure attempt. Complete
 VTT adoption uses a unique reserved object prefix and a post-PUT authorization
 fence; ASR completion, provenance/usage, indexing-job creation and raw retirement
 commit together. Original eligibility expires after one hour; the scheduler
-observably retries physical cleanup. Public WAV upload/UI remains disabled.
+observably retries physical cleanup. Public WAV upload remains disabled.
+
+The read-only inspection follow-up exposes typed ASR origin and original-audio
+retention state without inference or object access. Artifact links identify source
+origin; processing-version links identify evidence/citation origin even after
+reindexing. Mutable metadata never decides a machine-generated label. The UI
+separates expiry/retirement from confirmed physical deletion, follows cleanup after
+index completion and uses the existing authorized failed-cleanup retry boundary.
+Upload API/BFF/form and native owned-audio verification still gate public WAV input.
 
 ## Architecture style
 

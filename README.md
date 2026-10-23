@@ -144,8 +144,9 @@ archived. Subtitle uploads have no playable video; no playback URL is invented.
 
 This is a private model boundary, not a product upload feature. It supports WAV
 signed 16-bit PCM / 16 kHz / mono, at most 20 MB and 10 minutes in the validator;
-each model request is at most 30 seconds. Future jobs must enforce rights, scope,
-resumability and terminal original cleanup before accepting audio in the app.
+each model request is at most 30 seconds. The private job backend now enforces
+rights, scope, resumability and terminal original cleanup. Public audio upload
+remains gated by the additional verification and UI boundary described below.
 
 Explicit setup downloads about 148 MB of public multilingual Whisper-base files
 from a pinned revision, verifies every SHA-256 and retains only reusable weights:
@@ -184,9 +185,20 @@ queue continuations, temporary-original retirement/cleanup and atomic VTT handof
 to ordinary indexing (migrations 0011/0012). Original processing eligibility lasts
 at most one hour; physical deletion is separately confirmed/retried by the scheduler.
 Reindexing retains the VTT and ASR provenance, not the original audio. The existing
-application still rejects WAV: bounded authenticated upload and machine-generated
-inspection UI are the remaining step, not enabled by running the private worker.
+application still rejects WAV: bounded authenticated upload and the separately
+reported native owned-audio end-to-end check remain required, not enabled by
+running the private worker.
 See [media workflow](docs/sprint4/media-worker-plan.md).
+
+The read-only inspection follow-up labels automatically generated text as **not
+human-reviewed** in source/transcript/evidence/chat views, retaining the exact ASR
+origin across reindexing and older citations. Speech, code identifiers and
+timestamps may be wrong; upload a corrected authorized SRT/VTT as a new source
+when needed. Source management distinguishes original expiry, pending/failed
+cleanup and confirmed deletion, with existing authorized cleanup retry. Reindexing
+uses the retained transcript; it does not transcribe retired audio again or restore
+playback. This UI is preparation for future WAV uploads, not a new ingestion path.
+See [inspection validation](docs/sprint4/media-inspection-validation.md).
 
 ## Optional real local AI (no API key or service bill)
 

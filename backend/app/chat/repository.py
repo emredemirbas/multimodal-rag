@@ -73,16 +73,20 @@ class ChatRepository:
     @staticmethod
     def _turn(connection, tenant: str, project: UUID, row) -> ChatTurn:
         evidence = connection.execute(
-            """SELECT c.score,s.filename,cs.* FROM message_citations c
+            """SELECT c.score,s.filename,cs.*,to_jsonb(ar) AS asr_origin FROM message_citations c
                JOIN content_segments cs ON cs.tenant_id=c.tenant_id AND cs.project_id=c.project_id AND cs.id=c.segment_id
                JOIN sources s ON s.tenant_id=cs.tenant_id AND s.project_id=cs.project_id AND s.id=cs.source_id
+               LEFT JOIN processing_versions v ON v.tenant_id=cs.tenant_id AND v.project_id=cs.project_id
+                   AND v.source_id=cs.source_id AND v.generation=cs.generation
+               LEFT JOIN asr_runs ar ON ar.tenant_id=v.tenant_id AND ar.project_id=v.project_id
+                   AND ar.source_id=v.source_id AND ar.job_id=v.asr_job_id AND ar.completed_at IS NOT NULL
                WHERE c.tenant_id=%s AND c.project_id=%s AND c.turn_id=%s ORDER BY c.ordinal""",
             (tenant, project, row["id"]),
         ).fetchall()
         citations = [Citation(segment_id=item["id"], source_id=item["source_id"], source_filename=item["filename"],
                               start_ms=item["start_ms"], end_ms=item["end_ms"], modality=item["modality"],
                               frame_id=item["frame_id"], score=item["score"], processing_version=item["processing_version"],
-                              generation=item["generation"]) for item in evidence]
+                              generation=item["generation"], asr_origin=item["asr_origin"]) for item in evidence]
         response = QuestionResponse(answer=row["answer"], abstained=row["abstained"], citations=citations,
                                     retrieval_run_id=row["retrieval_run_id"], provider=row["provider"], model=row["model"],
                                     processing_version=row["retrieval_version"], latency_ms=row["duration_ms"])
@@ -191,8 +195,12 @@ class ChatRepository:
         with self.store._connect() as connection:
             self._scope(connection, tenant, project, actor)
             row = connection.execute(
-                """SELECT cs.*, s.filename AS source_filename FROM content_segments cs
+                """SELECT cs.*, s.filename AS source_filename,to_jsonb(ar) AS asr_origin FROM content_segments cs
                    JOIN sources s ON s.tenant_id=cs.tenant_id AND s.project_id=cs.project_id AND s.id=cs.source_id
+                   LEFT JOIN processing_versions v ON v.tenant_id=cs.tenant_id AND v.project_id=cs.project_id
+                       AND v.source_id=cs.source_id AND v.generation=cs.generation
+                   LEFT JOIN asr_runs ar ON ar.tenant_id=v.tenant_id AND ar.project_id=v.project_id
+                       AND ar.source_id=v.source_id AND ar.job_id=v.asr_job_id AND ar.completed_at IS NOT NULL
                    WHERE cs.tenant_id=%s AND cs.project_id=%s AND cs.id=%s AND s.deleted_at IS NULL""",
                 (tenant, project, segment),
             ).fetchone()

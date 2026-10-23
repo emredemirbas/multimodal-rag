@@ -7,6 +7,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
+from .provenance import AsrOrigin
+
 
 TenantId = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")]
 IdentitySubject = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
@@ -154,6 +156,7 @@ class Citation(BaseModel):
     score: float
     processing_version: str = "sprint0-v1"
     generation: int = 1
+    asr_origin: AsrOrigin | None = None
 
 
 class QuestionResponse(BaseModel):
@@ -172,6 +175,7 @@ class RetrievalHit(BaseModel):
     source_filename: str
     score: float
     semantic_similarity: float | None = None
+    asr_origin: AsrOrigin | None = None
 
 
 class RetrievalRun(BaseModel):
