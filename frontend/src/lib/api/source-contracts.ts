@@ -9,6 +9,7 @@ export interface ProcessingJob {
   processed_segments?: number;
   total_segments?: number;
   failure_code: string | null;
+  job_type?: string;
 }
 
 export interface SourceItem {
@@ -18,6 +19,7 @@ export interface SourceItem {
   generation: number;
   active_generation: number | null;
   segment_count: number;
+  frame_count?: number;
   provider: string;
   job: ProcessingJob | null;
   failure_code: string | null;
@@ -90,6 +92,7 @@ export function parseSourceList(value: unknown): SourceItem[] {
     const total = rawJob?.total_segments === undefined ? 0 : integer(rawJob.total_segments);
     if (processed > total || total > 10_000) throw new Error('Invalid checkpoint progress');
     const job: ProcessingJob | null = rawJob ? {
+      ...(rawJob.job_type === undefined ? {} : { job_type: string(rawJob.job_type) }),
       id: identifier(rawJob.id), status: rawJob.status as ProcessingJob["status"], stage: string(rawJob.stage),
       progress_percent: integer(rawJob.progress_percent), attempt_count: integer(rawJob.attempt_count),
       max_attempts: integer(rawJob.max_attempts), failure_code: rawJob.failure_code === null ? null : string(rawJob.failure_code),
@@ -100,6 +103,7 @@ export function parseSourceList(value: unknown): SourceItem[] {
       id: identifier(source.id), filename: string(source.filename), status: string(source.status),
       generation: integer(source.generation), active_generation: source.active_generation === null ? null : integer(source.active_generation),
       segment_count: integer(source.segment_count), provider: string(source.provider), job,
+      ...(source.frame_count === undefined ? {} : { frame_count: integer(source.frame_count) }),
       failure_code: source.failure_code === null ? null : string(source.failure_code),
       ...(source.kind === undefined ? {} : { kind: string(source.kind) }),
       playlist_truncated: playlistTruncated(source),

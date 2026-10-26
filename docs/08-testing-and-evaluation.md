@@ -216,6 +216,19 @@ claim that the fixture is representative native video quality. Public video uplo
 final derived-object adoption and visual retrieval/quality remain later gates.
 See `sprint4/video-worker-validation.md`.
 
+Retained-gallery tests add one-PNG continuations, no partial visibility, immutable
+origin, maximum 20 frames including blank OCR, derived cancel/retry after raw
+deletion, scope/token/actor/wall-clock fences and manifest/object corruption.
+Exercise a real worker SIGKILL after actual MinIO PUT but before DB adoption:
+the orphan reservation survives, cleanup removes only that candidate, and replacement
+deliveries retain the complete gallery without provider calls. Test protected image
+reads, reauthorization after object access, source/project cascades and PNG cleanup.
+Frontend contracts/proxy/render tests cover no-store/byte/time bounds, source mismatch,
+unsafe OCR, loading/empty/error/retry and no false searchable-state claims. Keep
+fixture process-loss evidence distinct from the separately exercised actual native
+pipeline; neither establishes representative OCR/scene quality. See
+`sprint4/visual-gallery-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

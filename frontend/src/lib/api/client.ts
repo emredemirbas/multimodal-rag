@@ -142,6 +142,43 @@ function serializeTitle(title: string): string {
   return JSON.stringify({ title });
 }
 
+export async function requestPng(path: string): Promise<Uint8Array<ArrayBuffer>> {
+  const { baseUrl, token } = configuration();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  try {
+    const response = await fetch(new URL(path.replace(/^\//, ""), baseUrl), { cache: "no-store", credentials: "omit", redirect: "error",
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "image/png", "X-Request-ID": crypto.randomUUID() }, signal: controller.signal });
+    if (!response.ok) throw await apiErrorFromResponse(response);
+    const length = response.headers.get("content-length");
+    if (response.headers.get("content-type") !== "image/png" || !response.body
+        || (length !== null && (!/^[0-9]{1,6}$/.test(length) || Number(length) > 600000 || Number(length) < 1))) {
+      await response.body?.cancel(); throw new ApiError({ status: 502, code: "invalid_api_response" });
+    }
+    reader = response.body.getReader();
+    const chunks: Uint8Array[] = []; let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 600000) throw new ApiError({ status: 502, code: "invalid_api_response" });
+      chunks.push(value);
+    }
+    const result = new Uint8Array(size); let offset = 0;
+    for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.byteLength; }
+    if (size < 8 || (length !== null && size !== Number(length))
+        || ![137,80,78,71,13,10,26,10].every((byte, index) => result[index] === byte)) throw new ApiError({ status: 502, code: "invalid_api_response" });
+    return result;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError({ status: controller.signal.aborted ? 504 : 503, code: "upstream_unavailable" });
+  } finally {
+    controller.abort(); clearTimeout(timeout);
+    if (reader) { try { await reader.cancel(); } catch {} reader.releaseLock(); }
+  }
+}
+
 export async function listProjects(status: ProjectListStatus): Promise<ProjectList> {
   const payload = await requestJson(
     `/api/v1/projects?status=${encodeURIComponent(status)}`,

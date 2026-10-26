@@ -6,14 +6,18 @@ import hashlib
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
+from pathlib import Path
 import socket
 import struct
 import subprocess
+import sys
 from threading import Thread
 import time
 import zlib
 
 import pytest
+import yaml
 
 from app.vision import client, contracts, server
 from app.vision.local import VisualResult
@@ -70,6 +74,18 @@ def service():
 
 def provider(service):
     return client.LocalVisualClient(f"http://127.0.0.1:{service.server_port}")
+
+
+def test_actual_compose_health_command_uses_the_private_protocol(service):
+    root = Path(__file__).resolve().parents[2]
+    health = yaml.safe_load((root / 'compose.yaml').read_text())['services']['visual']['healthcheck']['test']
+    assert health[:3] == ['CMD', 'python', '-c']
+    code = health[3].replace('http://127.0.0.1:8091', f'http://127.0.0.1:{service.server_port}')
+    environment = {key: os.environ[key] for key in ('PATH', 'LANG') if key in os.environ}
+    environment['PYTHONPATH'] = str(root / 'backend')
+    completed = subprocess.run([sys.executable, '-c', code], env=environment, capture_output=True, timeout=8)
+    assert completed.returncode == 0, 'The actual Compose health command violates the private protocol'
+    assert not service.observed  # No native work or input involved in health.
 
 
 def request(service, *, path="/extract?language=en", headers=None, body=None, method="POST"):

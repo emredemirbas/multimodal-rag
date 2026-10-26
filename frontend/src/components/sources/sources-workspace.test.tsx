@@ -14,6 +14,16 @@ const source: SourceItem = {
 };
 
 describe("source management", () => {
+  it("links only complete retained galleries and avoids raw-video reprocessing", () => {
+    const video = { ...source, kind: "video", filename: "owned.mp4", status: "metadata_ready", frame_count: 2,
+      active_generation: null, segment_count: 0, job: { ...source.job!, job_type: "visual_publish", stage: "frames_retained" } };
+    const { rerender } = render(<SourcesWorkspace projectId={projectId} initialSources={[video]} archived={false} />);
+    expect(screen.getByRole("link", { name: "View selected frames" })).toHaveAttribute("href", `/projects/${projectId}/sources/${source.id}/frames`);
+    expect(screen.getByText(/not indexed for questions or citations/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Reprocess source" })).toBeNull();
+    rerender(<SourcesWorkspace key="pending" projectId={projectId} initialSources={[{ ...video, frame_count: 0 }]} archived={false} />);
+    expect(screen.queryByRole("link", { name: "View selected frames" })).toBeNull();
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     Object.defineProperty(document, "hidden", { configurable: true, value: false });

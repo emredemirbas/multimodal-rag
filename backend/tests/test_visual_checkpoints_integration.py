@@ -384,6 +384,6 @@ def test_additive_migration_preserves_published_pre_checkpoint_data_and_checksum
     with store._connect() as connection:
         after = connection.execute('SELECT version,sha256 FROM schema_migrations ORDER BY version').fetchall()
         assert after[:len(before)] == before
-        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql']
+        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql']
         assert connection.execute('SELECT count(*) AS n FROM visual_runs WHERE tenant_id=%s AND project_id=%s',
                                    (principal.tenant_id, project.id)).fetchone()['n'] == 0

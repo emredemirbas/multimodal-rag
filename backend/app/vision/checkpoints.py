@@ -173,9 +173,16 @@ class VisualCheckpoints:
         run = self._run(connection, claim, live)
         if run['saved_at'] is None:
             raise SourceError('visual_checkpoint_incomplete', 'Save a complete visual result before adopting it.', 409)
+        result = self._snapshot(connection, self._scope(claim), run)
+        if self._live(connection, claim) is None:
+            return None
+        return result
+
+    def _snapshot(self, connection, scope, run) -> VisualResult:
+        """Integrity only; caller must enforce either the live or prepared fence."""
         rows = connection.execute(
             '''SELECT * FROM visual_checkpoint_frames WHERE tenant_id=%s AND project_id=%s AND job_id=%s
-               AND source_id=%s AND generation=%s ORDER BY ordinal''', self._scope(claim),
+               AND source_id=%s AND generation=%s ORDER BY ordinal''', scope,
         ).fetchall()
         if (len(rows) != run['saved_frames'] or [row['ordinal'] for row in rows] != list(range(len(rows)))
                 or sum(len(row['image']) for row in rows) != run['image_bytes']
@@ -189,6 +196,4 @@ class VisualCheckpoints:
                  'image_base64': base64.b64encode(row['image']).decode(), 'text': row['ocr_text']} for row in rows]})
         if result_digest(result) != run['result_sha256']:
             raise SourceError('invalid_visual_checkpoint', 'The saved visual manifest failed integrity validation.', 503)
-        if self._live(connection, claim) is None:
-            return None
         return result.result()

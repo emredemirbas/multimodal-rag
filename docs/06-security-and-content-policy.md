@@ -143,6 +143,24 @@ cleanup ticket; physical deletion is separately verified and failures remain
 observable/retryable, not reported as deleted. Prepared PNG/OCR stays private until
 full source/project deletion. No public MP4 route/form or final evidence is enabled.
 
+ADR 0023 adds derived PNG adoption, still without product MP4 upload/indexing.
+Each candidate gets a separately committed unique cleanup prefix before PUT;
+post-PUT membership is locked through commit, and actual wall-clock lease/source/
+generation checks prevent stale adoption. One PNG per delivery bounds I/O;
+continuations do not consume a failure attempt. Original deletion/expiry does not
+prevent use of already permitted prepared derivatives. Only a complete verified
+manifest receives the gallery publication marker. Failed/cancelled partial objects
+remain private until retry or complete source/project cleanup; old orphan tickets
+cannot delete newer accepted candidates.
+
+Read APIs enforce both scopes and membership, validate retained manifest/PNG hashes,
+geometry and size, and reauthorize after object I/O. Browser proxy uses server-only
+credentials, an eight-second request deadline, actual <=600,000-byte streaming cap,
+PNG-only framing, no redirects and no-store/nosniff/same-origin headers on all
+outcomes. Cross-site image embedding is rejected. Render OCR literally, label it
+unreviewed and preserve image-error/text-only inspection. A gallery is not indexed
+evidence, an original-video download, human review or OCR quality approval.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

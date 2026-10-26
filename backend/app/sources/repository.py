@@ -218,7 +218,9 @@ class SourceRepository:
                 job = connection.execute('SELECT * FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND id=%s', (tenant, project, receipt['job_id'])).fetchone()
                 return Registration(source=current, job=Job.model_validate(job), deduplicated=True)
             job = current.job
-            if command in {'retry', 'reprocess'} and current.kind in {'audio', 'video'} and job.status in {'failed', 'cancelled', 'succeeded'}:
+            if (command in {'retry', 'reprocess'} and current.kind in {'audio', 'video'}
+                    and job.status in {'failed', 'cancelled', 'succeeded'}
+                    and not (current.kind == 'video' and job.job_type == 'visual_publish' and command == 'retry')):
                 if current.kind == 'audio':
                     raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
                 raise SourceError('video_reupload_required', 'The original video is retired on terminal paths; upload it again to process.', 409)
@@ -337,7 +339,7 @@ class SourceRepository:
                    started_at=now(),updated_at=now(),failure_code=NULL,failure_detail=NULL
                    WHERE tenant_id=%s AND project_id=%s AND id=%s RETURNING *''',
                 (configured_space(self.settings.embedding_provider), token,
-                 VISUAL_LEASE_SECONDS if row['job_type'] == 'visual' else self.settings.job_lease_seconds, tenant, project, job),
+                 VISUAL_LEASE_SECONDS if row['job_type'] in {'visual', 'visual_publish'} else self.settings.job_lease_seconds, tenant, project, job),
             ).fetchone()
             connection.execute(
                 "INSERT INTO processing_attempts (tenant_id,project_id,id,job_id,attempt_number,status) VALUES (%s,%s,%s,%s,%s,'running')",
@@ -590,6 +592,8 @@ class SourceRepository:
                           count(*) FILTER (WHERE cleanup_id IS NOT NULL AND deleted_at IS NULL) AS cleanup_pending,
                           count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted FROM video_inputs''',
             ).fetchone()
+            galleries = connection.execute('SELECT count(*) FILTER (WHERE published_at IS NULL) AS pending,count(*) FILTER (WHERE published_at IS NOT NULL) AS published FROM visual_publications').fetchone()
+            retained_frames = connection.execute('SELECT count(*) AS count FROM retained_visual_frames').fetchone()['count']
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
                  '# TYPE tutorial_artifact_cleanup gauge', '# TYPE tutorial_embedding_checkpoint_segments gauge',
@@ -601,6 +605,9 @@ class SourceRepository:
                       '# TYPE tutorial_asr_staged_model_duration_seconds gauge',
                       f'tutorial_asr_staged_model_duration_seconds {float(asr["duration"])/1000}'])
         lines.append('# TYPE tutorial_audio_originals gauge')
+        lines.extend(['# TYPE tutorial_visual_galleries gauge', f'tutorial_visual_galleries{{status="pending"}} {galleries["pending"]}',
+                      f'tutorial_visual_galleries{{status="published"}} {galleries["published"]}',
+                      '# TYPE tutorial_retained_visual_frames gauge', f'tutorial_retained_visual_frames {retained_frames}'])
         lines.extend(['# TYPE tutorial_video_originals gauge', '# TYPE tutorial_visual_prepared_runs gauge',
                       f'tutorial_visual_prepared_runs {visual["prepared"]}'])
         lines.extend(['# TYPE tutorial_visual_runs gauge',

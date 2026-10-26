@@ -22,4 +22,6 @@ def delivery_route(job_type: str) -> tuple[str, str]:
         return 'tutorial.process_audio', 'media'
     if job_type == 'visual':
         return 'tutorial.process_video', 'visual'
+    if job_type == 'visual_publish':
+        return 'tutorial.publish_visual', 'visual'
     raise ValueError('Unsupported processing job type')

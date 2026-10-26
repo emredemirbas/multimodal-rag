@@ -239,6 +239,13 @@ visual retrieval/citations and representative OCR/scene quality gates remain ope
 Sprint 4/Alpha 2 is not complete. See `docs/sprint4/video-worker-plan.md` and
 `video-worker-validation.md`.
 
+The retained-gallery continuation (ADR 0023/migration 0015) adds bounded PNG object
+adoption, committed-frame recovery and scoped accessible frame/OCR inspection.
+It preserves original extraction provenance without repeating inference or raw
+retention. Completion is `frames_retained`, not searchable `ready`. Visual indexing/
+citations, public MP4 upload, scene/quality evaluation and the Alpha 2 exit criteria
+remain open. See `docs/sprint4/visual-gallery-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

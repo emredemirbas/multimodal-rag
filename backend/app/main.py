@@ -57,6 +57,8 @@ from .local_model import OllamaAnswerProvider
 from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
 from .chat.repository import ChatRepository
 from .chat.delivery import deliver
+from .vision.gallery import VisualGalleryRepository
+from .vision.gallery_contracts import VisualGallery
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
@@ -167,6 +169,10 @@ def create_app(
             raise
         route = request.scope.get("route")
         route_path = getattr(route, "path", "unmatched")
+        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image'}:
+            response.headers['Cache-Control'] = 'private, no-store'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
         metrics.observe_request(request.method, route_path, response.status_code)
         response.headers["X-Request-ID"] = request_id
         LOGGER.info(
@@ -520,6 +526,17 @@ def create_app(
             turn = repository.record(principal.tenant_id, project_id, actor_id, conversation_id, body, response, run)
         return StreamingResponse(deliver(repository, principal.tenant_id, project_id, actor_id, conversation_id, turn),
                                  media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
+
+    @app.get('/api/v1/projects/{project_id}/sources/{source_id}/frames', response_model=VisualGallery)
+    def selected_frames(project_id: UUID, source_id: UUID, request: Request, principal: CurrentPrincipal, response: Response):
+        response.headers['Cache-Control'] = 'private, no-store'
+        return VisualGalleryRepository(sources(request)).gallery(principal.tenant_id, project_id, source_id, actor(request, principal))
+
+    @app.get('/api/v1/projects/{project_id}/frames/{frame_id}/image')
+    def selected_frame_image(project_id: UUID, frame_id: UUID, request: Request, principal: CurrentPrincipal):
+        data = VisualGalleryRepository(sources(request)).image(principal.tenant_id, project_id, frame_id, actor(request, principal))
+        return Response(content=data, media_type='image/png', headers={'Cache-Control': 'private, no-store',
+            'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-origin'})
 
     @app.get("/api/v1/projects/{project_id}/evidence/{segment_id}", response_model=EvidenceView)
     def inspect_evidence(project_id: UUID, segment_id: UUID, request: Request, principal: CurrentPrincipal):

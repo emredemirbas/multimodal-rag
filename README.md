@@ -297,6 +297,20 @@ while permitted derived staging remains until source/project deletion. No paid
 service is used. See [workflow and remaining gates](docs/sprint4/video-worker-plan.md)
 and [validation](docs/sprint4/video-worker-validation.md).
 
+The next inspection component (ADR 0023, migration 0015) adds an internal
+`VisualGalleryRepository.enqueue` command and separate `tutorial.publish_visual`
+task. It retains one selected PNG per delivery without rerunning OCR or restoring
+the original. Only a complete gallery becomes readable at
+`/projects/{project_id}/sources/{source_id}/frames`, linked as **View selected
+frames** on retained video sources. It shows actual timestamps, literal unreviewed
+OCR and processing origin; PNGs pass through a bounded authenticated API/server-only
+no-store proxy. Incomplete galleries stay hidden. This is **inspection, not a
+search index or chat citation**: sources remain `metadata_ready`, and no public
+MP4 upload or original-video playback is enabled. Raw cleanup is unchanged; source/
+project deletion removes selected images and all staging too. See
+[retained-frame scope](docs/sprint4/visual-gallery-plan.md) and
+[verification](docs/sprint4/visual-gallery-validation.md).
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

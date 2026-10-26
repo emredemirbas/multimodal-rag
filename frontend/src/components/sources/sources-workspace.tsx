@@ -264,17 +264,19 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {(source.job.total_segments ?? 0) > 0 ? <p role="status" aria-live="polite">{source.job.processed_segments ?? 0} of {source.job.total_segments} segments saved · {source.job.delivery_count ?? 0} processing deliveries. Completed batches survive retries.</p> : null}
           {source.job.stage === 'waiting_continuation' ? <p>Progress saved. Processing will continue automatically without consuming a retry attempt; no action is needed.</p> : null}
           {source.job.stage === 'waiting_asr_continuation' ? <p>Audio window saved. Transcription continues automatically without consuming a retry attempt. Unfinished windows are not tutorial evidence.</p> : null}
+          {source.job.stage === 'waiting_visual_continuation' ? <p>Selected frame saved. Preparation continues automatically without consuming a retry attempt. The gallery stays unavailable until every frame is retained.</p> : null}
           {source.job.stage === 'waiting_capacity' ? <p>Playlist processing slots are busy. Waiting does not consume a retry attempt.{source.audio_retention ? ' The one-hour original-audio eligibility still includes this waiting time.' : ''}</p> : null}
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
-        {source.status === "metadata_ready" ? <p>Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically.</p> : null}
+        {source.status === "metadata_ready" ? <p>{source.kind === "video" ? "Visual preparation is complete, but this video is not indexed for questions or citations. Only fully retained selected frames can be inspected." : "Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically."}</p> : null}
         {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
         {source.active_generation !== null && source.active_generation !== source.generation ? <p>Previously indexed generation {source.active_generation} remains available{source.reindex_required ? ' for saved citation inspection' : ''} until replacement succeeds.</p> : null}
         <div className="form-actions">
+          {source.kind === "video" && (source.frame_count ?? 0) > 0 ? <Link className="button button--secondary" prefetch={false} href={`/projects/${projectId}/sources/${source.id}/frames`}>View selected frames</Link> : null}
           {source.active_generation !== null && (source.kind === undefined || source.kind === "transcript") ?
             <Link className="button button--secondary" prefetch={false} href={transcriptHref(projectId, source.id, source.active_generation)}>Read transcript</Link> : null}
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
-          {source.job && source.kind !== "audio" && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
-          {source.job && source.kind !== "audio" && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label={source.asr_origin ? "Reindex retained transcript" : "Reprocess source"} onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && (source.kind !== "video" || source.job.job_type === "visual_publish") && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && source.kind !== "video" && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label={source.asr_origin ? "Reindex retained transcript" : "Reprocess source"} onCompleted={refresh} /> : null}
           <DeleteSource projectId={projectId} source={source} onDeleted={deleted} />
         </div>
       </li>)}

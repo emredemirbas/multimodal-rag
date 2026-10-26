@@ -264,6 +264,29 @@ published evidence. The private Python registration repository is not an HTTP AP
 Terminal video retry/reprocess requires re-upload; idempotent replay never restores
 raw bytes. Final object adoption and product API/UI remain later work.
 
+Migration 0015/ADR 0023 adds `visual_publications`, with composite publication-job/
+source/generation and original-visual-run FKs, pinned result digest and atomic
+`published_at`. `retained_visual_frames` stores scoped stable ID/ordinal/actual PTS,
+PNG geometry, generated object reference/byte digest and literal OCR/text digest.
+Each unique candidate has a write-ahead orphan reservation; a committed row is
+reused on continuation/retry. Partial rows never appear in public reads.
+`publish_visual` command receipts are internal, not an extra public source command;
+the API still only accepts retry/cancel/reprocess. `Job.job_type` is now projected
+so UI recovery can distinguish derived publication from retired-original extraction.
+Derived retry can reuse frames after raw deletion; video reprocess still requires
+re-upload. No content_segments/processing_versions/active_generation or fabricated
+inference usage is added. Actual copy attempts remain in processing-attempt metrics.
+
+Authenticated no-store `GET /projects/{project_id}/sources/{source_id}/frames`
+returns either an honest empty gallery or the whole published manifest with original
+job/generation/profile/language/engine origin. It is separate from transcript
+browsing and never claims searchable readiness. `GET /projects/{project_id}/frames/
+{frame_id}/image` verifies scoped publication and bounded PNG bytes/digest/geometry,
+then rechecks access after storage. No object key or raw original is returned.
+The corresponding same-origin Next route is a bounded credential-free-browser
+proxy, not a signed public object URL. Source/project cascades remove every row;
+existing verified prefix cleanup removes adopted and orphan images.
+
 ### Projects
 
 - `POST /projects`

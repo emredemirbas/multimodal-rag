@@ -9,6 +9,7 @@ from ..sources.repository import SourceRepository
 from ..vision.policy import HARD_SECONDS, SOFT_SECONDS, VISIBILITY_SECONDS
 from .queue import worker_app
 from .visual_processing import process_video
+from .visual_publication import publish_visual
 
 settings = Settings.from_env()
 celery_app = worker_app('tutorial_visual', settings.broker_url, 'visual')
@@ -22,5 +23,14 @@ def process(tenant_id: str, project_id: str, source_id: str, job_id: str, genera
     try:
         repository = SourceRepository(PostgresStore(settings.database_url), S3ArtifactStore(settings), settings)
         process_video(repository, tenant_id, UUID(project_id), UUID(source_id), UUID(job_id), generation)
+    except Exception:
+        logging.getLogger('tutorial_workspace.jobs').error(json.dumps({'event': 'visual_worker_unavailable', 'code': 'processing_unavailable'}))
+
+
+@celery_app.task(name='tutorial.publish_visual', shared=False)
+def publish(tenant_id: str, project_id: str, source_id: str, job_id: str, generation: int):
+    try:
+        repository = SourceRepository(PostgresStore(settings.database_url), S3ArtifactStore(settings), settings)
+        publish_visual(repository, tenant_id, UUID(project_id), UUID(source_id), UUID(job_id), generation)
     except Exception:
         logging.getLogger('tutorial_workspace.jobs').error(json.dumps({'event': 'visual_worker_unavailable', 'code': 'processing_unavailable'}))

@@ -150,7 +150,7 @@ jobs:
           -c "import shutil; from app.jobs.visual_worker import celery_app;
           assert celery_app.conf.task_time_limit == 210 and celery_app.conf.task_soft_time_limit == 180;
           assert celery_app.conf.broker_transport_options['visibility_timeout'] == 300;
-          assert 'tutorial.process_video' in celery_app.tasks;
+          assert 'tutorial.process_video' in celery_app.tasks and 'tutorial.publish_visual' in celery_app.tasks;
           assert shutil.which('ffmpeg') is None and shutil.which('tesseract') is None;
           print('PASS: trusted visual worker budgets and no native decoders')"
       - name: Verify real private visual HTTP, profile pinning and native OCR
@@ -159,6 +159,8 @@ jobs:
           visual-inspect -m app.vision.http_selftest
       - name: Start the complete development stack
         run: docker compose up -d --wait --wait-timeout 120
+      - name: Verify optional visual service and worker actually become healthy
+        run: docker compose --profile local-visual up -d --wait --wait-timeout 120 visual-worker
       - name: Exercise the Compose application
         run: |
           python3 scripts/smoke_sprint1.py
@@ -184,4 +186,4 @@ jobs:
         run: docker compose logs --tail=100
       - name: Stop the CI stack
         if: always()
-        run: docker compose down --volumes
+        run: docker compose --profile local-visual down --volumes --remove-orphans

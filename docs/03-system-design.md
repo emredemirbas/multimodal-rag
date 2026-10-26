@@ -58,6 +58,19 @@ and observable. Private prepared bytes are not active retrieval/evidence: object
 adoption, visual indexing/citations and public upload/UI remain follow-up. See
 `sprint4/video-worker-plan.md`; default Compose startup remains unchanged.
 
+ADR 0023/migration 0015 supplies the retained-frame inspection slice. An internal
+authorized command creates a new derived-publication job linked to the immutable
+prepared extraction; it never consumes the raw input again. The same trusted
+visual worker adopts one PNG per delivery using unique orphan reservations and
+post-PUT actor/lease fencing. Atomic gallery publication requires the complete
+validated manifest. `retained_visual_frames` links stable IDs/PTS/OCR/object hashes
+to the exact original visual run and publication generation. Partial objects stay
+private. Source status remains `metadata_ready` without active retrieval generation.
+Scoped gallery/PNG reads and a bounded server-only no-store image proxy provide
+inspection with unreviewed-OCR/capability caveats. Complete source/project deletion
+still covers raw, orphan and adopted images/rows. Indexing/citations and product
+MP4 upload are separate follow-ups; see `sprint4/visual-gallery-plan.md`.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

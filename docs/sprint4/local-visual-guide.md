@@ -173,3 +173,27 @@ accepted counts and scoped operation IDs, not content/input fingerprints; no
 tokens, model duration or paid usage is fabricated. Video registration/queue,
 original retirement/confirmed cleanup and atomic object adoption still precede
 product uploads or published visual citations.
+
+## Retained-frame inspection continuation
+
+ADRs 0022/0023 subsequently add the dedicated optional visual queue, private
+authorized registration, one-hour raw eligibility/verified retirement, and a
+separate `VisualGalleryRepository.enqueue` command for prepared derivatives.
+The latter uses `tutorial.publish_visual` to adopt one PNG per delivery; only a
+complete manifest is shown. It never reruns native OCR or recreates an original.
+These internal commands are not public MP4 upload APIs.
+
+For a retained source, **View selected frames** opens the authenticated
+`/projects/{project_id}/sources/{source_id}/frames` page. It shows unreviewed literal
+OCR, actual PTS, source/extraction/publication identity and bounded PNGs through a
+no-store server-only proxy. An empty gallery does not expose partial staging.
+Source/project deletion removes all originals, orphan/adopted images and rows.
+This is still not an active search index, answer citation, original-video player,
+scene detector or representative OCR-quality approval. See
+`visual-gallery-plan.md` and `visual-gallery-validation.md` for the separately
+reported actual native workflow, fixture process-loss and frontend results.
+
+The `visual` Compose health command now uses the same private `LocalVisualClient`
+protocol. Generic urllib's User-Agent is intentionally not part of that protocol;
+do not broaden the header allowlist just to probe readiness. Normal startup still
+excludes optional visual services and product MP4 upload remains closed.

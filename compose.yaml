@@ -138,7 +138,7 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     healthcheck:
-      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8091/health/ready',timeout=2)"]
+      test: [CMD, python, -c, "from app.vision.client import LocalVisualClient; LocalVisualClient('http://127.0.0.1:8091').ready()"]
       interval: 10s
       timeout: 3s
       retries: 5

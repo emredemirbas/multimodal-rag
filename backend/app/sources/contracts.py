@@ -17,6 +17,7 @@ class SourceError(Exception):
 class Job(BaseModel):
     id: UUID
     source_id: UUID
+    job_type: str = 'transcript'
     generation: int
     stage: str
     status: Literal['pending', 'running', 'retrying', 'succeeded', 'failed', 'cancelled']

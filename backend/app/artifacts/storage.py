@@ -57,6 +57,8 @@ class S3ArtifactStore:
             content_type = 'audio/wav' if key.endswith('/input.wav') else 'text/plain; charset=utf-8'
             if key.endswith('/input.mp4'):
                 content_type = 'video/mp4'
+            if key.endswith('/frame.png'):
+                content_type = 'image/png'
             self.client.put_object(Bucket=self.bucket, Key=key, Body=content, ContentType=content_type)
         except (ClientError, BotoCoreError):
             raise self._unavailable() from None

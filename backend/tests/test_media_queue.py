@@ -12,6 +12,7 @@ from app.jobs.queue import delivery_route
 def test_delivery_routes_are_fixed_and_remote_models_are_rejected():
     assert delivery_route('asr') == ('tutorial.process_audio', 'media')
     assert delivery_route('visual') == ('tutorial.process_video', 'visual')
+    assert delivery_route('visual_publish') == ('tutorial.publish_visual', 'visual')
     for job_type in ['transcript', 'metadata']:
         assert delivery_route(job_type) == ('tutorial.process_transcript', 'ingestion')
     with pytest.raises(ValueError): delivery_route('arbitrary.task')
@@ -29,6 +30,8 @@ assert 'tutorial.process_audio' not in ingestion.tasks
 assert 'tutorial.process_audio' in media.tasks
 assert 'tutorial.process_transcript' not in media.tasks
 assert 'tutorial.process_video' in visual.tasks
+assert 'tutorial.publish_visual' in visual.tasks
+assert 'tutorial.publish_visual' not in ingestion.tasks and 'tutorial.publish_visual' not in media.tasks
 assert 'tutorial.process_video' not in ingestion.tasks and 'tutorial.process_video' not in media.tasks
 assert 'tutorial.process_audio' not in visual.tasks and 'tutorial.process_transcript' not in visual.tasks
 assert visual.conf.task_soft_time_limit == 180 and visual.conf.task_time_limit == 210
