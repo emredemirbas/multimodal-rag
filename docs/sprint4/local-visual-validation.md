@@ -90,3 +90,9 @@ No applied migration, existing data, shared queue/bucket, frontend dependency or
 actual `.env` changed; it remains ignored/mode 0600. Application services were not
 restarted. This is not a learner-code sandbox certification. See
 `local-visual-guide.md` for operator use and narrower input limits.
+
+Hosted follow-up: `7f0ee79` passed both backend jobs in
+[run 40338181380](https://github.com/emredemirbas/multimodal-rag/actions/runs/40338181380)
+but failed the frontend's transitive Zod dependency audit. The image/native visual
+job was skipped, not passed. See `zod-security-validation.md` for the separate
+targeted lockfile correction and verification.
