@@ -1,0 +1,18 @@
+FROM python:3.12.10-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    OMP_THREAD_LIMIT=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-tur libseccomp2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1000 visual && useradd --uid 1000 --gid 1000 --home-dir /app visual
+
+WORKDIR /app
+RUN pip install --no-cache-dir 'pydantic==2.14.1'
+COPY app/__init__.py ./app/__init__.py
+COPY app/asr/__init__.py app/asr/isolation.py ./app/asr/
+COPY app/vision ./app/vision
+
+USER 1000:1000
+ENTRYPOINT ["python", "-m", "app.vision.smoke"]

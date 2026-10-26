@@ -58,7 +58,8 @@ not block subtitle uploads or allowlisted metadata adapters.
 | Decision | Proposed default | Status |
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
-| Authorized binary media limits | WAV only, at most 20 MB / 10 minutes; initial encoding 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
+| Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADR 0021; stateless foundation only, no product upload |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -81,8 +82,9 @@ behind `AUDIO_UPLOAD_ENABLED=false` (ADR 0020); explicit pinned-weight/local-asr
 setup and operator opt-in are required. Capability is not model health. Native
 pipeline/keyword evidence and enablement status are separately recorded in
 `sprint4/audio-upload-validation.md`, retaining the earlier vocabulary failure.
-Re-transcription after original cleanup requires re-upload. MP3/MP4, video, original
-frame retention and broader binary-media limits remain unapproved.
+Re-transcription after original cleanup requires re-upload. At that milestone,
+MP3/MP4, video, frame retention and broader limits remained unapproved; the narrower
+2026-10-26 delegated visual decision below supersedes that for MP4/selected frames.
 
 The same-day single-clip evaluation tool adds explicit operator-owned labels and
 content-free word/character, identifier and cue-boundary diagnostics. Native input
@@ -100,7 +102,8 @@ certification. Optional local semantic embeddings now use Qwen3 Embedding 0.6B
 in a separately versioned 1024-D space (ADR 0016). Local ASR foundation now has the
 restricted WAV scope and isolated model process in ADR 0018. ADR 0019 adds private
 durable jobs and original cleanup; ADR 0020 adds the separately gated WAV upload
-boundary, not default enablement or general speech-quality approval. Vision remains
+boundary, not default enablement or general speech-quality approval. Local frame/OCR
+foundation follows in ADR 0021; visual descriptions/published frame evidence remain
 unimplemented. No paid endpoint or cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic
@@ -132,7 +135,21 @@ same user-selected lesson relationships, not a new media format. The existing
 with no retry consumed for waiting and no extension of the one-hour raw eligibility.
 Alignment remains user-asserted. Metadata deletion unlinks independent audio rather
 than cancelling it; complete source/project deletion remains authoritative. See
-`sprint4/audio-playlist-validation.md`. Video/frame/OCR decisions remain open.
+`sprint4/audio-playlist-validation.md`. The subsequent bounded visual decision is
+recorded below; full video ingestion and visual quality remain undelivered.
+
+### Delegated local visual scope (2026-10-26)
+
+The owner delegated technical choices after the explicit MP4/OCR proposal. Select
+owned/authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/
+Turkish OCR, no paid provider/downloader and default-closed product capability.
+Future originals retire on terminal paths with <=one-hour processing eligibility;
+physical deletion must be confirmed separately. Permitted frames/OCR remain until
+complete source/project deletion. ADR 0021 starts only a stateless isolated
+FFmpeg/Tesseract foundation: H.264/avc1 yuv420p, <=1080p/60fps, zero-based input,
+uniform candidates/exact-pixel deduplication, actual PTS and no audio processing.
+Other codecs/formats, scene-quality claims and vision descriptions are not implied.
+Durable authorization/jobs/cleanup, UI and published visual evidence remain follow-up.
 
 ## Decide before Sprint 5
 

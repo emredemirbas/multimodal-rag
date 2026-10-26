@@ -116,6 +116,20 @@ jobs:
         run: >-
           docker compose --profile local-asr run --rm --no-deps --entrypoint python asr
           -c "from app.asr.isolation import block_outbound_sockets; block_outbound_sockets(); print('PASS: ASR outbound sockets blocked')"
+      - name: Build optional local visual tool
+        run: docker compose build visual-inspect
+      - name: Verify visual tool has no application mounts, credentials or network
+        run: >-
+          docker compose --profile visual-tools config --format json |
+          python3 -c 'import json,sys; s=json.load(sys.stdin)["services"]["visual-inspect"];
+          assert s["network_mode"] == "none" and s["read_only"] and not s.get("ports")
+          and not s.get("volumes") and not s.get("environment");
+          assert int(s["pids_limit"]) == 32 and int(s["mem_limit"]) == int(s["memswap_limit"]) == 1073741824;
+          print("PASS: standalone visual tool isolation configuration")'
+      - name: Verify isolated native visual parsing with authored English and Turkish cards
+        run: >-
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
+          visual-inspect -m app.vision.selftest
       - name: Start the complete development stack
         run: docker compose up -d --wait --wait-timeout 120
       - name: Exercise the Compose application

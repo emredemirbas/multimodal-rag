@@ -171,6 +171,19 @@ CLI/native-probe tests are synthetic software evidence, not a reviewed corpus.
 See `sprint4/asr-evaluation-guide.md`. No quality threshold, automatic enablement,
 representative speaker/technical benchmark or word-level alignment is implied.
 
+### Local visual foundation
+
+Test top-level MP4/metadata bounds before native decoding, fixed codecs/timelines,
+bounded sampling, actual PTS, strict P5 pixels, deterministic PNG/CRC, exact-pixel
+deduplication without erasing single-pixel code changes, literal OCR, content-free
+reports, model/profile drift and child deadline/environment/resource limits.
+Optional CI builds the minimal OCR image and generates authored English/Turkish
+cards in a new no-network/read-only/resource-bounded container. Report known-language
+OCR checks separately from mixed-language failures; synthetic cards are not a
+representative scene/code/terminal benchmark. No application records or media are
+used. Durable authorization/recovery/storage/deletion tests remain required before
+product video enablement. See `sprint4/local-visual-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

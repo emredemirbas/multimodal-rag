@@ -209,6 +209,14 @@ label provenance. It does not constitute a reviewed benchmark or full Alpha 2;
 video/frame/OCR scope and quality thresholds remain open. See
 `docs/sprint4/asr-evaluation-guide.md` and `asr-evaluation-validation.md`.
 
+### Local visual continuation
+
+The 2026-10-26 owner-delegated visual continuation (ADR 0021) starts a stateless
+isolated MP4/FFmpeg/Tesseract tool. Uniform candidates, exact-pixel deduplication,
+actual PTS/PNG/profile and local OCR are the first component; no product video
+upload, scene detector, stored visual evidence or full Alpha 2 is implied. See
+`docs/sprint4/local-visual-guide.md` and `docs/sprint4/local-visual-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

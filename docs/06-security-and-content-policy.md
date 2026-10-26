@@ -97,6 +97,16 @@ expiry or browser abort must not be represented as confirmed deletion/cancellati
 No arbitrary URL fetch, cloud fallback or broader media retention is authorized
 (ADRs 0018–0020).
 
+The separately delegated MP4/selected-frame scope (ADR 0021, 2026-10-26) begins
+with an explicit stateless no-network FFmpeg/Tesseract container, not a product
+upload endpoint. Native children inherit socket denial and receive no app
+credentials/mounts; temporary originals/intermediates live only in bounded tmpfs.
+Fixed MOV/H.264/protocol options and native resource/time/output limits supplement
+kernel/container restrictions. Future durable originals need terminal retirement,
+<=one-hour processing eligibility and independently confirmed cleanup; permitted
+selected frames/OCR may remain only until complete source/project deletion.
+Capability stays closed until authorization/lifecycle/UI/evidence are delivered.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

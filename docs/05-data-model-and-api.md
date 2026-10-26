@@ -227,6 +227,13 @@ repository and leaves WAV disabled by default. The original stateless operator
 probe creates no project rows; the separate end-to-end probe uses a disposable
 project/stack and deletes its own sources, data and objects.
 
+### Stateless visual foundation
+
+ADR 0021's separate visual tool likewise adds no application records, migration or
+API. Typed temporary results carry actual PTS, PNG/input hashes, OCR and a versioned
+engine/language-data profile. No project-owned frame/OCR is persisted or published
+until the later authorized durable video workflow is implemented.
+
 ### Projects
 
 - `POST /projects`

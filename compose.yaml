@@ -74,6 +74,27 @@ services:
     cap_drop: [ALL]
     restart: unless-stopped
 
+  visual-inspect:
+    profiles: [visual-tools]
+    image: multimodal-tutorial-workspace-visual:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.vision
+    network_mode: none
+    stdin_open: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=192m,mode=1777
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 2.0
+    pids_limit: 32
+    ulimits:
+      core: 0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
   asr:
     profiles: [local-asr]
     image: multimodal-tutorial-workspace-asr:local

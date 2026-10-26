@@ -241,6 +241,26 @@ identifiers and timing coverage without printing transcripts or writing app data
 The included deliberately imperfect JSON example needs no model or services; it
 is synthetic, not representative speech-quality evidence. WAV opt-in stays off.
 
+## Optional local MP4/frame/OCR tool
+
+The first visual component is a separate, explicit no-network tool for authorized
+H.264 MP4 (<=100 MB / 10 minutes). It extracts at most 20 uniform candidates,
+preserves actual timestamps, removes exact duplicate images and runs local
+English/Turkish OCR. It is **not yet a video upload, scene detector or visual RAG
+feature**; application APIs/UI still reject MP4. No paid provider is used.
+
+```bash
+docker compose build visual-inspect
+docker compose --profile visual-tools run --rm -T --no-deps visual-inspect \
+  --authorized-input --language en < /absolute/path/to/owned-tutorial.mp4
+```
+
+Use `tr` explicitly for Turkish; mixed `en+tr` has a recorded exact-term failure.
+Output contains counts, hashes and processing identity, not frames/OCR text. Your
+host file is untouched; only temporary container copies exist. See the
+[limits, authored native test and next steps](docs/sprint4/local-visual-guide.md).
+Do not add the tool profile to ordinary application startup.
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

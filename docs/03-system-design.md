@@ -11,6 +11,17 @@ queries are bounded API requests. Incompatible active generations are excluded
 before distance calculation, not silently blended into either retrieval channel.
 The production evolution sections remain future considerations, not current work.
 
+ADR 0021 adds a separately invoked, no-network `visual-inspect` container, not an
+application worker or upload capability. Its bounded FFprobe/FFmpeg/Tesseract
+children inherit the kernel network filter and have no application credentials or
+mounts. Temporary originals/intermediates stay in container tmpfs; the typed
+interface returns actual PTS, image/input hashes, local OCR and engine/language-data
+profile. Uniform candidates/exact-pixel deduplication are not scene detection.
+The CLI prints content-free summaries only. Durable scoped video jobs, raw cleanup,
+derived storage, UI and visual citations remain follow-up. Normal startup does not
+run it; explicit image build includes small public Debian OCR-language assets, not
+Ollama/Whisper downloads. See `sprint4/local-visual-guide.md`.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the
