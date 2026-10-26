@@ -28,9 +28,9 @@ before denying new sockets/connect, verifies inheritance in a fresh child, and
 serves bounded stateless MP4 requests with the same isolated parser. A worker-side
 HTTP client requires a pinned processing identity and validates input digest,
 actual PTS and bounded PNG/OCR integrity; it has no proxy/redirect/retry/fallback.
-Current API/workers are not attached to that network and create no video jobs.
-See `sprint4/visual-service-plan.md`; durable authorization/storage/cleanup remain
-the next component, not an implied public video capability.
+The API/ordinary/audio workers never join that network. The later dedicated
+trusted visual worker below is its sole application-side peer.
+See `sprint4/visual-service-plan.md`; the listener alone adds no upload capability.
 
 The subsequent checkpoint component (migration 0013) pins video bytes, actor,
 rights and processing identity under the existing scoped job fence. It saves one
@@ -43,6 +43,20 @@ is rechecked before commit. Source/project deletion cascades through all staged
 bytes/text. This is not video registration, an executable queue, original cleanup
 or visual RAG. The native image explicitly excludes checkpoint/database code.
 See `sprint4/visual-checkpoints-plan.md`.
+
+ADR 0022/migration 0014 connects private registration, S3 temporary originals,
+outbox delivery and a separate `visual-worker`/queue to those checkpoints. Only
+this trusted credential-bearing coordinator joins both app and visual-private
+networks; FFmpeg/Tesseract still runs solely in the credential-free native service.
+Visual task limits are 180/210 seconds, DB lease 240 and configured visibility 300;
+other workers keep their existing limits. A complete checkpoint resumes without
+provider construction or raw GET. Atomic completion records actual accepted usage
+counts, marks `visual_prepared` / source `metadata_ready` and schedules raw cleanup.
+Eligibility is fixed at job creation + one hour; success/cancel/permanent failure/
+expiry/revocation retire raw input. Independently verified deletion remains retryable
+and observable. Private prepared bytes are not active retrieval/evidence: object
+adoption, visual indexing/citations and public upload/UI remain follow-up. See
+`sprint4/video-worker-plan.md`; default Compose startup remains unchanged.
 
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure

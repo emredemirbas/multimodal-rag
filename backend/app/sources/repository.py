@@ -8,6 +8,8 @@ from psycopg.types.json import Jsonb
 
 from ..artifacts.storage import ArtifactStore, object_prefix
 from ..artifacts.audio import retire_audio
+from ..artifacts.video import retire_video
+from ..vision.policy import LEASE_SECONDS as VISUAL_LEASE_SECONDS
 from ..config import Settings
 from ..models import AuthorizationMode, EvidenceSegment
 from ..postgres import PostgresStore
@@ -216,8 +218,10 @@ class SourceRepository:
                 job = connection.execute('SELECT * FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND id=%s', (tenant, project, receipt['job_id'])).fetchone()
                 return Registration(source=current, job=Job.model_validate(job), deduplicated=True)
             job = current.job
-            if command in {'retry', 'reprocess'} and current.kind == 'audio' and job.status in {'failed', 'cancelled', 'succeeded'}:
-                raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
+            if command in {'retry', 'reprocess'} and current.kind in {'audio', 'video'} and job.status in {'failed', 'cancelled', 'succeeded'}:
+                if current.kind == 'audio':
+                    raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
+                raise SourceError('video_reupload_required', 'The original video is retired on terminal paths; upload it again to process.', 409)
             if command == 'cancel':
                 if job.status not in {'pending', 'running', 'retrying', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only unfinished processing can be cancelled.', 409)
@@ -228,6 +232,7 @@ class SourceRepository:
                 self._finish_attempt(connection, tenant, project, job.id, 'cancelled', None)
                 connection.execute("UPDATE sources SET status='cancelled',updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (tenant, project, source))
                 retire_audio(connection, tenant, project, source)
+                retire_video(connection, tenant, project, source)
             elif command == 'retry':
                 if job.status not in {'failed', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only failed or cancelled processing can be retried.', 409)
@@ -331,7 +336,8 @@ class SourceRepository:
                    lease_token=%s,lease_expires_at=now()+make_interval(secs=>%s),
                    started_at=now(),updated_at=now(),failure_code=NULL,failure_detail=NULL
                    WHERE tenant_id=%s AND project_id=%s AND id=%s RETURNING *''',
-                (configured_space(self.settings.embedding_provider), token, self.settings.job_lease_seconds, tenant, project, job),
+                (configured_space(self.settings.embedding_provider), token,
+                 VISUAL_LEASE_SECONDS if row['job_type'] == 'visual' else self.settings.job_lease_seconds, tenant, project, job),
             ).fetchone()
             connection.execute(
                 "INSERT INTO processing_attempts (tenant_id,project_id,id,job_id,attempt_number,status) VALUES (%s,%s,%s,%s,%s,'running')",
@@ -413,7 +419,10 @@ class SourceRepository:
                AND j.generation=%s AND s.generation=j.generation AND s.deleted_at IS NULL
                AND NOT EXISTS (SELECT 1 FROM audio_inputs a WHERE a.tenant_id=j.tenant_id AND a.project_id=j.project_id
                    AND a.job_id=j.id AND a.source_id=j.source_id AND a.generation=j.generation
-                   AND (a.cleanup_id IS NOT NULL OR a.expires_at<=now())) FOR UPDATE OF j''',
+                   AND (a.cleanup_id IS NOT NULL OR a.expires_at<=now()))
+               AND NOT EXISTS (SELECT 1 FROM video_inputs v WHERE v.tenant_id=j.tenant_id AND v.project_id=j.project_id
+                   AND v.job_id=j.id AND v.source_id=j.source_id AND v.generation=j.generation
+                   AND (v.cleanup_id IS NOT NULL OR v.expires_at<=clock_timestamp())) FOR UPDATE OF j''',
             (tenant, project, source, job, claim['lease_token'], claim['generation']),
         ).fetchone()
         return row is not None
@@ -449,6 +458,7 @@ class SourceRepository:
         )
         connection.execute("UPDATE sources SET status='failed',failure_code=%s,failure_detail=%s,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (code, detail, tenant, project, source))
         retire_audio(connection, tenant, project, source, job)
+        retire_video(connection, tenant, project, source, job)
 
     def fail(self, claim: dict, error: SourceError) -> bool:
         import random
@@ -564,6 +574,7 @@ class SourceRepository:
             visual = connection.execute(
                 '''SELECT count(*) FILTER (WHERE saved_at IS NULL) AS waiting,
                           count(*) FILTER (WHERE saved_at IS NOT NULL) AS saved,
+                          count(*) FILTER (WHERE prepared_at IS NOT NULL) AS prepared,
                           coalesce(sum(saved_frames),0) AS frames,coalesce(sum(image_bytes),0) AS bytes,
                           coalesce(sum(ocr_characters),0) AS characters FROM visual_runs''',
             ).fetchone()
@@ -572,6 +583,12 @@ class SourceRepository:
                           count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at<=now()) AS expired,
                           count(*) FILTER (WHERE cleanup_id IS NOT NULL AND deleted_at IS NULL) AS cleanup_pending,
                           count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted FROM audio_inputs''',
+            ).fetchone()
+            video_originals = connection.execute(
+                '''SELECT count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at>now()) AS available,
+                          count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at<=now()) AS expired,
+                          count(*) FILTER (WHERE cleanup_id IS NOT NULL AND deleted_at IS NULL) AS cleanup_pending,
+                          count(*) FILTER (WHERE deleted_at IS NOT NULL) AS deleted FROM video_inputs''',
             ).fetchone()
         lines = ['# TYPE tutorial_processing_jobs gauge', '# TYPE tutorial_retained_processing_attempts gauge',
                  '# TYPE tutorial_retained_attempt_duration_seconds gauge', '# TYPE tutorial_outbox_pending gauge',
@@ -584,6 +601,8 @@ class SourceRepository:
                       '# TYPE tutorial_asr_staged_model_duration_seconds gauge',
                       f'tutorial_asr_staged_model_duration_seconds {float(asr["duration"])/1000}'])
         lines.append('# TYPE tutorial_audio_originals gauge')
+        lines.extend(['# TYPE tutorial_video_originals gauge', '# TYPE tutorial_visual_prepared_runs gauge',
+                      f'tutorial_visual_prepared_runs {visual["prepared"]}'])
         lines.extend(['# TYPE tutorial_visual_runs gauge',
                       f'tutorial_visual_runs{{status="waiting"}} {visual["waiting"]}',
                       f'tutorial_visual_runs{{status="saved"}} {visual["saved"]}',
@@ -592,6 +611,7 @@ class SourceRepository:
                       '# TYPE tutorial_visual_checkpoint_ocr_characters gauge', f'tutorial_visual_checkpoint_ocr_characters {visual["characters"]}'])
         for status in ('available', 'expired', 'cleanup_pending', 'deleted'):
             lines.append(f'tutorial_audio_originals{{status="{status}"}} {originals[status]}')
+            lines.append(f'tutorial_video_originals{{status="{status}"}} {video_originals[status]}')
         for row in jobs:
             lines.append(f'tutorial_processing_jobs{{status="{row["status"]}"}} {row["count"]}')
         for row in attempts:

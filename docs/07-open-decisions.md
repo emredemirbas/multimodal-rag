@@ -59,7 +59,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
 | Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
-| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADR 0021; isolated service/private checkpoints, no product upload |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0022; isolated service/private prepared jobs and raw cleanup, no product upload |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -166,6 +166,14 @@ can be reused after lease recovery; interrupted inference may repeat the whole
 call. Native/database roles remain separate. Video registration, dedicated queue,
 original retirement/physical cleanup, object adoption and published UI/evidence
 remain follow-up. See `sprint4/visual-checkpoints-plan.md`.
+
+ADR 0022 implements the next private slice: write-ahead orphan-safe registration,
+separate optional visual queue, complete checkpoint reuse and raw retirement with
+verified cleanup. Success means prepared private results only, not indexed/ready.
+No public API/BFF/form or final frame-object adoption/evidence is included. This
+uses the already delegated rights/size/language/retention choices and no paid
+provider; it does not approve mixed-language quality or scene recall. See
+`sprint4/video-worker-plan.md` and `video-worker-validation.md`.
 
 ## Decide before Sprint 5
 

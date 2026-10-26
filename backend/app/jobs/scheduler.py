@@ -9,6 +9,7 @@ from ..config import Settings
 from ..postgres import PostgresStore
 from ..sources.repository import SourceRepository
 from ..sources.media import retire_unusable_audio
+from ..sources.video import retire_unusable_video
 from .dispatch import cleanup_once, dispatch_once, redeliver_unclaimed
 from .queue import delivery_route
 from .worker import celery_app
@@ -35,13 +36,15 @@ def main():
     while not stopping:
         try:
             retired = retire_unusable_audio(repository)
+            retired_video = retire_unusable_video(repository)
             recovered = repository.recover_leases()
             redeliver_unclaimed(repository)
             sent = dispatch_once(repository, publish)
             cleaned = cleanup_once(repository)
             Path('/tmp/ingestion-scheduler-heartbeat').touch()
-            if recovered or sent or cleaned or retired:
-                logging.info(json.dumps({'event': 'scheduler_cycle', 'published': sent, 'recovered': recovered, 'cleaned': cleaned, 'retired_audio': retired}))
+            if recovered or sent or cleaned or retired or retired_video:
+                logging.info(json.dumps({'event': 'scheduler_cycle', 'published': sent, 'recovered': recovered,
+                                        'cleaned': cleaned, 'retired_audio': retired, 'retired_video': retired_video}))
         except Exception:
             logging.error(json.dumps({'event': 'scheduler_unavailable', 'code': 'dependency_unavailable'}))
         for _ in range(30):

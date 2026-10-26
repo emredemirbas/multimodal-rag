@@ -117,7 +117,7 @@ jobs:
           docker compose --profile local-asr run --rm --no-deps --entrypoint python asr
           -c "from app.asr.isolation import block_outbound_sockets; block_outbound_sockets(); print('PASS: ASR outbound sockets blocked')"
       - name: Build optional local visual tool
-        run: docker compose build visual-inspect
+        run: docker compose build visual-inspect visual-worker
       - name: Verify visual tool has no application mounts, credentials or network
         run: >-
           docker compose --profile visual-tools config --format json |
@@ -137,9 +137,22 @@ jobs:
           assert s["read_only"] and not s.get("ports") and not s.get("volumes") and not s.get("environment");
           assert s["profiles"] == ["local-visual"] and set(s["networks"]) == {"visual-private"};
           assert c["networks"]["visual-private"]["internal"];
-          assert all("visual-private" not in value.get("networks", {}) for name,value in c["services"].items() if name != "visual");
+          w=c["services"]["visual-worker"];
+          assert set(w["networks"]) == {"default","visual-private"} and w["profiles"] == ["local-visual"];
+          assert w["read_only"] and not w.get("ports") and not w.get("volumes");
+          assert w["environment"]["VISUAL_BASE_URL"] == "http://visual:8091";
+          assert all("visual-private" not in value.get("networks", {}) for name,value in c["services"].items() if name not in {"visual","visual-worker"});
           assert int(s["pids_limit"]) == 32 and int(s["mem_limit"]) == int(s["memswap_limit"]) == 1073741824;
           print("PASS: isolated private visual listener configuration")'
+      - name: Verify trusted visual worker budgets and decoder separation
+        run: >-
+          docker compose --profile local-visual run --rm -T --no-deps --entrypoint python visual-worker
+          -c "import shutil; from app.jobs.visual_worker import celery_app;
+          assert celery_app.conf.task_time_limit == 210 and celery_app.conf.task_soft_time_limit == 180;
+          assert celery_app.conf.broker_transport_options['visibility_timeout'] == 300;
+          assert 'tutorial.process_video' in celery_app.tasks;
+          assert shutil.which('ffmpeg') is None and shutil.which('tesseract') is None;
+          print('PASS: trusted visual worker budgets and no native decoders')"
       - name: Verify real private visual HTTP, profile pinning and native OCR
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python

@@ -45,6 +45,7 @@ class Settings:
     ollama_model: str = 'qwen3:4b'
     local_model_timeout: int = 24
     asr_base_url: str = 'http://asr:8090'
+    visual_base_url: str = 'http://visual:8091'
     audio_upload_enabled: bool = False
 
     def __post_init__(self) -> None:
@@ -52,7 +53,9 @@ class Settings:
             raise ValueError('AUDIO_UPLOAD_ENABLED must be a boolean value')
         from .local_model import checked_local_url
         from .asr.client import checked_asr_url
+        from .vision.client import checked_visual_url
         checked_asr_url(self.asr_base_url)
+        checked_visual_url(self.visual_base_url)
         if self.embedding_provider not in {'hash', 'ollama'} or self.embedding_dimensions != 64:
             raise ValueError('Use hash (64-D) or local Ollama (fixed 1024-D); custom dimensions are disabled')
         if self.answer_provider not in {'extractive', 'ollama'}:
@@ -124,5 +127,6 @@ class Settings:
             ollama_model=os.getenv('OLLAMA_MODEL', 'qwen3:4b'),
             local_model_timeout=int(os.getenv('LOCAL_MODEL_TIMEOUT', '24')),
             asr_base_url=os.getenv('ASR_BASE_URL', 'http://asr:8090'),
+            visual_base_url=os.getenv('VISUAL_BASE_URL', 'http://visual:8091'),
             audio_upload_enabled=_environment_flag('AUDIO_UPLOAD_ENABLED', False),
         )

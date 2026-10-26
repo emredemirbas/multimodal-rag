@@ -131,6 +131,18 @@ source/project deletion cascades through bytes/text. Derived staging retention i
 separate from processing eligibility and future raw physical cleanup. No raw input
 is stored or filename/media/OCR/input fingerprint logged by this DB component.
 
+ADR 0022 connects that store to a private trusted visual coordinator. A committed
+unique-prefix orphan reservation precedes PUT; source/job/outbox/input adoption
+rechecks initiating membership and project status, locking membership through commit.
+Only that worker joins both networks, never exposing app credentials to the native
+service. Original reads check generated scoped key, actor, digest/byte count and
+eligibility before and after storage. Cached preparation revalidates the raw record
+without fetching it. Fixed one-hour eligibility cannot be extended by retry.
+Every terminal path and scheduler expiry/revocation pass creates a scoped raw
+cleanup ticket; physical deletion is separately verified and failures remain
+observable/retryable, not reported as deleted. Prepared PNG/OCR stays private until
+full source/project deletion. No public MP4 route/form or final evidence is enabled.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

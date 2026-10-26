@@ -13,7 +13,7 @@ import pytest
 from app.jobs.dispatch import cleanup_once
 from app.jobs.processing import process_transcript
 from app.config import Settings
-from app.models import AuthenticatedPrincipal, ProjectCreate
+from app.models import AuthenticatedPrincipal, ProjectCreate, TranscriptIngestRequest, AuthorizationMode
 from app.postgres import PostgresStore
 from app.providers import DeterministicHashEmbeddingProvider, EvidenceExtractiveAnswerProvider
 from app.service import TutorialService
@@ -374,17 +374,16 @@ def test_additive_migration_preserves_published_pre_checkpoint_data_and_checksum
     principal = AuthenticatedPrincipal(provider='test', subject='visual-migration-user', tenant_id='visual-migration')
     service = TutorialService(store, DeterministicHashEmbeddingProvider(), EvidenceExtractiveAnswerProvider())
     project = service.create_project(principal, ProjectCreate(title='Existing data'))
-    actor = store.bootstrap_principal(principal)
-    repo = SourceRepository(store, MemoryArtifacts(), Settings(environment='test', development_auth_token='visual-test-development-token'))
-    fixture = (repo, service, principal, project, actor)
-    existing = register(fixture)
-    assert run(repo, existing)
+    service.ingest_transcript(principal, project.id, TranscriptIngestRequest(
+        filename='existing.vtt', authorization_mode=AuthorizationMode.OWNER_UPLOAD, idempotency_key='existing-fixture',
+        content='WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nGET /health reports service health.\n'))
     citation = service.ask(principal, project.id, 'GET /health').citations[0]
     store.run_migrations()
     store.run_migrations()
     assert service.ask(principal, project.id, 'GET /health').citations[0].segment_id == citation.segment_id
     with store._connect() as connection:
         after = connection.execute('SELECT version,sha256 FROM schema_migrations ORDER BY version').fetchall()
-        assert after[:-1] == before and after[-1]['version'] == '0013_visual_checkpoints.sql'
+        assert after[:len(before)] == before
+        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql']
         assert connection.execute('SELECT count(*) AS n FROM visual_runs WHERE tenant_id=%s AND project_id=%s',
                                    (principal.tenant_id, project.id)).fetchone()['n'] == 0

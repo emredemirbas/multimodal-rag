@@ -204,6 +204,18 @@ Private staging must never appear in retrieval/citations/usage or contentful log
 metrics. These fixtures make no native request or object PUT: a real video worker
 SIGKILL, original cleanup and atomic object adoption remain later workflow gates.
 
+The subsequent private video workflow adds real PostgreSQL registration/race,
+scope/auth/rights, orphan cleanup, expiry/terminal retirement, original integrity,
+cached-result recovery and once-only preparation/usage tests. A test-owned Celery
+process is SIGKILLed after a committed complete snapshot, then replaced through
+real Redis and MinIO: provider construction and original GET are forbidden on
+recovery, native inference is explicitly a synthetic fixture in this test.
+Cleanup must verify actual object absence; source/project deletion removes every
+private row/byte. Native HTTP/OCR tests remain separate component evidence, not a
+claim that the fixture is representative native video quality. Public video upload,
+final derived-object adoption and visual retrieval/quality remain later gates.
+See `sprint4/video-worker-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

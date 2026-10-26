@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from ..sources.repository import SourceRepository
 from ..artifacts.audio import record_audio_deleted
+from ..artifacts.video import record_video_deleted
 
 
 def dispatch_once(repository: SourceRepository, publish, *, limit: int = 20) -> int:
@@ -91,4 +92,5 @@ def cleanup_once(repository: SourceRepository) -> int:
         ).fetchone()
         if completed:
             record_audio_deleted(connection, row)
+            record_video_deleted(connection, row)
     return 1

@@ -231,6 +231,14 @@ lease recovery, not per-frame native resumability or an executable video queue.
 No original media is retained by this component and no result is published.
 See `docs/sprint4/visual-checkpoints-plan.md` and `visual-checkpoints-validation.md`.
 
+ADR 0022/migration 0014 then adds private authorized registration and the dedicated
+optional visual queue, result recovery and terminal/expiry/revocation raw retirement
+with verified retryable deletion. Success is private `visual_prepared`, not a
+published/indexed generation. Public video API/UI, final derived-object adoption,
+visual retrieval/citations and representative OCR/scene quality gates remain open;
+Sprint 4/Alpha 2 is not complete. See `docs/sprint4/video-worker-plan.md` and
+`video-worker-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

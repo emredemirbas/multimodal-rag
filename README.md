@@ -280,11 +280,22 @@ The next private component adds migration 0013 and atomic, scoped PNG/OCR
 checkpoints. An accepted complete result can be recovered after a lost job lease;
 interrupted inference may still repeat. Input/actor/rights/profile, expiry and
 image/text integrity are fenced, and source/project deletion removes staged bytes.
-This is **not video ingestion or visual retrieval**: there is still no video
-registration/worker/upload form or published frame evidence. No existing data is
-created/processed by adding this component. See
+This checkpoint component alone does not enable product video ingestion or visual
+retrieval. See
 [checkpoint scope](docs/sprint4/visual-checkpoints-plan.md) and
 [database validation](docs/sprint4/visual-checkpoints-validation.md).
+
+The private workflow continuation (ADR 0022, migration 0014) now supplies internal
+authorized MP4 registration, a dedicated `visual-worker` queue, complete-result
+recovery and independently verified raw-object cleanup. Both `visual-worker` and
+the credential-free native service are opt-in under `local-visual`; normal startup
+is unchanged. There is deliberately **no public MP4 endpoint or upload form**.
+Internal success means `visual_prepared` / source `metadata_ready`, not searchable
+`ready`: PNG/OCR remains private, without published evidence or citations. Raw
+processing expires one hour after job creation; terminal paths retire the original,
+while permitted derived staging remains until source/project deletion. No paid
+service is used. See [workflow and remaining gates](docs/sprint4/video-worker-plan.md)
+and [validation](docs/sprint4/video-worker-validation.md).
 
 ## Optional real local AI (no API key or service bill)
 

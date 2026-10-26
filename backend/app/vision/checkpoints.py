@@ -60,7 +60,7 @@ class VisualCheckpoints:
         if member is None:
             return None
         row = connection.execute(
-            '''SELECT s.kind,s.content_sha256,s.authorization_mode,j.job_type,j.actor_user_id,
+            '''SELECT s.kind,s.content_sha256,s.authorization_mode,j.job_type,j.actor_user_id,j.lease_expires_at AS lease_until,
                       j.created_at + interval '1 hour' AS expires_at
                FROM processing_jobs j JOIN sources s
                ON s.tenant_id=j.tenant_id AND s.project_id=j.project_id AND s.id=j.source_id
@@ -163,28 +163,32 @@ class VisualCheckpoints:
 
     def load(self, claim) -> VisualResult | None:
         with self.repository.store._connect() as connection:
-            live = self._live(connection, claim)
-            if live is None:
-                return None
-            run = self._run(connection, claim, live)
-            if run['saved_at'] is None:
-                raise SourceError('visual_checkpoint_incomplete', 'Save a complete visual result before adopting it.', 409)
-            rows = connection.execute(
-                '''SELECT * FROM visual_checkpoint_frames WHERE tenant_id=%s AND project_id=%s AND job_id=%s
-                   AND source_id=%s AND generation=%s ORDER BY ordinal''', self._scope(claim),
-            ).fetchall()
-            if (len(rows) != run['saved_frames'] or [row['ordinal'] for row in rows] != list(range(len(rows)))
-                    or sum(len(row['image']) for row in rows) != run['image_bytes']
-                    or sum(len(row['ocr_text']) for row in rows) != run['ocr_characters']
-                    or any(hashlib.sha256(row['ocr_text'].encode()).hexdigest() != row['text_sha256'] for row in rows)):
-                raise SourceError('invalid_visual_checkpoint', 'The saved visual result failed integrity validation.', 503)
-            result = validated_result({'input_sha256': run['input_sha256'], 'identity': run['identity'],
-                'video': run['video_metadata'], 'candidates': run['candidates'], 'frames': [
-                    {'sample_target_ms': row['sample_target_ms'], 'timestamp_ms': row['timestamp_ms'],
-                     'width': row['width'], 'height': row['height'], 'image_sha256': row['image_sha256'],
-                     'image_base64': base64.b64encode(row['image']).decode(), 'text': row['ocr_text']} for row in rows]})
-            if result_digest(result) != run['result_sha256']:
-                raise SourceError('invalid_visual_checkpoint', 'The saved visual manifest failed integrity validation.', 503)
-            if self._live(connection, claim) is None:
-                return None
-            return result.result()
+            return self._load(connection, claim)
+
+    def _load(self, connection, claim) -> VisualResult | None:
+        """Also used by atomic preparation in the caller's fenced transaction."""
+        live = self._live(connection, claim)
+        if live is None:
+            return None
+        run = self._run(connection, claim, live)
+        if run['saved_at'] is None:
+            raise SourceError('visual_checkpoint_incomplete', 'Save a complete visual result before adopting it.', 409)
+        rows = connection.execute(
+            '''SELECT * FROM visual_checkpoint_frames WHERE tenant_id=%s AND project_id=%s AND job_id=%s
+               AND source_id=%s AND generation=%s ORDER BY ordinal''', self._scope(claim),
+        ).fetchall()
+        if (len(rows) != run['saved_frames'] or [row['ordinal'] for row in rows] != list(range(len(rows)))
+                or sum(len(row['image']) for row in rows) != run['image_bytes']
+                or sum(len(row['ocr_text']) for row in rows) != run['ocr_characters']
+                or any(hashlib.sha256(row['ocr_text'].encode()).hexdigest() != row['text_sha256'] for row in rows)):
+            raise SourceError('invalid_visual_checkpoint', 'The saved visual result failed integrity validation.', 503)
+        result = validated_result({'input_sha256': run['input_sha256'], 'identity': run['identity'],
+            'video': run['video_metadata'], 'candidates': run['candidates'], 'frames': [
+                {'sample_target_ms': row['sample_target_ms'], 'timestamp_ms': row['timestamp_ms'],
+                 'width': row['width'], 'height': row['height'], 'image_sha256': row['image_sha256'],
+                 'image_base64': base64.b64encode(row['image']).decode(), 'text': row['ocr_text']} for row in rows]})
+        if result_digest(result) != run['result_sha256']:
+            raise SourceError('invalid_visual_checkpoint', 'The saved visual manifest failed integrity validation.', 503)
+        if self._live(connection, claim) is None:
+            return None
+        return result.result()

@@ -28,6 +28,50 @@ x-api-image: &api-image
     context: ./backend
 
 services:
+  visual-worker:
+    profiles: [local-visual]
+    build:
+      context: ./backend
+      target: visual-worker
+    environment:
+      APP_ENV: development
+      APP_STORE: postgres
+      APP_AUTO_MIGRATE: "false"
+      DEVELOPMENT_AUTH_TOKEN: visual-worker-is-not-an-api-service
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tutorial}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-tutorial}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: tutorial-artifacts
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tutorial}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      PLAYLIST_CONCURRENCY: ${PLAYLIST_CONCURRENCY:-2}
+      VISUAL_BASE_URL: http://visual:8091
+    networks: [default, visual-private]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      visual:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "celery -A app.jobs.visual_worker:celery_app inspect ping --timeout=3 -d visual@$$HOSTNAME | grep -q pong"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 64
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
   media-worker:
     profiles: [local-asr]
     build:

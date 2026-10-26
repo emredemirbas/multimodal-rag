@@ -251,6 +251,19 @@ frame/text/result hashes and accepted counts. Storage is bounded private staging
 not a published frame/evidence model or final object-store adoption. No API,
 registration/dispatcher/task, original-media storage or usage publication is added.
 
+Migration 0014/ADR 0022 subsequently adds private `video_inputs`, with a full
+tenant/project/job/source/generation FK, actor, fixed job-created + one-hour expiry,
+bounded input digest/size/language, generated raw key and scoped cleanup FK.
+`deleted_at` is set only after confirmed physical deletion. Runs gain `prepared_at`
+(requires a saved result); usage gains actual `input_video_bytes` and
+`selected_frame_count`. Preparation and usage are atomic and once per logical job;
+segment count is zero, local billed amount is zero, unknown model token/time is not
+invented. `tutorial.process_video` on the separate visual queue ends at
+`visual_prepared`; source remains `metadata_ready` without active generation or
+published evidence. The private Python registration repository is not an HTTP API.
+Terminal video retry/reprocess requires re-upload; idempotent replay never restores
+raw bytes. Final object adoption and product API/UI remain later work.
+
 ### Projects
 
 - `POST /projects`
