@@ -102,3 +102,49 @@ must be implemented before any product upload flag is introduced. The accepted
 future one-hour original eligibility and retained selected-frame/OCR policy do
 not create application storage in this stateless slice. Visual retrieval, frame
 citations, scene-change recall and broader OCR review remain follow-up.
+
+## Private service boundary
+
+The stateless follow-up adds `python -m app.vision.server` and a worker-side
+`LocalVisualClient`. Optional Compose `visual` uses the same minimal image but only
+the internal `visual-private` network, no host port/app environment/mounts. It binds
+8091 before inherited kernel denial and verifies a fresh child's denied socket
+creation before health becomes ready. Current API, frontend and workers do not
+join that network. It is not a public upload or authenticated application API.
+
+The diagnostic above can also be run with `-m app.vision.http_selftest`. A parent
+connects over container-local loopback to the actual filtered service child in
+the disposable **no-network** tool container; no host port, app record or user file
+is used. It checks authored Turkish card OCR/PNG transport and pinned-profile
+rejection. Original explicit-language/mixed-language quality caveats still apply.
+
+Private version-one protocol:
+
+- `GET /health/ready?language=en|tr|en+tr` returns strict engine/language-data/policy
+  identity with its recomputed profile hash; default language is `en`.
+- `POST /extract?language=...` accepts only raw MP4 bytes, one Content-Length and
+  `Content-Type: application/octet-stream`. Exactly one `X-Visual-Profile` and
+  `X-Input-SHA256` must match the pinned identity and actual bytes. No credentials,
+  application IDs, URLs, content encodings, transfer encoding or Expect headers.
+- Response includes strict protocol/input/identity/video/candidate fields and at
+  most 20 frames with actual PTS, base64 PNG, image SHA-256 and literal untrusted
+  OCR. **This payload is private content, never a log or public summary.** Both
+  sides check selection/timeline, image hashes/CRC/geometry/bounded decompression
+  and exact duplicate pixels. At most 18,000,000 response bytes are accepted.
+- The client requires `extract(content, expected_identity=pinned)`; a readiness
+  check never silently replaces that pin. Only `http://visual:8091` or explicit
+  loopback test ports are accepted; no proxy, redirect, automatic retry or fallback.
+- Capacity is one extraction and four connections. Header/body reading has an
+  absolute ten-second deadline, including trickling peers. Existing native limits
+  and 120-second pipeline budget remain. Response writes have a five-second
+  timeout; the client has a 145-second absolute socket deadline (three seconds
+  for health, with separate two-second connection timeout). Errors expose fixed
+  codes, not media/text/paths/raw parser details. Busy/unavailable is retryable by
+  a future bounded job policy; invalid payload/profile is not silently repaired.
+
+This is local private parsing isolation, not production HTTP hardening or tenant
+authorization. It creates no usage rows or invented model costs. Fixed route,
+status, candidate/frame counts, duration and elapsed time are logged without input
+fingerprints. Future durable jobs must enforce actor/tenant/project scope and
+persist identity/checkpoints, lease/expiry fences and independently confirmed
+raw/derived deletion before a product video capability can be enabled.

@@ -234,6 +234,14 @@ API. Typed temporary results carry actual PTS, PNG/input hashes, OCR and a versi
 engine/language-data profile. No project-owned frame/OCR is persisted or published
 until the later authorized durable video workflow is implemented.
 
+The subsequent private `visual:8091` listener is not part of `/api/v1`: health
+returns the requested language's validated processing identity; extraction takes
+bounded MP4 bytes plus pinned profile/input digest headers and returns typed
+PNG/OCR/timestamps. Both sides validate image/timeline/profile integrity. No user,
+tenant, project, source, object URL, prompt or credentials cross this boundary.
+It has no public port, persistent storage, migrations, jobs or autonomous retries.
+Only a later authorized worker may attach to its isolated internal network.
+
 ### Projects
 
 - `POST /projects`

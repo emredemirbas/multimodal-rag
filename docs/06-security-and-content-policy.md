@@ -107,6 +107,19 @@ kernel/container restrictions. Future durable originals need terminal retirement
 selected frames/OCR may remain only until complete source/project deletion.
 Capability stays closed until authorization/lifecycle/UI/evidence are delivered.
 
+The private visual HTTP continuation retains that boundary: only a prebound
+internal listener survives inherited socket/connect denial, with no public ports,
+app network/credentials or mounts. A four-connection/one-extraction limit, absolute
+10-second header/body deadline, bounded native children, five-second response write
+timeout and finite JSON/image bounds constrain work. The client pins identities,
+checks actual input/frame digests and PNG CRC/bounded decoded geometry, rejects
+redirects/proxies and has a 145-second absolute socket deadline (three seconds for
+readiness, plus bounded connection setup). Request framing rejects duplicate
+length/type/profile/digest headers, encodings, credential/project headers and URL
+input. Logs contain fixed routes/status/count/timing only. This is an opt-in local
+parser protocol, not an Internet-facing server, authorization layer or security
+certification; scoped durable video jobs/deletion remain mandatory follow-up.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

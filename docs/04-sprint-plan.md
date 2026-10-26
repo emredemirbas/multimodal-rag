@@ -217,6 +217,13 @@ actual PTS/PNG/profile and local OCR are the first component; no product video
 upload, scene detector, stored visual evidence or full Alpha 2 is implied. See
 `docs/sprint4/local-visual-guide.md` and `docs/sprint4/local-visual-validation.md`.
 
+The private-service continuation wraps that parser in an optional credential-free
+internal listener and a profile-pinned worker HTTP client. Native parsing still
+never runs in API/ordinary workers. Bounded framing/deadlines/capacity, validated
+PNG/OCR/input identity and an actual native HTTP smoke are a separate component
+gate, not durable video ingestion. No upload/storage/retrieval capability changes;
+see `docs/sprint4/visual-service-plan.md` and `visual-service-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

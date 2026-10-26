@@ -151,6 +151,13 @@ uniform candidates/exact-pixel deduplication, actual PTS and no audio processing
 Other codecs/formats, scene-quality claims and vision descriptions are not implied.
 Durable authorization/jobs/cleanup, UI and published visual evidence remain follow-up.
 
+The private-service continuation adds only a credential-free internal HTTP boundary
+and profile-pinned worker client around that stateless parser. It receives no
+application identities, publishes no host port and is not connected to current
+workers. The default product capability remains closed; no durable records,
+retention expansion, provider or new upload decision is implied. See
+`sprint4/visual-service-plan.md` and its separate validation record.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

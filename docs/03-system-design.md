@@ -22,6 +22,16 @@ derived storage, UI and visual citations remain follow-up. Normal startup does n
 run it; explicit image build includes small public Debian OCR-language assets, not
 Ollama/Whisper downloads. See `sprint4/local-visual-guide.md`.
 
+The private-service follow-up adds optional `visual` on `visual-private` only
+(`local-visual` profile, no host ports/mounts/app credentials). It binds a listener
+before denying new sockets/connect, verifies inheritance in a fresh child, and
+serves bounded stateless MP4 requests with the same isolated parser. A worker-side
+HTTP client requires a pinned processing identity and validates input digest,
+actual PTS and bounded PNG/OCR integrity; it has no proxy/redirect/retry/fallback.
+Current API/workers are not attached to that network and create no video jobs.
+See `sprint4/visual-service-plan.md`; durable authorization/storage/cleanup remain
+the next component, not an implied public video capability.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

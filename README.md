@@ -261,6 +261,21 @@ host file is untouched; only temporary container copies exist. See the
 [limits, authored native test and next steps](docs/sprint4/local-visual-guide.md).
 Do not add the tool profile to ordinary application startup.
 
+A separate optional **private service boundary** now exposes the same parser to a
+profile-pinned, validating worker client. `visual` (`local-visual` profile) has no
+published ports, app credentials or mounts; current workers are not connected.
+It is still stateless and **does not enable video upload**. Exercise its real
+native HTTP boundary without starting any application service:
+
+```bash
+docker compose build visual-inspect
+docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python \
+  visual-inspect -m app.vision.http_selftest
+```
+
+See [private protocol and limits](docs/sprint4/local-visual-guide.md#private-service-boundary)
+and [component validation](docs/sprint4/visual-service-validation.md).
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

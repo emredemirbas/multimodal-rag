@@ -184,6 +184,16 @@ representative scene/code/terminal benchmark. No application records or media ar
 used. Durable authorization/recovery/storage/deletion tests remain required before
 product video enablement. See `sprint4/local-visual-validation.md`.
 
+The separate private HTTP boundary tests real loopback framing, connection/work
+capacity, absolute trickle deadlines, release/recovery, safe errors/logs, profile
+pinning and input/result binding. Validate base64/PNG chunks, CRC, geometry,
+bounded decompression, timestamps/sampling and exact decoded-pixel duplicates,
+including malformed remote output. Verify no proxy, redirect or provider retry.
+An additional disposable no-network native probe starts the actual filtered server
+child, transports authored PNG/Turkish OCR over its private listener and rejects a
+changed pinned identity before repeat inference. This remains synthetic component
+evidence, not durable video recovery/deletion or representative OCR quality.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

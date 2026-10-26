@@ -74,6 +74,33 @@ services:
     cap_drop: [ALL]
     restart: unless-stopped
 
+  visual:
+    profiles: [local-visual]
+    image: multimodal-tutorial-workspace-visual:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.vision
+    entrypoint: [python, -m, app.vision.server]
+    networks: [visual-private]
+    read_only: true
+    tmpfs:
+      - /tmp:size=192m,mode=1777
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 2.0
+    pids_limit: 32
+    ulimits:
+      core: 0
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8091/health/ready',timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
   visual-inspect:
     profiles: [visual-tools]
     image: multimodal-tutorial-workspace-visual:local
@@ -376,5 +403,7 @@ volumes:
   minio-data:
 
 networks:
+  visual-private:
+    internal: true
   asr-private:
     internal: true

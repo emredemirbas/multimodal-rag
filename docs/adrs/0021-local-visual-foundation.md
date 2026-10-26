@@ -26,5 +26,14 @@ closed until all those pieces and their UI/isolation/recovery tests are delivere
 See `../sprint4/local-visual-plan.md`. This is media parsing isolation, not the
 hardened learner-code execution boundary. It does not finish multimodal Alpha 2.
 
+The next stateless component adds an optional credential-free private HTTP listener
+on an internal-only network, binding before inherited socket denial and verifying
+a fresh child's restriction before readiness. Current API/workers are not attached.
+Require explicit pinned processing identity and actual input digest on extraction;
+validate bounded PNG/OCR/timelines on both sides. Limit connections, work, request
+reading, native processing and response bytes/time; prohibit proxy/redirect/retry
+or fallback in the client. It adds no project records, storage or upload capability.
+The original CLI remains available. See `../sprint4/visual-service-plan.md`.
+
 Primary references: [FFprobe/MOV input controls](https://ffmpeg.org/ffprobe-all.html),
 [Tesseract local languages and CLI](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html).

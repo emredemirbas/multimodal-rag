@@ -76,8 +76,8 @@ class VideoInfo(BaseModel):
     duration_ms: int = Field(gt=0, le=MAX_DURATION_MS)
     width: int = Field(ge=16, le=1920)
     height: int = Field(ge=16, le=1080)
-    fps_numerator: int = Field(gt=0)
-    fps_denominator: int = Field(gt=0)
+    fps_numerator: int = Field(gt=0, le=1_000_000_000)
+    fps_denominator: int = Field(gt=0, le=1_000_000_000)
 
 
 def parse_probe(data: bytes) -> VideoInfo:
