@@ -194,6 +194,16 @@ child, transports authored PNG/Turkish OCR over its private listener and rejects
 changed pinned identity before repeat inference. This remains synthetic component
 evidence, not durable video recovery/deletion or representative OCR quality.
 
+Private visual checkpoints add real PostgreSQL tests for concurrent begin/save,
+duplicate no-overwrite, lease recovery, stale/foreign scope/source/generation/
+initiating actor, membership revocation/locking, cancellation, wall-clock expiry,
+fixed deadline across retries, incomplete/corrupt manifests and atomic rollback.
+Check the 20-frame/Unicode character-byte limits, scoped FKs and source/project
+cascades; migrate existing published data without modifying prior checksums.
+Private staging must never appear in retrieval/citations/usage or contentful logs/
+metrics. These fixtures make no native request or object PUT: a real video worker
+SIGKILL, original cleanup and atomic object adoption remain later workflow gates.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

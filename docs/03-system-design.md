@@ -32,6 +32,18 @@ Current API/workers are not attached to that network and create no video jobs.
 See `sprint4/visual-service-plan.md`; durable authorization/storage/cleanup remain
 the next component, not an implied public video capability.
 
+The subsequent checkpoint component (migration 0013) pins video bytes, actor,
+rights and processing identity under the existing scoped job fence. It saves one
+complete validated PNG/OCR batch atomically in bounded private PostgreSQL staging
+(<=20 frames/12 MB image bytes), outside published evidence and final object
+storage. A retry can read that snapshot rather than repeat a completed extraction;
+an interrupted in-flight native call can still repeat in full. Membership remains
+locked through the transaction; wall-clock lease/one-hour job-creation eligibility
+is rechecked before commit. Source/project deletion cascades through all staged
+bytes/text. This is not video registration, an executable queue, original cleanup
+or visual RAG. The native image explicitly excludes checkpoint/database code.
+See `sprint4/visual-checkpoints-plan.md`.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

@@ -35,5 +35,18 @@ reading, native processing and response bytes/time; prohibit proxy/redirect/retr
 or fallback in the client. It adds no project records, storage or upload capability.
 The original CLI remains available. See `../sprint4/visual-service-plan.md`.
 
+The following checkpoint component adds migration 0013 private scoped runs and
+bounded PNG/OCR rows under the existing live actor/job/source/generation fence.
+Pin actual input bytes/rights/profile before inference; atomically save/revalidate
+one complete result with hashes and accepted counts. Membership remains locked
+through commit and processing eligibility ends one hour after job creation,
+without retry extension. PostgreSQL staging avoids premature untracked object
+PUTs; complete source/project deletion cascades all bytes/text. No result enters
+published evidence/usage. Retrieval after lease recovery is supported, but a lost
+in-flight full extraction may repeat; per-frame decoding is not claimed. Exclude
+this trusted DB code from the minimal native image. Registration/queue execution,
+raw cleanup, final object adoption and UI remain follow-up. See
+`../sprint4/visual-checkpoints-plan.md`.
+
 Primary references: [FFprobe/MOV input controls](https://ffmpeg.org/ffprobe-all.html),
 [Tesseract local languages and CLI](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html).

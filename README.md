@@ -276,6 +276,16 @@ docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python 
 See [private protocol and limits](docs/sprint4/local-visual-guide.md#private-service-boundary)
 and [component validation](docs/sprint4/visual-service-validation.md).
 
+The next private component adds migration 0013 and atomic, scoped PNG/OCR
+checkpoints. An accepted complete result can be recovered after a lost job lease;
+interrupted inference may still repeat. Input/actor/rights/profile, expiry and
+image/text integrity are fenced, and source/project deletion removes staged bytes.
+This is **not video ingestion or visual retrieval**: there is still no video
+registration/worker/upload form or published frame evidence. No existing data is
+created/processed by adding this component. See
+[checkpoint scope](docs/sprint4/visual-checkpoints-plan.md) and
+[database validation](docs/sprint4/visual-checkpoints-validation.md).
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

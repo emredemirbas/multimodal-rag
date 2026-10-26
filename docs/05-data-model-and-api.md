@@ -242,6 +242,15 @@ tenant, project, source, object URL, prompt or credentials cross this boundary.
 It has no public port, persistent storage, migrations, jobs or autonomous retries.
 Only a later authorized worker may attach to its isolated internal network.
 
+Migration 0013 adds `visual_runs` and `visual_checkpoint_frames` for the subsequent
+private DB component. A complete scope/source/job/generation FK owns each row;
+source/project deletion cascades through PNG bytes and OCR. Runs pin actual input
+digest/bytes, initiating actor/rights, full identity/profile and a one-hour deadline
+from job creation. Complete snapshots retain video/candidate/actual PTS metadata,
+frame/text/result hashes and accepted counts. Storage is bounded private staging,
+not a published frame/evidence model or final object-store adoption. No API,
+registration/dispatcher/task, original-media storage or usage publication is added.
+
 ### Projects
 
 - `POST /projects`

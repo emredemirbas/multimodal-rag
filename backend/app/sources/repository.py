@@ -561,6 +561,12 @@ class SourceRepository:
                 '''SELECT coalesce(sum(next_window),0) AS windows,coalesce(sum(completed_frames),0) AS frames,
                           coalesce(sum(model_duration_ms),0) AS duration FROM asr_runs''',
             ).fetchone()
+            visual = connection.execute(
+                '''SELECT count(*) FILTER (WHERE saved_at IS NULL) AS waiting,
+                          count(*) FILTER (WHERE saved_at IS NOT NULL) AS saved,
+                          coalesce(sum(saved_frames),0) AS frames,coalesce(sum(image_bytes),0) AS bytes,
+                          coalesce(sum(ocr_characters),0) AS characters FROM visual_runs''',
+            ).fetchone()
             originals = connection.execute(
                 '''SELECT count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at>now()) AS available,
                           count(*) FILTER (WHERE cleanup_id IS NULL AND expires_at<=now()) AS expired,
@@ -578,6 +584,12 @@ class SourceRepository:
                       '# TYPE tutorial_asr_staged_model_duration_seconds gauge',
                       f'tutorial_asr_staged_model_duration_seconds {float(asr["duration"])/1000}'])
         lines.append('# TYPE tutorial_audio_originals gauge')
+        lines.extend(['# TYPE tutorial_visual_runs gauge',
+                      f'tutorial_visual_runs{{status="waiting"}} {visual["waiting"]}',
+                      f'tutorial_visual_runs{{status="saved"}} {visual["saved"]}',
+                      '# TYPE tutorial_visual_checkpoint_frames gauge', f'tutorial_visual_checkpoint_frames {visual["frames"]}',
+                      '# TYPE tutorial_visual_checkpoint_image_bytes gauge', f'tutorial_visual_checkpoint_image_bytes {visual["bytes"]}',
+                      '# TYPE tutorial_visual_checkpoint_ocr_characters gauge', f'tutorial_visual_checkpoint_ocr_characters {visual["characters"]}'])
         for status in ('available', 'expired', 'cleanup_pending', 'deleted'):
             lines.append(f'tutorial_audio_originals{{status="{status}"}} {originals[status]}')
         for row in jobs:

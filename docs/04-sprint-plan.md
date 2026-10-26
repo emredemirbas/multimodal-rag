@@ -224,6 +224,13 @@ PNG/OCR/input identity and an actual native HTTP smoke are a separate component
 gate, not durable video ingestion. No upload/storage/retrieval capability changes;
 see `docs/sprint4/visual-service-plan.md` and `visual-service-validation.md`.
 
+Migration 0013 next adds private complete-result visual checkpoints with pinned
+input/engine/actor/rights, atomic bounded PNG/OCR storage, live scoped lease/expiry
+fences and deletion cascades. It supports retrieving an accepted result after
+lease recovery, not per-frame native resumability or an executable video queue.
+No original media is retained by this component and no result is published.
+See `docs/sprint4/visual-checkpoints-plan.md` and `visual-checkpoints-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

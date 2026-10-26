@@ -9,6 +9,9 @@ from .client import LocalVisualClient, VisualError
 
 
 def main():
+    from importlib.util import find_spec
+    if any(find_spec(name) is not None for name in ('app.vision.checkpoints', 'psycopg', 'boto3', 'celery', 'fastapi')):
+        raise ValueError("Native image contains application coordination dependencies")
     environment = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1",
                    "LANG": "C.UTF-8"}
     fixture = subprocess.run([sys.executable, "-m", "app.vision.http_selftest", "--fixture"],

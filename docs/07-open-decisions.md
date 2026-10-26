@@ -59,7 +59,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
 | Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
-| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADR 0021; stateless foundation only, no product upload |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADR 0021; isolated service/private checkpoints, no product upload |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -157,6 +157,15 @@ application identities, publishes no host port and is not connected to current
 workers. The default product capability remains closed; no durable records,
 retention expansion, provider or new upload decision is implied. See
 `sprint4/visual-service-plan.md` and its separate validation record.
+
+The subsequent private checkpoint component adds migration 0013 and scoped bounded
+PNG/OCR snapshots, not original retention or product enablement. It pins actor,
+rights, bytes and full processing identity before inference, with one-hour
+job-creation eligibility and complete source/project cascades. A saved full result
+can be reused after lease recovery; interrupted inference may repeat the whole
+call. Native/database roles remain separate. Video registration, dedicated queue,
+original retirement/physical cleanup, object adoption and published UI/evidence
+remain follow-up. See `sprint4/visual-checkpoints-plan.md`.
 
 ## Decide before Sprint 5
 

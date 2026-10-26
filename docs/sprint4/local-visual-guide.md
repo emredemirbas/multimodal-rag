@@ -148,3 +148,28 @@ status, candidate/frame counts, duration and elapsed time are logged without inp
 fingerprints. Future durable jobs must enforce actor/tenant/project scope and
 persist identity/checkpoints, lease/expiry fences and independently confirmed
 raw/derived deletion before a product video capability can be enabled.
+
+## Private database checkpoints
+
+Migration 0013 separately adds trusted-worker `VisualCheckpoints.begin/save/load`.
+It is not included in the native image and is not exposed through the CLI, HTTP
+parser or application upload API. No video source/job is registered automatically.
+Only a pre-existing exact scoped video/visual claim can access it.
+
+`begin` pins actual MP4 digest/bytes, initiating actor/rights and full processing
+identity before inference. `save` accepts one complete verified result atomically;
+`load` rechecks image/text/manifest integrity before returning private content.
+At most 20 PNGs/12 MB image bytes/320,000 OCR characters are staged in PostgreSQL,
+not a public evidence table or final object store. These permitted derived bytes
+remain until source/project deletion or later adoption cleanup. Input originals
+are never stored by this component.
+
+Every operation checks tenant/project/source/job/generation, initiating membership,
+token, wall-clock lease and eligibility ending one hour after job creation. A
+retry never extends it; expiry is not physical cleanup. A saved result survives
+lease recovery but no interrupted per-frame decoder can resume in this slice.
+Source/project cascades remove all staged bytes/text. Logs/aggregate metrics expose
+accepted counts and scoped operation IDs, not content/input fingerprints; no
+tokens, model duration or paid usage is fabricated. Video registration/queue,
+original retirement/confirmed cleanup and atomic object adoption still precede
+product uploads or published visual citations.

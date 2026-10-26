@@ -120,6 +120,17 @@ input. Logs contain fixed routes/status/count/timing only. This is an opt-in loc
 parser protocol, not an Internet-facing server, authorization layer or security
 certification; scoped durable video jobs/deletion remain mandatory follow-up.
 
+The subsequent visual checkpoint store is trusted-worker code excluded from the
+native parser image. Begin/save/load recheck both scopes, source/job/generation,
+initiating actor membership, exact token, live wall-clock lease and fixed one-hour
+job-creation eligibility. Membership is key-share locked until transaction end;
+eligibility loss before commit rolls back every staged frame. Input/profile/rights
+drift and incomplete/corrupt PNG/OCR manifests fail closed. Complete selected-frame
+snapshots are bounded private PostgreSQL data, never retrieval/public evidence;
+source/project deletion cascades through bytes/text. Derived staging retention is
+separate from processing eligibility and future raw physical cleanup. No raw input
+is stored or filename/media/OCR/input fingerprint logged by this DB component.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.
