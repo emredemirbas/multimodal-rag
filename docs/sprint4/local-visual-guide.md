@@ -197,3 +197,28 @@ The `visual` Compose health command now uses the same private `LocalVisualClient
 protocol. Generic urllib's User-Agent is intentionally not part of that protocol;
 do not broaden the header allowlist just to probe readiness. Normal startup still
 excludes optional visual services and product MP4 upload remains closed.
+
+## Retained OCR indexing continuation
+
+ADR 0024 adds an internal `VisualIndexRepository.enqueue(tenant, project, source,
+publication_job, actor, idempotency_key)` command for an existing complete gallery.
+Call it only from a trusted authorized operator context with both scopes and the
+original initiating actor. A new key requests a new index generation; replay of
+the same key returns the same logical job. This is not an HTTP upload endpoint or
+a reason to expose database/storage credentials to the browser/native service.
+
+`tutorial.index_visual` runs on the ordinary ingestion queue using its configured
+hash or approved optional local semantic mode. The native visual service is not
+needed again. Saved embedding groups survive bounded retries and continuations;
+only a complete generation becomes searchable. Blank OCR fails honestly. Changing
+mode needs a new internal index command; public video reprocess remains closed.
+
+The gallery reports the active OCR index generation/space separately from its
+publication generation. Source cards warn when that space differs from current
+search. Answers/evidence/history label unreviewed OCR and link the exact retained
+frame at actual PTS, including zero; this is a point observation, not the duration
+of code on screen. Text-only models do not see the pixels or hear audio. Original
+extraction identity and earlier citations remain stable across reindexing, with
+no extra native call or raw retention. Complete source/project deletion still
+removes all private chunks, evidence, derived chat and PNGs. Public MP4 upload and
+representative scene/technical OCR quality remain separate gates.

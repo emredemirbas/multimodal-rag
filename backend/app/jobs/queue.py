@@ -18,6 +18,8 @@ def worker_app(name: str, broker: str, queue: str) -> Celery:
 def delivery_route(job_type: str) -> tuple[str, str]:
     if job_type in {'transcript', 'metadata'}:
         return 'tutorial.process_transcript', 'ingestion'
+    if job_type == 'visual_index':
+        return 'tutorial.index_visual', 'ingestion'
     if job_type == 'asr':
         return 'tutorial.process_audio', 'media'
     if job_type == 'visual':

@@ -229,6 +229,20 @@ fixture process-loss evidence distinct from the separately exercised actual nati
 pipeline; neither establishes representative OCR/scene quality. See
 `sprint4/visual-gallery-validation.md`.
 
+Retained-OCR indexing additionally tests literal Unicode chunk offsets/stable IDs,
+zero-PTS point evidence, hash/semantic vector-space separation, complete-only
+promotion, saved batch corruption and actual post-write wall-clock rollback.
+Cover internal command scope/concurrency/replay, cancel/retry, empty OCR, provider
+drift, immutable extraction/frame origin in new/old evidence/chat, scoped FKs and
+full deletion. An actual owned Celery worker is killed after eight saved vectors;
+replacement must not recompute them or read/write original objects. Keep that
+controlled-inference recovery evidence separate from the authored native OCR ->
+gallery -> actual ingestion index -> production BFF/SSE/history/frame-link probe.
+Neither establishes representative OCR/scene quality or native semantic recall.
+Frontend contracts must accept frame points but reject transcript points/mixed
+origins, and preserve literal OCR, exact protected frame links and honest index
+state. See `sprint4/visual-index-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

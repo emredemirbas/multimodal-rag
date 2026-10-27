@@ -5,6 +5,7 @@ import { requestJson } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
 import { asrOrigin } from "../../../../../../test-support/media-fixture";
 import { projectId, transcriptFixture } from "../../../../../../test-support/transcript-fixture";
+import { visualFixture } from "../../../../../../test-support/visual-fixture";
 
 vi.mock("@/lib/api/client", () => ({ requestJson: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not-found"); } }));
@@ -12,7 +13,19 @@ const evidence = { ...transcriptFixture().items[0], generation: 2, asr_origin: a
 function page(segment = evidence.segment_id) { return EvidencePage({ params: Promise.resolve({ projectId, segmentId: segment }) }); }
 
 describe("machine-generated evidence inspection", () => {
-  beforeEach(() => vi.mocked(requestJson).mockReset());
+  beforeEach(() => { vi.mocked(requestJson).mockReset(); });
+  it("links point-in-time unreviewed OCR to the exact supporting frame without a fake player", async () => {
+    const gallery = visualFixture();
+    vi.mocked(requestJson).mockResolvedValue({ ...evidence, asr_origin: null, visual_origin: gallery.origin, frame_id: gallery.items[0].id,
+      modality: "frame", generation: 3, processing_version: "visual-ocr-chunks-v1:g3", start_ms: 0, end_ms: 0, text: gallery.items[0].ocr_text });
+    render(await page());
+    expect(screen.getByRole("region", { name: "Visual evidence provenance" })).toHaveTextContent("not human-reviewed");
+    expect(screen.getByText(/00:00 \(actual frame timestamp\)/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Inspect the supporting frame and full OCR" })).toHaveAttribute("href", `/projects/${projectId}/sources/${evidence.source_id}/frames#frame-${gallery.items[0].id}`);
+    expect(screen.queryByRole("link", { name: "Read this transcript generation" })).toBeNull();
+    expect(screen.getByText(/No original-video player/)).toBeVisible();
+    expect(document.querySelector("script,video,audio,iframe")).toBeNull();
+  });
   it("shows version-pinned provenance, correction guidance and literal untrusted text", async () => {
     vi.mocked(requestJson).mockResolvedValue({ ...evidence, text: '<img src=x onerror="alert(1)"> GET /health' });
     render(await page());

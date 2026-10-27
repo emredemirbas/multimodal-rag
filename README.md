@@ -304,12 +304,27 @@ the original. Only a complete gallery becomes readable at
 `/projects/{project_id}/sources/{source_id}/frames`, linked as **View selected
 frames** on retained video sources. It shows actual timestamps, literal unreviewed
 OCR and processing origin; PNGs pass through a bounded authenticated API/server-only
-no-store proxy. Incomplete galleries stay hidden. This is **inspection, not a
-search index or chat citation**: sources remain `metadata_ready`, and no public
+no-store proxy. Incomplete galleries stay hidden. Gallery publication alone is
+**inspection, not a search index**: sources remain `metadata_ready` until the
+separate OCR index step below, and no public
 MP4 upload or original-video playback is enabled. Raw cleanup is unchanged; source/
 project deletion removes selected images and all staging too. See
 [retained-frame scope](docs/sprint4/visual-gallery-plan.md) and
 [verification](docs/sprint4/visual-gallery-validation.md).
+
+The next private continuation indexes retained **OCR text** (ADR 0024), not pixels
+or audio. `VisualIndexRepository.enqueue` pins a complete gallery in a new index
+generation; `tutorial.index_visual` runs on the ordinary ingestion queue with the
+configured hash or approved local Qwen embeddings. Eight-document checkpoints,
+bounded continuations and atomic activation preserve prior evidence on failure.
+Blank OCR produces no invented evidence. Frame citations/history retain exact
+point-in-time PTS, original extraction origin and protected supporting-frame links.
+The gallery now reports active OCR index generation/space separately; mismatched
+spaces remain excluded from search. Reindexing is still an internal operator
+command; public video reprocess/upload stays closed. This does not certify OCR
+accuracy, add scene detection/descriptions or complete Alpha 2. See the
+[index scope](docs/sprint4/visual-index-plan.md) and
+[verification](docs/sprint4/visual-index-validation.md).
 
 ## Optional real local AI (no API key or service bill)
 

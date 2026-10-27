@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import type { ChatTurn, Conversation } from "@/lib/api/chat-contracts";
 import { asrOrigin } from "../../../test-support/media-fixture";
+import { visualFixture } from "../../../test-support/visual-fixture";
 
 const project = "12345678-1234-1234-1234-123456789abc";
 const conversation: Conversation = { id: "12345678-1234-1234-1234-123456789abd", project_id: project, title: "Tutorial questions", created_at: "2026-10-02T00:00:00Z" };
@@ -16,6 +17,15 @@ function response() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
+  it("retains stable visual evidence and supporting-frame links in saved history", () => {
+    const gallery = visualFixture(), citation = turn.response.citations[0];
+    const visual = { ...turn, response: { ...turn.response, citations: [{ ...citation, modality: "frame", start_ms: 0, end_ms: 0,
+      generation: 3, processing_version: "visual-ocr-chunks-v1:g3", visual_origin: gallery.origin, frame_id: gallery.items[0].id }] } };
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{ conversation, turns: [visual] }} archived />);
+    expect(screen.getByText(/Automatic frame OCR · not human-reviewed/)).toBeVisible();
+    expect(screen.getByRole("link", { name: /00:00 \(frame\)/ })).toHaveAttribute("href", `/projects/${project}/evidence/${citation.segment_id}`);
+    expect(screen.getByRole("link", { name: "Inspect supporting frame" })).toHaveAttribute("href", `/projects/${project}/sources/${citation.source_id}/frames#frame-${gallery.items[0].id}`);
+  });
   it("labels automatic evidence in saved history without changing its stable citation link", () => {
     const generated = { ...turn, response: { ...turn.response, citations: [{ ...turn.response.citations[0], asr_origin: asrOrigin }] } };
     render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{ conversation, turns: [generated] }} archived />);

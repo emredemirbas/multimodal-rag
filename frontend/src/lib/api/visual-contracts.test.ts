@@ -31,4 +31,11 @@ describe("selected frame contracts", () => {
     await expect(getVisualGallery(projectId, sourceId)).rejects.toMatchObject({ status: 502 });
     expect(requestJson).toHaveBeenCalledWith(`/api/v1/projects/${projectId}/sources/${sourceId}/frames`);
   });
+  it("keeps completed gallery and versioned index state separate", () => {
+    const row = { ...visualFixture(), searchable: true, active_index_generation: 3, active_embedding_space: "signed-hash-v1:64" };
+    expect(parseVisualGallery(row).active_index_generation).toBe(3);
+    expect(() => parseVisualGallery({ ...row, active_index_generation: 2 })).toThrow();
+    expect(() => parseVisualGallery({ ...row, active_embedding_space: null })).toThrow();
+    expect(() => parseVisualGallery({ ...row, searchable: false })).toThrow();
+  });
 });

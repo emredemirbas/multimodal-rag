@@ -217,7 +217,7 @@ class VisualGalleryRepository:
     def _read_scope(self, connection, tenant, project, source, actor):
         self.repository.store._require_membership(connection, tenant, actor)
         row = connection.execute(
-            '''SELECT s.filename FROM sources s JOIN projects p ON p.tenant_id=s.tenant_id AND p.id=s.project_id
+            '''SELECT s.filename,s.active_generation,s.active_embedding_space FROM sources s JOIN projects p ON p.tenant_id=s.tenant_id AND p.id=s.project_id
                WHERE s.tenant_id=%s AND s.project_id=%s AND s.id=%s AND s.deleted_at IS NULL AND p.deleted_at IS NULL''',
             (tenant, project, source),
         ).fetchone()
@@ -238,8 +238,15 @@ class VisualGalleryRepository:
             self._verify_rows(publication, snapshot, rows)
             if len(rows) != len(snapshot.frames): raise SourceError('artifact_integrity', 'The selected-frame gallery is incomplete.')
             identity = VisualIdentity.model_validate(snapshot.identity)
+            indexed = connection.execute(
+                '''SELECT 1 FROM processing_versions WHERE tenant_id=%s AND project_id=%s AND source_id=%s
+                   AND generation=%s AND visual_publication_job_id=%s''',
+                (tenant, project, source, current['active_generation'], publication['job_id']),
+            ).fetchone() is not None
             return VisualGallery(source_id=source, source_filename=current['filename'], generation=publication['generation'],
                 processing_version=VERSION, published_at=publication['published_at'],
+                searchable=indexed, active_index_generation=current['active_generation'] if indexed else None,
+                active_embedding_space=current['active_embedding_space'] if indexed else None,
                 origin=VisualOrigin(job_id=run['job_id'], generation=run['generation'], profile=identity.profile,
                     language=identity.language, engines=identity.engines.model_dump(), checkpoint_version=run['checkpoint_version'], prepared_at=run['prepared_at']),
                 items=[RetainedFrame.model_validate(row) for row in rows])

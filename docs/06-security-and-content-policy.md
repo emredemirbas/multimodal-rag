@@ -161,6 +161,24 @@ outcomes. Cross-site image embedding is rejected. Render OCR literally, label it
 unreviewed and preserve image-error/text-only inspection. A gallery is not indexed
 evidence, an original-video download, human review or OCR quality approval.
 
+ADR 0024 subsequently indexes only already permitted retained OCR. Internal
+commands verify a complete published manifest, original initiating actor/rights
+and scope; jobs pin gallery, parser and embedding space. Every batch/promotion
+checks exact source/job/generation/token/actor, key-share locks membership and
+rechecks actual wall-clock lease before commit. Stored text/frame/vector digests
+are revalidated; scoped FKs prevent attaching another source's frame/gallery.
+Private chunks are never retrieved or exposed; partial/failed replacement cannot
+remove old active evidence. Indexing does not extend raw eligibility, fetch an
+original/object, invoke native tools or select a new provider. Complete deletion
+cascades chunks/evidence/version origin and derived chat, with existing PNG cleanup.
+
+Literal unreviewed OCR remains untrusted context, never instructions or verified
+code. Text-only answer policy explicitly forbids unseen visual/speech claims;
+point PTS is not a visible-duration interval. Version-pinned origin/frame references
+are checked before citations/history/evidence are returned, not inferred from
+mutable metadata. Browser links use existing protected gallery/image boundaries;
+no raw/signed public object URL or fake player. Public MP4 upload stays closed.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

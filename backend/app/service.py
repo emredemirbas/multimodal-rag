@@ -259,6 +259,7 @@ class TutorialService:
                 processing_version=hit.segment.processing_version,
                 generation=hit.segment.generation,
                 asr_origin=hit.asr_origin,
+                visual_origin=hit.visual_origin,
             )
             for hit in cited_hits
         ]

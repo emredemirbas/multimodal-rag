@@ -71,6 +71,18 @@ inspection with unreviewed-OCR/capability caveats. Complete source/project delet
 still covers raw, orphan and adopted images/rows. Indexing/citations and product
 MP4 upload are separate follow-ups; see `sprint4/visual-gallery-plan.md`.
 
+ADR 0024/migration 0016 adds that retained-OCR index continuation. An internal
+authorized command pins one published gallery and immutable embedding space in a
+new `visual_index` job/generation. Ordinary ingestion performs text-only embeddings,
+eight literal chunks per checkpoint and at most eight batches per bounded delivery.
+Private staging never participates in search; validated complete promotion activates
+frame evidence/usage atomically. Each chunk keeps frame, literal offset, actual
+point PTS and processing version. Scoped version/gallery/frame FKs and a public-only
+origin view retain the original extraction, including saved chat after reindexing.
+Gallery state reports active index generation/space separately. Model context is
+unreviewed OCR, not image understanding. No raw/native access, original extension,
+public MP4 upload or new provider. See `sprint4/visual-index-plan.md`.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

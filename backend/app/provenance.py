@@ -20,6 +20,36 @@ class AsrOrigin(BaseModel):
     completed_at: datetime
 
 
+class VisualOrigin(BaseModel):
+    machine_generated: Literal[True] = True
+    human_reviewed: Literal[False] = False
+    job_id: UUID
+    generation: int = Field(ge=1)
+    profile: str = Field(pattern=r'^local-visual-v1:[a-f0-9]{64}$')
+    language: Literal['en', 'tr', 'en+tr']
+    engines: dict[str, str]
+    checkpoint_version: str
+    prepared_at: datetime
+
+
+def checked_visual_origin(row):
+    """Fail closed when managed frame evidence loses its versioned provenance."""
+    origin = row.get('visual_origin')
+    managed = row.get('visual_publication_job_id') is not None
+    if not managed and origin is None:
+        return None  # Legacy validation-only frames have no retained-image promise.
+    try:
+        parsed = VisualOrigin.model_validate(origin)
+        if (not managed or row['modality'] != 'frame' or row['frame_id'] is None
+                or row['start_ms'] != row['end_ms'] or parsed.generation >= row['generation']
+                or row['processing_version'] != f"visual-ocr-chunks-v1:g{row['generation']}"):
+            raise ValueError()
+        return parsed
+    except (ValueError, KeyError):
+        from .sources.contracts import SourceError
+        raise SourceError('invalid_visual_provenance', 'The visual evidence provenance could not be verified.', 503) from None
+
+
 class AudioRetention(BaseModel):
     status: Literal['temporary', 'expired', 'cleanup_pending', 'cleanup_failed', 'deleted']
     processing_expires_at: datetime

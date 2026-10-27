@@ -91,5 +91,5 @@ class TranscriptRepository:
                 asr_origin=asr_origin,
                 items=[EvidenceView(segment_id=item["id"], source_filename=row["filename"], asr_origin=asr_origin,
                                     **{key: item[key] for key in EvidenceView.model_fields
-                                       if key not in {"segment_id", "source_filename", "asr_origin"}}) for item in segments],
+                                       if key not in {"segment_id", "source_filename", "asr_origin", "frame_id", "visual_origin"}}) for item in segments],
             )

@@ -6,6 +6,7 @@ import { parseConversation, parseHistory, timestamp, type AnswerMode, type Retri
 import { ApiError, apiErrorFromResponse } from "@/lib/api/errors";
 import type { SourceItem } from "@/lib/api/source-contracts";
 import { consumeChatStream } from "@/lib/chat-stream";
+import { retainedFrameHref } from "@/lib/api/visual-contracts";
 
 interface Props {
   projectId: string; sources: SourceItem[]; initialConversations: Conversation[];
@@ -115,11 +116,11 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
 
   return <div className="stack">
     <p className="muted">{answerMode === "ollama" ? "Local Ollama answer mode: Qwen3 4B runs on your computer, with no paid/cloud provider." :
-      answerMode === "extractive" ? "Offline extractive baseline: answers quote your indexed transcripts, not a connected language model." :
+      answerMode === "extractive" ? "Offline extractive baseline: answers quote indexed evidence, not a connected language model." :
       "Answer configuration could not be verified. Reload the workspace before relying on the configured model."} Each question is self-contained; saved history is not model context.</p>
     <p className="muted">{retrievalMode === 'local-semantic-and-lexical' ? 'Local semantic search: Qwen3 Embedding 0.6B + exact project-filtered vectors and full-text search. The experimental relevance guard can miss valid questions; inspect citations.' :
       retrievalMode === 'deterministic-hash-and-lexical' ? 'Retrieval still uses the deterministic hash/lexical baseline, not a learned semantic model.' : 'Retrieval configuration could not be verified. Reload the workspace.'}</p>
-    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use the reindex/reprocess control for each source below (or reupload validation-only transcripts), then reload this workspace. Saved citations remain inspectable.</p> : null}
+    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use transcript reindex/reprocess controls below (or reupload validation-only transcripts). Retained-video OCR currently requires an operator-created index job. Then reload this workspace; saved citations remain inspectable.</p> : null}
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {
@@ -134,7 +135,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     </div>
     {error ? <p role="alert">{error}</p> : null}
     <p role="status" aria-live="polite">{status}</p>
-    {turns.length === 0 ? <p>No saved messages yet. Ask about an indexed transcript to see timestamped evidence.</p> :
+    {turns.length === 0 ? <p>No saved messages yet. Ask about indexed evidence to see timestamped citations.</p> :
       <ol className="chat-turns" aria-label="Conversation history">{turns.map((turn) => <li key={turn.id} className="chat-turn">
         <h3>You</h3><p className="evidence-text">{turn.question}</p>
         <h3>{turn.response.abstained ? "Evidence limitation" : "Tutorial evidence"}</h3>
@@ -143,9 +144,10 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
         {turn.response.citations.length ? <ol aria-label={`Citations for question ${turn.sequence}`}>
           {turn.response.citations.map((citation) => <li key={citation.segment_id}>
             <Link className="citation-link" prefetch={false} href={`/projects/${projectId}/evidence/${citation.segment_id}`}>
-              {citation.source_filename} · {timestamp(citation.start_ms)}–{timestamp(citation.end_ms)} · generation {citation.generation}
+              {citation.source_filename} · {timestamp(citation.start_ms)}{citation.start_ms !== citation.end_ms ? `–${timestamp(citation.end_ms)}` : " (frame)"} · generation {citation.generation}
             </Link>
             {citation.asr_origin ? <p className="field-hint">Automatically transcribed · not human-reviewed. Speech, code identifiers and timestamps may be wrong; inspect this evidence.</p> : null}
+            {citation.visual_origin && citation.frame_id ? <p className="field-hint">Automatic frame OCR · not human-reviewed. <Link prefetch={false} href={retainedFrameHref(projectId, citation.source_id, citation.frame_id)}>Inspect supporting frame</Link></p> : null}
           </li>)}
         </ol> : null}
       </li>)}</ol>}

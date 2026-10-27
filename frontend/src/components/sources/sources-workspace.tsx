@@ -40,6 +40,9 @@ const FAILURE_MESSAGES: Record<string, string> = {
   local_asr_unavailable: "Local transcription is unavailable. Processing retries within its attempt and original-expiry limits.",
   local_asr_busy: "Local transcription capacity is busy. Saved windows survive automatic retries until the original expires.",
   audio_integrity: "Original audio integrity verification failed. Upload a new authorized recording.",
+  visual_ocr_empty: "No nonblank OCR text was recognized. Inspect the retained frames; no searchable text was invented.",
+  invalid_visual_index: "The saved OCR index failed verification. The operator must create a new index from a valid retained gallery; old evidence is unchanged.",
+  invalid_visual_provenance: "Visual evidence provenance could not be verified. Inspect source processing before retrying.",
 };
 
 function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
@@ -255,7 +258,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         <p>{source.status.replaceAll("_", " ")} · generation {source.generation} · {source.segment_count} indexed segments</p>
         <AsrProvenance origin={source.asr_origin} />
         {source.audio_retention ? <AudioRetentionStatus projectId={projectId} retention={source.audio_retention} onRefresh={refresh} /> : null}
-        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
+        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.kind === "video" ? 'The operator must create a new retained-OCR index job; public video reprocessing is not enabled' : source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
           source.active_embedding_space ? <p className="field-hint">Search index: {source.active_embedding_space.startsWith('qwen3-0.6b:') ? 'Qwen3 Embedding 0.6B · 1024 dimensions' : 'Deterministic hash · 64 dimensions'}</p> : null}
         {source.job ? <>
           <label htmlFor={`progress-${source.id}`}>Processing: {source.job.stage.replaceAll("_", " ")} ({source.job.progress_percent}%)</label>
@@ -275,7 +278,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {source.active_generation !== null && (source.kind === undefined || source.kind === "transcript") ?
             <Link className="button button--secondary" prefetch={false} href={transcriptHref(projectId, source.id, source.active_generation)}>Read transcript</Link> : null}
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
-          {source.job && source.kind !== "audio" && (source.kind !== "video" || source.job.job_type === "visual_publish") && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && (source.kind !== "video" || ["visual_publish", "visual_index"].includes(source.job.job_type ?? "")) && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
           {source.job && source.kind !== "audio" && source.kind !== "video" && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label={source.asr_origin ? "Reindex retained transcript" : "Reprocess source"} onCompleted={refresh} /> : null}
           <DeleteSource projectId={projectId} source={source} onDeleted={deleted} />
         </div>

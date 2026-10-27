@@ -5,9 +5,9 @@ from enum import Enum
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
-from .provenance import AsrOrigin
+from .provenance import AsrOrigin, VisualOrigin
 
 
 TenantId = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")]
@@ -105,13 +105,19 @@ class EvidenceSegment(BaseModel):
     source_id: UUID
     modality: str
     start_ms: int = Field(ge=0)
-    end_ms: int = Field(gt=0)
+    end_ms: int = Field(ge=0)
     text: str
     embedding: list[float]
     embedding_space: str = 'signed-hash-v1:64'
     processing_version: str = "sprint0-v1"
     generation: int = 1
     frame_id: UUID | None = None
+
+    @model_validator(mode='after')
+    def timeline(self):
+        if self.end_ms < self.start_ms or (self.end_ms == self.start_ms and self.modality != 'frame'):
+            raise ValueError('Invalid evidence timeline')
+        return self
 
 
 class Source(BaseModel):
@@ -157,6 +163,7 @@ class Citation(BaseModel):
     processing_version: str = "sprint0-v1"
     generation: int = 1
     asr_origin: AsrOrigin | None = None
+    visual_origin: VisualOrigin | None = None
 
 
 class QuestionResponse(BaseModel):
@@ -176,6 +183,7 @@ class RetrievalHit(BaseModel):
     score: float
     semantic_similarity: float | None = None
     asr_origin: AsrOrigin | None = None
+    visual_origin: VisualOrigin | None = None
 
 
 class RetrievalRun(BaseModel):

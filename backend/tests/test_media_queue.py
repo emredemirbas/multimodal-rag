@@ -13,6 +13,7 @@ def test_delivery_routes_are_fixed_and_remote_models_are_rejected():
     assert delivery_route('asr') == ('tutorial.process_audio', 'media')
     assert delivery_route('visual') == ('tutorial.process_video', 'visual')
     assert delivery_route('visual_publish') == ('tutorial.publish_visual', 'visual')
+    assert delivery_route('visual_index') == ('tutorial.index_visual', 'ingestion')
     for job_type in ['transcript', 'metadata']:
         assert delivery_route(job_type) == ('tutorial.process_transcript', 'ingestion')
     with pytest.raises(ValueError): delivery_route('arbitrary.task')
@@ -26,6 +27,8 @@ from app.jobs.worker import celery_app as ingestion
 from app.jobs.media_worker import celery_app as media
 from app.jobs.visual_worker import celery_app as visual
 assert 'tutorial.process_transcript' in ingestion.tasks
+assert 'tutorial.index_visual' in ingestion.tasks
+assert 'tutorial.index_visual' not in media.tasks and 'tutorial.index_visual' not in visual.tasks
 assert 'tutorial.process_audio' not in ingestion.tasks
 assert 'tutorial.process_audio' in media.tasks
 assert 'tutorial.process_transcript' not in media.tasks

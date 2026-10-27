@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 from ..models import QuestionRequest, QuestionResponse, ProjectCreate
-from ..provenance import AsrOrigin
+from ..provenance import AsrOrigin, VisualOrigin
 
 
 class ConversationCreate(ProjectCreate):
@@ -57,3 +57,5 @@ class EvidenceView(BaseModel):
     processing_version: str
     generation: int
     asr_origin: AsrOrigin | None = None
+    frame_id: UUID | None = None
+    visual_origin: VisualOrigin | None = None

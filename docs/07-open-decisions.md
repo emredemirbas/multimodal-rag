@@ -59,7 +59,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
 | Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
-| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0023; isolated service/jobs, raw cleanup and retained-frame inspection; no product upload or visual index |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0024; isolated service/jobs, raw cleanup, retained gallery and versioned OCR-text indexing/citations; no product upload |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -103,8 +103,9 @@ in a separately versioned 1024-D space (ADR 0016). Local ASR foundation now has 
 restricted WAV scope and isolated model process in ADR 0018. ADR 0019 adds private
 durable jobs and original cleanup; ADR 0020 adds the separately gated WAV upload
 boundary, not default enablement or general speech-quality approval. Local frame/OCR
-foundation follows in ADR 0021; visual descriptions/published frame evidence remain
-unimplemented. No paid endpoint or cloud fallback is authorized.
+foundation follows in ADR 0021; retained OCR-text frame evidence/citations now follow
+in ADR 0024, while visual descriptions remain unimplemented. No paid endpoint or
+cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic
 cap with checkpointed work under the already accepted transcript input limits.
@@ -182,6 +183,15 @@ format or paid request. Show immutable extraction origin and unreviewed OCR with
 pretending a gallery is an active search index. Scoped public read-only inspection
 does not open MP4 registration. Visual indexing/citations, accessible upload and
 representative quality remain open. See `sprint4/visual-gallery-plan.md`.
+
+ADR 0024 (2026-10-27) continues the accepted derived evidence path with internal
+retained-OCR indexing and stable frame-backed citations. Use configured hash or
+approved optional local Qwen embeddings, checkpointed bounded batches and atomic
+publication; no new provider/retention/format or paid call. Actual PTS is a point,
+not an invented duration. Original extraction origin and old answers survive new
+index generations. Blank OCR creates no evidence. This supersedes only the gallery
+slice's indexing/citation deferral; public MP4 upload, scene/description features,
+representative OCR quality and full Alpha 2 remain open. See `sprint4/visual-index-plan.md`.
 
 ## Decide before Sprint 5
 

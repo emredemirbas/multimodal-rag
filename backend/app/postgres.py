@@ -482,6 +482,7 @@ class PostgresStore:
         source_ids: list[UUID] | None = None,
         *, embedding_space: str = 'signed-hash-v1:64',
     ) -> list[RetrievalHit]:
+        from .provenance import checked_visual_origin
         from .providers import content_tokens
         from .retrieval import CANDIDATES_PER_CHANNEL, fuse_and_rerank
         self.get_project(tenant_id, project_id)
@@ -519,11 +520,13 @@ class PostgresStore:
                 ), ranks AS (
                     SELECT * FROM lexical UNION ALL SELECT * FROM semantic
                 )
-                SELECT c.*, r.score, r.channel,to_jsonb(ar) AS asr_origin FROM ranks r JOIN candidates c ON c.id=r.id
+                SELECT c.*, r.score, r.channel,to_jsonb(ar) AS asr_origin,vo.origin AS visual_origin FROM ranks r JOIN candidates c ON c.id=r.id
                 LEFT JOIN processing_versions v ON v.tenant_id=c.tenant_id AND v.project_id=c.project_id
                     AND v.source_id=c.source_id AND v.generation=c.generation
                 LEFT JOIN asr_runs ar ON ar.tenant_id=v.tenant_id AND ar.project_id=v.project_id
                     AND ar.source_id=v.source_id AND ar.job_id=v.asr_job_id AND ar.completed_at IS NOT NULL
+                LEFT JOIN visual_index_origins vo ON vo.tenant_id=c.tenant_id AND vo.project_id=c.project_id
+                    AND vo.source_id=c.source_id AND vo.generation=c.generation
                 ORDER BY r.channel, r.score DESC, c.id
                 """,
                 (tenant_id, project_id, embedding_space, len(query_embedding), source_ids or None, source_ids or None, lexical_query, vector,
@@ -554,6 +557,7 @@ class PostgresStore:
                     score=float(row["score"]),
                     semantic_similarity=float(row['semantic']),
                     asr_origin=row['asr_origin'],
+                    visual_origin=checked_visual_origin(row),
                 )
             )
         return fuse_and_rerank(query_text, list(channels.values()), limit, semantic_mode=embedding_space != 'signed-hash-v1:64')

@@ -3,7 +3,7 @@ export const projectId = "11111111-1111-4111-8111-111111111111";
 export const sourceId = "22222222-2222-4222-8222-222222222222";
 export function visualFixture(): VisualGallery {
   return { source_id: sourceId, source_filename: "owned.mp4", generation: 2, processing_version: "retained-frames-v1",
-    published_at: "2026-10-26T12:00:00Z", searchable: false,
+    published_at: "2026-10-26T12:00:00Z", searchable: false, active_index_generation: null, active_embedding_space: null,
     origin: { machine_generated: true, human_reviewed: false, job_id: "33333333-3333-4333-8333-333333333333", generation: 1,
       profile: "local-visual-v1:" + "a".repeat(64), language: "tr", engines: { ffmpeg: "5.1.9", tesseract: "5.3.0" },
       checkpoint_version: "visual-checkpoint-v1", prepared_at: "2026-10-26T11:59:00Z" },

@@ -246,6 +246,14 @@ retention. Completion is `frames_retained`, not searchable `ready`. Visual index
 citations, public MP4 upload, scene/quality evaluation and the Alpha 2 exit criteria
 remain open. See `docs/sprint4/visual-gallery-validation.md`.
 
+The 2026-10-27 retained-OCR index continuation (ADR 0024/migration 0016) adds
+checkpointed hash/optional local semantic text indexing, stable frame-modality
+evidence and generation-pinned visual citations/history/inspection. Separate
+internal index jobs consume only complete galleries; point timestamps do not
+invent visible durations. This is OCR-text RAG, not image-model understanding.
+Public MP4 upload, scene/description features and representative quality/Alpha 2
+exit criteria remain open. See `docs/sprint4/visual-index-validation.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

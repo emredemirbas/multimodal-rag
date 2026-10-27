@@ -67,7 +67,7 @@ class SourceRepository:
 
     def _managed_source(self, row: dict) -> ManagedSource:
         source = ManagedSource.model_validate(row)
-        source.reindex_required = (source.kind == 'transcript' and source.active_generation is not None
+        source.reindex_required = (source.kind in {'transcript', 'video'} and source.active_generation is not None
                                    and source.active_embedding_space != configured_space(self.settings.embedding_provider))
         return source
 
@@ -119,7 +119,7 @@ class SourceRepository:
                idempotency_key,generation,actor_user_id,target_embedding_space)
                VALUES (%s,%s,%s,%s,%s,'queued','pending',%s,%s,%s,%s) RETURNING *''',
             (tenant, project, job_id, source, job_type, f'ingest-{job_id}', generation, actor,
-             configured_space(self.settings.embedding_provider) if job_type == 'transcript' else None),
+             configured_space(self.settings.embedding_provider) if job_type in {'transcript', 'visual_index'} else None),
         ).fetchone()
         SourceRepository.enqueue(connection, tenant, project, source, job_id, generation)
         return Job.model_validate(row)
@@ -220,7 +220,7 @@ class SourceRepository:
             job = current.job
             if (command in {'retry', 'reprocess'} and current.kind in {'audio', 'video'}
                     and job.status in {'failed', 'cancelled', 'succeeded'}
-                    and not (current.kind == 'video' and job.job_type == 'visual_publish' and command == 'retry')):
+                    and not (current.kind == 'video' and job.job_type in {'visual_publish', 'visual_index'} and command == 'retry')):
                 if current.kind == 'audio':
                     raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
                 raise SourceError('video_reupload_required', 'The original video is retired on terminal paths; upload it again to process.', 409)
@@ -334,7 +334,7 @@ class SourceRepository:
                 '''UPDATE processing_jobs SET status='running',stage='validating',progress_percent=CASE WHEN total_segments>0 THEN greatest(5,progress_percent) ELSE 5 END,
                    attempt_count=attempt_count+CASE WHEN continuation_pending THEN 0 ELSE 1 END,
                    delivery_count=greatest(delivery_count,attempt_count)+1,continuation_pending=false,
-                   target_embedding_space=CASE WHEN job_type='transcript' THEN coalesce(target_embedding_space,%s) ELSE NULL END,
+                   target_embedding_space=CASE WHEN job_type IN ('transcript','visual_index') THEN coalesce(target_embedding_space,%s) ELSE NULL END,
                    lease_token=%s,lease_expires_at=now()+make_interval(secs=>%s),
                    started_at=now(),updated_at=now(),failure_code=NULL,failure_detail=NULL
                    WHERE tenant_id=%s AND project_id=%s AND id=%s RETURNING *''',
@@ -513,9 +513,10 @@ class SourceRepository:
             return True
 
     def _activate(self, connection, claim: dict, provider: str, model: str, segment_count: int, characters: int, duration_ms: int,
-                  *, embedding_space: str, model_digest: str | None, input_tokens: int | None, cumulative: bool = False):
+                  *, embedding_space: str, model_digest: str | None, input_tokens: int | None, cumulative: bool = False,
+                  processing_version: str | None = None):
         tenant, project, source, job = (claim[key] for key in ('tenant_id', 'project_id', 'source_id', 'id'))
-        generation, version = claim['generation'], f"{PROCESSING_VERSION}:g{claim['generation']}"
+        generation, version = claim['generation'], processing_version or f"{PROCESSING_VERSION}:g{claim['generation']}"
         connection.execute(
             '''UPDATE processing_versions v SET asr_job_id=a.asr_job_id FROM source_artifacts a
                WHERE a.tenant_id=v.tenant_id AND a.project_id=v.project_id AND a.source_id=v.source_id
@@ -568,7 +569,7 @@ class SourceRepository:
             cleanup = connection.execute('SELECT status,count(*) AS count FROM artifact_cleanup GROUP BY status').fetchall()
             waiting = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_capacity' AND status IN ('pending','retrying')").fetchone()['count']
             continuations = connection.execute("SELECT count(*) AS count FROM processing_jobs WHERE stage='waiting_continuation' AND status='pending'").fetchone()['count']
-            checkpoints = connection.execute('SELECT count(*) AS count FROM embedding_checkpoints').fetchone()['count']
+            checkpoints = connection.execute('SELECT (SELECT count(*) FROM embedding_checkpoints)+(SELECT count(*) FROM visual_index_chunks) AS count').fetchone()['count']
             asr = connection.execute(
                 '''SELECT coalesce(sum(next_window),0) AS windows,coalesce(sum(completed_frames),0) AS frames,
                           coalesce(sum(model_duration_ms),0) AS duration FROM asr_runs''',

@@ -1,21 +1,9 @@
 """Public selected-frame inspection: no storage key, original digest or raw run."""
 from datetime import datetime
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-
-
-class VisualOrigin(BaseModel):
-    machine_generated: Literal[True] = True
-    human_reviewed: Literal[False] = False
-    job_id: UUID
-    generation: int = Field(ge=1)
-    profile: str = Field(pattern=r'^local-visual-v1:[a-f0-9]{64}$')
-    language: Literal['en', 'tr', 'en+tr']
-    engines: dict[str, str]
-    checkpoint_version: str
-    prepared_at: datetime
+from ..provenance import VisualOrigin
 
 
 class RetainedFrame(BaseModel):
@@ -35,5 +23,7 @@ class VisualGallery(BaseModel):
     processing_version: str | None = None
     published_at: datetime | None = None
     origin: VisualOrigin | None = None
-    searchable: Literal[False] = False
+    searchable: bool = False
+    active_index_generation: int | None = None
+    active_embedding_space: str | None = None
     items: list[RetainedFrame] = Field(default_factory=list, max_length=20)

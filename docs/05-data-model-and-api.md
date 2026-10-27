@@ -287,6 +287,28 @@ The corresponding same-origin Next route is a bounded credential-free-browser
 proxy, not a signed public object URL. Source/project cascades remove every row;
 existing verified prefix cleanup removes adopted and orphan images.
 
+Migration 0016/ADR 0024 adds `visual_index_runs` linked to the full original
+publication/source/generation and scoped `visual_index_chunks` for bounded private
+embedding batches. Each row retains stable segment/frame, literal character offset,
+actual PTS, target vector space and float32 embedding digest. Eight-document groups
+resume after loss; only full integrity-checked activation creates evidence/usage.
+New internal command receipts use `index_visual`; public source commands remain
+retry/cancel/reprocess, with derived-index retry but no public video reprocess.
+Superseding an unfinished index removes its private chunks, not published evidence.
+
+`processing_versions.visual_publication_job_id` pins retained-gallery origin;
+managed frame segments carry the same FK and a full scoped retained-frame FK.
+Legacy validation-only frames remain compatible without a fabricated image/origin.
+Frame PTS uses `start_ms=end_ms` (including zero), not an inferred duration;
+transcripts still require positive intervals. A scoped public-projection view
+supplies nullable `visual_origin` to retrieval, answer/history citations and evidence.
+Evidence also projects `frame_id`; missing managed provenance fails closed.
+Saved citations remain unchanged across reindexing. Gallery JSON now separately
+reports `searchable`, `active_index_generation` and `active_embedding_space`;
+index presence does not mean compatibility with the current configured search.
+Source inventory exposes that mismatch. Protected evidence reads are no-store
+on success and errors. No new public MP4 command/upload endpoint is added.
+
 ### Projects
 
 - `POST /projects`

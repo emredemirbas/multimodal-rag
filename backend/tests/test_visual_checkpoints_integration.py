@@ -374,16 +374,23 @@ def test_additive_migration_preserves_published_pre_checkpoint_data_and_checksum
     principal = AuthenticatedPrincipal(provider='test', subject='visual-migration-user', tenant_id='visual-migration')
     service = TutorialService(store, DeterministicHashEmbeddingProvider(), EvidenceExtractiveAnswerProvider())
     project = service.create_project(principal, ProjectCreate(title='Existing data'))
-    service.ingest_transcript(principal, project.id, TranscriptIngestRequest(
+    ingested = service.ingest_transcript(principal, project.id, TranscriptIngestRequest(
         filename='existing.vtt', authorization_mode=AuthorizationMode.OWNER_UPLOAD, idempotency_key='existing-fixture',
         content='WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nGET /health reports service health.\n'))
-    citation = service.ask(principal, project.id, 'GET /health').citations[0]
-    store.run_migrations()
-    store.run_migrations()
-    assert service.ask(principal, project.id, 'GET /health').citations[0].segment_id == citation.segment_id
+    # Seed/capture the historical schema directly: the current application's search
+    # correctly requires its new view, installed only by the deployment migration.
     with store._connect() as connection:
+        previous = connection.execute('SELECT * FROM content_segments WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
+            (principal.tenant_id, project.id, ingested.source.id)).fetchone()
+    store.run_migrations()
+    store.run_migrations()
+    assert service.ask(principal, project.id, 'GET /health').citations[0].segment_id == previous['id']
+    with store._connect() as connection:
+        preserved = connection.execute('SELECT * FROM content_segments WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND id=%s',
+            (principal.tenant_id, project.id, ingested.source.id, previous['id'])).fetchone()
+        assert {key: preserved[key] for key in previous} == previous
         after = connection.execute('SELECT version,sha256 FROM schema_migrations ORDER BY version').fetchall()
         assert after[:len(before)] == before
-        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql']
+        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql', '0016_retained_ocr_index.sql']
         assert connection.execute('SELECT count(*) AS n FROM visual_runs WHERE tenant_id=%s AND project_id=%s',
                                    (principal.tenant_id, project.id)).fetchone()['n'] == 0

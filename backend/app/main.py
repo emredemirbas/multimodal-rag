@@ -169,7 +169,7 @@ def create_app(
             raise
         route = request.scope.get("route")
         route_path = getattr(route, "path", "unmatched")
-        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image'}:
+        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image', '/api/v1/projects/{project_id}/evidence/{segment_id}'}:
             response.headers['Cache-Control'] = 'private, no-store'
             response.headers['X-Content-Type-Options'] = 'nosniff'
             response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
