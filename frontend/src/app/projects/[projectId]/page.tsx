@@ -15,6 +15,7 @@ import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 import type { Project } from "@/lib/api/contracts";
 import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
 import { getAudioCapability } from '@/lib/api/audio';
+import { getVideoCapability } from '@/lib/api/video';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -70,6 +71,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
 
   const notice = detailNotice(query.notice);
   const audioCapabilityPromise = getAudioCapability().catch(() => null);
+  const videoCapabilityPromise = getVideoCapability().catch(() => null);
   let conversations: Conversation[] = [];
   let history: History | null = null;
   let chatError = "";
@@ -91,6 +93,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
     sourceError = publicErrorMessage(error);
   }
   const audioCapability = await audioCapabilityPromise;
+  const videoCapability = await videoCapabilityPromise;
 
   return (
     <div className="stack stack--large">
@@ -129,7 +132,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
         <section className="panel panel--wide" aria-labelledby="workspace-heading">
           <p className="eyebrow">Learning material</p>
           <h2 id="workspace-heading">Source management</h2>
-          <SourcesWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems} archived={project.status === "archived"} initialError={sourceError} audioCapability={audioCapability} />
+          <SourcesWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems} archived={project.status === "archived"} initialError={sourceError} audioCapability={audioCapability} videoCapability={videoCapability} />
         </section>
 
         <section className="panel" aria-labelledby="settings-heading">

@@ -62,3 +62,7 @@ class AudioRetention(BaseModel):
         if retired != (self.cleanup_id is not None) or (self.status == 'deleted') != (self.deleted_at is not None):
             raise ValueError('Inconsistent original-audio retention state')
         return self
+
+
+class VideoRetention(AudioRetention):
+    """Same verified original lifecycle, independently projected from video_inputs."""

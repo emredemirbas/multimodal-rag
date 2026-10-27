@@ -320,6 +320,20 @@ Existing source/job DTOs follow the latest generation; no public API field or
 video upload route is introduced. Only the original actor may retry derived
 automatic work. Archive does not cancel already accepted workflow stages.
 
+ADR 0026 adds no schema/migration. `ManagedSource.video_retention` independently
+projects scoped `video_inputs`/cleanup lifecycle fields: `status`,
+`processing_expires_at`, nullable `cleanup_id` and `deleted_at`. Expiry is not
+confirmed deletion; source generation 2/3 still refers to original generation 1's
+raw lifecycle. No key, input digest or private inference payload is exposed.
+Authenticated no-store `GET /ingestion/video-capabilities` returns fixed accepted
+codec/size/duration/geometry/FPS/frame/language/TTL limits and configured `enabled`,
+independent of the existing WAV capability. `POST /projects/{project_id}/sources/video`
+accepts exactly file, rights, OCR language, idempotency key and
+`retention_acknowledged=accepted`, returning a Registration for the automatic
+workflow. The same-origin BFF returns only validated source/job/project IDs and
+deduplication state. Public video reprocess remains closed; current derived retry
+and protected original cleanup retry retain their initiator fences.
+
 ### Projects
 
 - `POST /projects`

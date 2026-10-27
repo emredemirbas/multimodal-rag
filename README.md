@@ -334,7 +334,7 @@ acceptance, even if the visual worker has a different default. Existing manual
 mode is unchanged. Cancel stops the current stage; original-initiator derived
 retry does not re-fetch raw video or rerun OCR. Already accepted work continues
 through archive, which is not cancellation. Public MP4 upload and its raw-cleanup
-UI **remain closed**. See [workflow scope](docs/sprint4/video-workflow-plan.md) and
+UI were deferred to the opt-in boundary below. See [workflow scope](docs/sprint4/video-workflow-plan.md) and
 [verification](docs/sprint4/video-workflow-validation.md).
 
 The opt-in native smoke accepts only a test-authored MP4 on stdin and creates and
@@ -351,6 +351,50 @@ docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python 
 
 This authored-card smoke demonstrates actual queue/native/application wiring,
 not representative OCR accuracy or original-video playback.
+
+### Experimental standalone MP4 upload (off by default)
+
+ADR 0026 connects that workflow through authenticated
+`GET /api/v1/ingestion/video-capabilities`,
+`POST /api/v1/projects/{project_id}/sources/video`, and a same-origin browser form.
+The existing WAV capability/flag is independent. Explicitly build/start the private
+visual service and worker and opt in; for a one-command local opt-in:
+
+```bash
+VIDEO_UPLOAD_ENABLED=true docker compose --profile local-visual up --build -d \
+  api frontend scheduler ingestion-worker visual-worker
+```
+
+Only that command receives the override. `.env.example` keeps the default false;
+later Compose commands without an explicit override or configured flag may disable
+it again. No weights, paid API or arbitrary video downloader are required. Building
+the isolated parser explicitly installs the documented small public OCR assets.
+Configuration availability is not service readiness or a quality certification.
+
+The form requires rights, explicit English/Turkish/experimental combined OCR, and
+permission to retain selected frames/literal OCR until source/project deletion.
+MP4 <=100 MB/10 minutes, H.264/avc1 yuv420p <=1080p/60fps, zero-based/unrotated only.
+Optional AAC is ignored. No sound transcription, original-video player, scene
+detector, visual description or playlist association is implied. OCR can be wrong,
+especially code/symbols and combined language, and uniform sampling can miss changes.
+
+Actual multipart wire bytes/time/part counts are bounded; one video delivery per
+server process prevents unbounded concurrent large buffering. API tmpfs is bounded
+at 256 MiB to fit a 100 MB spooled upload without changing other upload limits.
+Stopping delivery is not job cancellation: keep the unchanged draft/key for an
+uncertain retry, or refresh sources to find an accepted job. Current-stage recovery
+and exact frame citations use the existing atomic workflow. Raw-video expiry is
+not physical deletion; source cards show pending/failed/confirmed cleanup and keep
+polling after indexing. Retired original extraction requires a fresh upload;
+derived retry uses retained work. Complete deletion still covers all artifacts.
+See [scope](docs/sprint4/video-upload-plan.md) and
+[validation](docs/sprint4/video-upload-validation.md).
+
+On a disposable opted-in stack, add `VIDEO_UPLOAD_SMOKE=1` and
+`VIDEO_UPLOAD_LARGE_SMOKE=1` to the authored native smoke above (alongside its
+required `VIDEO_WORKFLOW_SMOKE=1`). This exercises production BFF/API/SSR, actual
+OCR/citations/retention, a 100,000,000-byte MP4 and owned-project cleanup. CI uses
+that explicit opt-in only on its fresh stack. It does not enable the owner's app.
 
 ## Optional real local AI (no API key or service bill)
 

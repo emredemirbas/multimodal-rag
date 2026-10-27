@@ -51,6 +51,27 @@ describe("source management", () => {
     await act(async () => { vi.advanceTimersByTime(20_000); });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+  it('keeps polling original video cleanup after indexing finishes, then stops on confirmed deletion', async () => {
+    const pending={...source,kind:'video',filename:'owned.mp4',frame_count:2,video_retention:audioRetention('cleanup_pending')};
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({items:[{...pending,video_retention:audioRetention('deleted')}]}),{status:200}));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[pending]} archived={false}/>);
+    expect(screen.getByText(/Original video retention status also refreshes/)).toBeVisible();
+    await act(async()=>{vi.advanceTimersByTime(5000);});
+    expect(screen.getByText('Original video deletion confirmed.')).toBeVisible();
+    await act(async()=>{vi.advanceTimersByTime(15000);});expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it.each([undefined,null,{enabled:false}])('fails closed when video capability is missing/unavailable/off (%s)',capability=>{
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} videoCapability={capability}/>);
+    expect(screen.queryByRole('form',{name:'Upload authorized MP4'})).not.toBeInTheDocument();
+    expect(screen.getByLabelText('SRT / VTT transcript')).toBeRequired();
+  });
+  it('offers explicit video opt-in independently of audio and hides uploads on archived projects',()=>{
+    const {rerender}=render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} videoCapability={{enabled:true}}/>);
+    expect(screen.getByRole('form',{name:'Upload authorized MP4'})).toBeVisible();
+    expect(screen.queryByRole('form',{name:'Upload authorized WAV'})).not.toBeInTheDocument();
+    rerender(<SourcesWorkspace projectId={projectId} initialSources={[]} archived videoCapability={{enabled:true}}/>);
+    expect(screen.queryByRole('form',{name:'Upload authorized MP4'})).not.toBeInTheDocument();
+  });
   it("does not offer unusable retry/reprocess controls for retired original audio", () => {
     const failed = { ...source, kind: "audio", active_generation: null, status: "failed", audio_retention: audioRetention("cleanup_failed"),
       job: { ...source.job!, status: "failed" as const, failure_code: "audio_expired" } };

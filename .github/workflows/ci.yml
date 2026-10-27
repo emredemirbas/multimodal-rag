@@ -158,9 +158,10 @@ jobs:
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.http_selftest
       - name: Start the complete development stack
-        run: docker compose up -d --wait --wait-timeout 120
+        # Opt in only on this disposable stack, not normal/default startup.
+        run: VIDEO_UPLOAD_ENABLED=true docker compose up -d --wait --wait-timeout 120
       - name: Verify optional visual service and worker actually become healthy
-        run: docker compose --profile local-visual up -d --wait --wait-timeout 120 visual-worker
+        run: VIDEO_UPLOAD_ENABLED=true docker compose --profile local-visual up -d --wait --wait-timeout 120 visual-worker
       - name: Exercise the Compose application
         run: |
           python3 scripts/smoke_sprint1.py
@@ -172,10 +173,12 @@ jobs:
           python-version: "3.12"
       - name: Install integration dependencies
         run: python -m pip install -e './backend[dev]'
-      - name: Verify automatic native video, retained-frame and OCR-index handoffs
+      - name: Verify public MP4 boundary, native OCR, retention and 100 MB upload
         env:
           PYTHONPATH: backend
           VIDEO_WORKFLOW_SMOKE: "1"
+          VIDEO_UPLOAD_SMOKE: "1"
+          VIDEO_UPLOAD_LARGE_SMOKE: "1"
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.http_selftest --fixture |

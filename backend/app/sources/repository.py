@@ -30,7 +30,14 @@ SOURCE_DETAILS = '''SELECT s.*, to_jsonb(j) AS job, to_jsonb(ar) AS asr_origin,
                        WHEN ai.cleanup_id IS NOT NULL THEN 'cleanup_pending'
                        WHEN ai.expires_at<=now() THEN 'expired' ELSE 'temporary' END,
         'processing_expires_at',ai.expires_at,'cleanup_id',ai.cleanup_id,'deleted_at',ai.deleted_at
-    ) END AS audio_retention
+    ) END AS audio_retention,
+    CASE WHEN vi.job_id IS NULL THEN NULL ELSE jsonb_build_object(
+        'status', CASE WHEN vi.deleted_at IS NOT NULL THEN 'deleted'
+                       WHEN vc.status='failed' THEN 'cleanup_failed'
+                       WHEN vi.cleanup_id IS NOT NULL THEN 'cleanup_pending'
+                       WHEN vi.expires_at<=now() THEN 'expired' ELSE 'temporary' END,
+        'processing_expires_at',vi.expires_at,'cleanup_id',vi.cleanup_id,'deleted_at',vi.deleted_at
+    ) END AS video_retention
     FROM sources s
     LEFT JOIN LATERAL (
         SELECT * FROM processing_jobs WHERE tenant_id=s.tenant_id
@@ -45,6 +52,11 @@ SOURCE_DETAILS = '''SELECT s.*, to_jsonb(j) AS job, to_jsonb(ar) AS asr_origin,
         ORDER BY generation DESC LIMIT 1
     ) ai ON true
     LEFT JOIN artifact_cleanup ac ON ac.tenant_id=ai.tenant_id AND ac.project_id=ai.project_id AND ac.id=ai.cleanup_id
+    LEFT JOIN LATERAL (
+        SELECT * FROM video_inputs WHERE tenant_id=s.tenant_id AND project_id=s.project_id AND source_id=s.id
+        ORDER BY generation DESC LIMIT 1
+    ) vi ON true
+    LEFT JOIN artifact_cleanup vc ON vc.tenant_id=vi.tenant_id AND vc.project_id=vi.project_id AND vc.id=vi.cleanup_id
 '''
 
 

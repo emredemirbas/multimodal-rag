@@ -59,7 +59,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
 | Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
-| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0025; isolated service/jobs, raw cleanup, retained gallery, OCR-text citations and opt-in atomic private handoffs; no product upload |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0026; isolated jobs, raw cleanup, gallery/citations, atomic handoffs and experimental standalone upload behind VIDEO_UPLOAD_ENABLED=false |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -200,6 +200,16 @@ relationships. Old manual mode is unchanged. Archive does not cancel accepted
 work; explicit cancellation prevents further stages, and only the original actor
 can retry derived automatic work. No public upload, new retention/format/provider,
 quality approval or paid fallback. See `sprint4/video-workflow-plan.md`.
+
+ADR 0026 continues only those accepted formats/languages/retention/providers with
+the separately gated standalone MP4 API/BFF/form and typed original-video cleanup
+UI. `VIDEO_UPLOAD_ENABLED=false` remains independent of WAV. Fixed authenticated
+capability is configuration, not readiness/quality. Require rights and permitted-
+derivative/temporary-original consent; no playlist mapping, audio transcription,
+player, scene/description capability or public video reprocess. Bound bytes, read
+time, multipart count and per-process delivery concurrency, and fit the accepted
+100 MB file in a bounded API tmpfs. The user's actual `.env`, application data and
+running services are not changed. See `sprint4/video-upload-plan.md`.
 
 ## Decide before Sprint 5
 

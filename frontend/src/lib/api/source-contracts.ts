@@ -29,6 +29,7 @@ export interface SourceItem {
   reindex_required?: boolean;
   asr_origin?: AsrOrigin | null;
   audio_retention?: AudioRetention | null;
+  video_retention?: VideoRetention | null;
 }
 
 export interface PlaylistItem {
@@ -85,6 +86,8 @@ export function parseSourceList(value: unknown): SourceItem[] {
   if (!Array.isArray(payload.items)) throw new Error("Invalid source list");
   return payload.items.map((item) => {
     const source = record(item);
+    const videoRetention = parseVideoRetention(source.video_retention);
+    if (videoRetention && (source.kind !== 'video' || source.audio_retention != null || source.asr_origin != null)) throw new Error('Mixed original-media provenance');
     if (source.reindex_required !== undefined && typeof source.reindex_required !== 'boolean') throw new Error('Invalid reindex state');
     const rawJob = source.job === null ? null : record(source.job);
     if (rawJob && (!JOB_STATES.includes(string(rawJob.status)) || integer(rawJob.progress_percent) > 100)) throw new Error("Invalid processing state");
@@ -111,6 +114,7 @@ export function parseSourceList(value: unknown): SourceItem[] {
       reindex_required: source.reindex_required === true,
       asr_origin: parseAsrOrigin(source.asr_origin),
       audio_retention: parseAudioRetention(source.audio_retention),
+      ...(source.video_retention === undefined ? {} : { video_retention: videoRetention }),
     };
   });
 }
@@ -145,5 +149,5 @@ export function isProcessing(source: SourceItem): boolean {
   return source.job !== null && ["pending", "running", "retrying"].includes(source.job.status);
 }
 import { UUID_PATTERN } from "@/lib/api/identifiers";
-import { parseAsrOrigin, parseAudioRetention, type AsrOrigin, type AudioRetention } from "@/lib/api/provenance-contracts";
+import { parseAsrOrigin, parseAudioRetention, parseVideoRetention, type AsrOrigin, type AudioRetention, type VideoRetention } from "@/lib/api/provenance-contracts";
 export { UUID_PATTERN } from "@/lib/api/identifiers";

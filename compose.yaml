@@ -22,6 +22,7 @@ x-api-environment: &api-environment
   OLLAMA_MODEL: qwen3:4b
   LOCAL_MODEL_TIMEOUT: "24"
   AUDIO_UPLOAD_ENABLED: ${AUDIO_UPLOAD_ENABLED:-false}
+  VIDEO_UPLOAD_ENABLED: ${VIDEO_UPLOAD_ENABLED:-false}
 
 x-api-image: &api-image
   build:
@@ -278,7 +279,8 @@ services:
       start_period: 10s
     read_only: true
     tmpfs:
-      - /tmp:size=64m,mode=1777
+      # Multipart spooling must fit the gated 100 MB MP4 plus bounded overhead.
+      - /tmp:size=256m,mode=1777
     security_opt:
       - no-new-privileges:true
     cap_drop:

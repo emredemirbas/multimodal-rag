@@ -52,7 +52,7 @@ export function publicErrorMessage(error: unknown): string {
 
   const sourceErrors: Record<string, string> = {
     upload_too_large: "Choose a non-empty transcript file of at most 2 MB.",
-    unsupported_file: "This transcript form accepts only text .srt and .vtt files. WAV requires the separate operator-enabled experimental form; video is not supported.",
+    unsupported_file: "This transcript form accepts only text .srt and .vtt files. WAV and supported MP4 require their separate operator-enabled experimental forms.",
     invalid_encoding: "Save the transcript as UTF-8, then upload it again.",
     rights_required: "Select the ownership, authorization or license statement that applies to this source.",
     provider_not_configured: "YouTube metadata requires a server-side Data API key. You can upload transcripts without a key.",
@@ -73,6 +73,16 @@ export function publicErrorMessage(error: unknown): string {
     invalid_audio_form: "Select one WAV file, ownership, speech language and temporary-retention acknowledgement; optionally select one current playlist lesson.",
     audio_upload_timeout: "Upload delivery timed out. It may already be queued; refresh sources or resend the unchanged file with the same request key.",
     audio_reupload_required: "The original audio is retired. Transcribing again requires a new authorized upload.",
+    video_upload_disabled: "Local MP4 upload is disabled. Explicit local-visual setup and operator opt-in are required; transcripts remain available.",
+    video_upload_busy: "Another video delivery is in progress. Retry the unchanged file and request key shortly.",
+    invalid_video_type: "Choose one supported MP4: H.264/avc1, yuv420p, at most 1080p/60 fps. Audio is not transcribed.",
+    invalid_video_input: "The MP4 container or filename is invalid. Use an authorized supported MP4 of at most 100 MB.",
+    video_too_large: "Choose a non-empty MP4 file of at most 100 MB.",
+    invalid_video_form: "Select one MP4, ownership, OCR language and temporary-original/permitted-frames retention acknowledgement.",
+    invalid_visual_language: "Choose English, Turkish or experimental combined English/Turkish OCR.",
+    video_upload_timeout: "Upload delivery timed out. It may already be queued; refresh sources or resend the unchanged file with the same request key.",
+    video_reupload_required: "The original video is retired. Extracting again requires a new authorized MP4 upload.",
+    visual_initiator_required: "The original video initiator must retry this processing workflow.",
   };
   if (sourceErrors[error.code]) return sourceErrors[error.code];
 

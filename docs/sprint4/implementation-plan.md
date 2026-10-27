@@ -47,7 +47,12 @@ application records that assertion, not a verified audiovisual alignment.
 
 ## Remaining Sprint 4 work
 
-FFmpeg/media isolation, scene detection, frame deduplication, OCR/vision models,
-transcript/frame alignment, visual citations and the visual benchmark remain
-unimplemented. Provider-backed Alpha 1 gates also remain open. Do not call this
-slice full Sprint 4 or Alpha 2 completion.
+Since this original playlist slice, ADRs 0018–0026 have delivered constrained local
+WAV transcription and MP4 selected-frame/OCR foundations, isolated services/jobs,
+raw cleanup, resumable derived processing, exact-pixel deduplication, retained
+gallery/frame citations and separately default-off experimental upload boundaries.
+They do not deliver scene-aware selection, vision descriptions, verified
+transcript/frame alignment or representative visual-quality evaluation. General
+quality/release thresholds remain open; the owner selected free local portfolio
+mode rather than a hosted production launch. Do not call the constrained authored
+native probes full Sprint 4, general multimodal quality or Alpha 2 completion.

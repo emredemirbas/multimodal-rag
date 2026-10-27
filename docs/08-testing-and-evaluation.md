@@ -253,6 +253,18 @@ actual native automatic workflow + frame citation/API/SSR/PNG + confirmed cleanu
 smoke in the hosted image job, separately from fixture-only inference tests. See
 `sprint4/video-workflow-validation.md`; public upload/quality gates stay closed.
 
+The later default-off MP4 upload boundary (ADR 0026) tests independent strict flag
+and capability, auth/disabled checks before body reads, actual bytes with false
+length, read timeout/disconnect, one-video-per-process admission/release, multipart
+count/duplicate fields and standalone consent/codec-language limits. Verify scoped
+original-job receipts including completed replays, malformed/mixed provenance,
+uncertain client draft/key recovery, cancellation versus stopped delivery,
+cleanup failure/authorized retry and polling after terminal jobs. Run actual
+public BFF/API/production SSR, native authored English/Turkish OCR, automatic
+index/frame citations and a 100,000,000-byte MP4 through real API spooling on fresh
+services, then confirm complete scoped deletion. Keep those diagnostics separate
+from representative code-OCR/scene quality. See `sprint4/video-upload-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

@@ -235,3 +235,18 @@ after raw deletion without another native call. Archive is not cancellation;
 explicit cancel stops the current stage. See `video-workflow-plan.md` and
 `video-workflow-validation.md`, plus the README's opt-in authored native smoke.
 This still adds no product upload form, MP4 API or original-video player.
+
+## Experimental public boundary (default off)
+
+The later ADR 0026 connects that accepted workflow to a standalone authenticated
+MP4 API and same-origin form behind `VIDEO_UPLOAD_ENABLED=false`. It does not
+enable a player/audio/scene/description path or widen accepted inputs. Configure
+`local-visual` explicitly and use the README's opt-in command; capability is not
+readiness/quality. Rights, explicit OCR language and permitted-derivative retention
+consent are required. The source list tracks raw expiry/retirement/deletion
+independently of job completion, and supports authorized failed cleanup retry.
+Browser delivery abort is not processing cancellation; preserve the unchanged
+draft/key when acceptance is uncertain. See `video-upload-plan.md` and
+`video-upload-validation.md` for the separately reported actual public native and
+100 MB spooling probes. Earlier authored/combined-language quality limitations
+remain unchanged; no representative code-OCR or scene recall is established.

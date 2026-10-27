@@ -8,6 +8,7 @@ from dataclasses import replace
 import json
 import os
 import sys
+import struct
 import time
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -21,6 +22,7 @@ from app.models import AuthenticatedPrincipal, AuthorizationMode
 from app.postgres import PostgresStore
 from app.sources.repository import SourceRepository
 from app.sources.video import VideoRepository
+from app.sources.contracts import Registration
 from app.vision.media import validate_mp4
 
 
@@ -47,12 +49,14 @@ def main():
     store = PostgresStore(settings.database_url)
     repo = SourceRepository(store, S3ArtifactStore(settings), settings)
 
-    def request(path, body=None, method='GET', expected=200, *, frontend=False):
-        headers = {'Content-Type': 'application/json'}
+    public_upload = os.getenv('VIDEO_UPLOAD_SMOKE') == '1'
+    def request(path, body=None, method='GET', expected=200, *, frontend=False, content_type='application/json'):
+        headers = {'Content-Type': content_type}
         if not frontend: headers['Authorization'] = 'Bearer ' + settings.development_auth_token
-        data = json.dumps(body).encode() if body is not None else None
+        else: headers['Origin'] = web
+        data = body if isinstance(body, bytes) else json.dumps(body).encode() if body is not None else None
         try:
-            with urlopen(Request((web if frontend else api) + path, data=data, headers=headers, method=method), timeout=15) as response:
+            with urlopen(Request((web if frontend else api) + path, data=data, headers=headers, method=method), timeout=45) as response:
                 status, payload, receipt = response.status, response.read(3_000_000), response.headers
         except HTTPError as error:
             status, payload, receipt = error.code, error.read(100_000), error.headers
@@ -77,7 +81,24 @@ def main():
         tenant = settings.development_auth_tenant
         args = dict(filename='authored-cards.mp4', content=fixture, rights=AuthorizationMode.OWNER_UPLOAD,
                     language='tr', idempotency_key='smoke-video-' + uuid4().hex, auto_process=True)
-        original = VideoRepository(repo).register(tenant, project, actor, **args)
+        def public_register(data, key, filename='authored-cards.mp4'):
+            boundary='video-smoke-'+uuid4().hex
+            body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: video/mp4\r\n\r\n'.encode()+data+b'\r\n')
+            fields=dict(authorization_mode='owner_upload',language='tr',idempotency_key=key,retention_acknowledged='accepted')
+            body+=(''.join(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n' for name,value in fields.items())+f'--{boundary}--\r\n').encode()
+            payload,headers=request(f'/api/projects/{project}/sources/video',body,'POST',202,frontend=True,content_type='multipart/form-data; boundary='+boundary)
+            receipt=json.loads(payload)
+            assert set(receipt)=={'project_id','source_id','job_id','deduplicated'} and receipt['project_id']==str(project)
+            assert 'no-store' in headers['Cache-Control']
+            return Registration(source=repo.get_source(tenant,project,UUID(receipt['source_id'])),
+                job=repo.get_job(tenant,project,UUID(receipt['job_id'])),deduplicated=receipt['deduplicated'])
+        if public_upload:
+            capability=json.loads(request('/api/v1/ingestion/video-capabilities')[0])
+            assert capability['enabled'] and capability['max_bytes']==100_000_000
+            workspace=request(f'/projects/{project}',frontend=True)[0].decode()
+            assert 'Upload authorized MP4' in workspace and 'selected-frame/OCR retention' in workspace
+            original=public_register(fixture,args['idempotency_key'])
+        else: original = VideoRepository(repo).register(tenant, project, actor, **args)
         def ready():
             current = repo.get_source(tenant, project, original.source.id)
             assert current.status not in {'failed', 'cancelled'}, 'Owned video processing failed'
@@ -85,7 +106,7 @@ def main():
         current = wait(ready)
         assert current.generation == current.active_generation == 3 and current.active_embedding_space == HASH_SPACE
         assert current.job.job_type == 'visual_index' and current.job.status == 'succeeded'
-        replay = VideoRepository(repo).register(tenant, project, actor, **args)
+        replay = public_register(fixture,args['idempotency_key']) if public_upload else VideoRepository(repo).register(tenant, project, actor, **args)
         assert replay.deduplicated and replay.job.id == original.job.id and replay.source.generation == 3
         gallery = json.loads(request(f'{path}/sources/{original.source.id}/frames')[0])
         assert gallery['searchable'] and gallery['active_index_generation'] == 3
@@ -117,8 +138,25 @@ def main():
                 return connection.execute('SELECT deleted_at FROM video_inputs WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
                                           (tenant, project, original.source.id)).fetchone()['deleted_at'] is not None
         wait(raw_deleted, 60)
+        if public_upload:
+            workspace=request(f'/projects/{project}',frontend=True)[0].decode()
+            assert 'Original video deletion confirmed.' in workspace and 'View selected frames' in workspace
         objects = repo.artifacts.client.list_objects_v2(Bucket=repo.artifacts.bucket, Prefix=f'{tenant}/{project}/').get('Contents', [])
         assert len(objects) == 2 and all(o['Key'].endswith('/frame.png') for o in objects)
+        if public_upload and os.getenv('VIDEO_UPLOAD_LARGE_SMOKE')=='1':
+            padding=100_000_000-len(fixture)
+            assert padding>=8
+            large=fixture+struct.pack('>I4s',padding,b'free')+bytes(padding-8)
+            validate_mp4(large)
+            big=public_register(large,'large-video-'+uuid4().hex,'large-authored.mp4')
+            assert big.source.video_retention is not None
+            request(f'{path}/sources/{big.source.id}/cancel',{'idempotency_key':'cancel-large-'+uuid4().hex},'POST',202)
+            with store._connect() as connection:
+                actual=connection.execute('SELECT byte_count FROM video_inputs WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
+                    (tenant,project,big.source.id)).fetchone()['byte_count']
+                assert actual==100_000_000
+            print('PASS: actual 100,000,000-byte MP4 through production BFF/API/spooling and scoped cancellation; no raised subtitle/WAV/chat limits.')
+            del large
         _, receipt = request(path, method='DELETE', expected=204)
         deleted = True
         wait(lambda: json.loads(request(f'{path}/cleanup/{receipt["X-Cleanup-ID"]}')[0])['status'] == 'completed', 60)
@@ -126,7 +164,7 @@ def main():
         with store._connect() as connection:
             assert not connection.execute('SELECT 1 FROM video_workflows WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()
         request(f'{path}/evidence/{citation["segment_id"]}', expected=404)
-        print('PASS: actual native MP4 -> automatic gallery/outbox -> OCR index -> frame citation/API/SSR/PNG -> confirmed raw and owned-project cleanup. Fixture OCR quality only.')
+        print('PASS: '+('public BFF/MP4/retention UI -> ' if public_upload else '')+'actual native MP4 -> automatic gallery/outbox -> OCR index -> frame citation/API/SSR/PNG -> confirmed raw and owned-project cleanup. Fixture OCR quality only.')
     finally:
         if not deleted:
             _, receipt = request(path, method='DELETE', expected=204)

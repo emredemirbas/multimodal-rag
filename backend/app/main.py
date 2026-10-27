@@ -50,6 +50,9 @@ from .sources.repository import SourceRepository
 from .sources.transcript import MAX_PAGES, TranscriptPage, TranscriptRepository
 from .sources.upload_limit import UploadLimitMiddleware
 from .sources.audio_upload import AUDIO_FORM_FIELDS, AUDIO_OPTIONAL_FIELDS, AudioCapability
+from .sources.video_upload import VIDEO_FORM_FIELDS, VideoCapability
+from .sources.video import VideoRepository
+from .vision.media import MAX_VIDEO_BYTES
 from .sources.media import MediaRepository
 from .asr.contracts import Language
 from .asr.wav import MAX_WAV_BYTES
@@ -147,7 +150,8 @@ def create_app(
         lifespan=lifespan,
     )
     app.add_middleware(UploadLimitMiddleware, limit=active_settings.upload_limit_bytes + 16_384,
-                       audio_upload_enabled=active_settings.audio_upload_enabled, authenticator=active_authenticator)
+                       audio_upload_enabled=active_settings.audio_upload_enabled,
+                       video_upload_enabled=active_settings.video_upload_enabled, authenticator=active_authenticator)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -380,6 +384,41 @@ def create_app(
         actor(request, principal)
         response.headers['Cache-Control'] = 'no-store'
         return AudioCapability(enabled=active_settings.audio_upload_enabled and request.app.state.sources is not None)
+
+    @app.get('/api/v1/ingestion/video-capabilities', response_model=VideoCapability)
+    def video_capabilities(request: Request, response: Response, principal: CurrentPrincipal) -> VideoCapability:
+        actor(request, principal)
+        response.headers['Cache-Control'] = 'no-store'
+        return VideoCapability(enabled=active_settings.video_upload_enabled and request.app.state.sources is not None)
+
+    @app.post('/api/v1/projects/{project_id}/sources/video', response_model=Registration, status_code=202)
+    async def upload_video(
+        project_id: UUID, request: Request, response: Response, principal: CurrentPrincipal,
+        file: Annotated[UploadFile, File()],
+        authorization_mode: Annotated[AuthorizationMode, Form()],
+        language: Annotated[Literal['en', 'tr', 'en+tr'], Form()],
+        idempotency_key: Annotated[str, Form(min_length=8, max_length=128, pattern=r'^[a-zA-Z0-9_-]+$')],
+        retention_acknowledged: Annotated[Literal['accepted'], Form()],
+    ) -> Registration:
+        try:
+            if not active_settings.video_upload_enabled:
+                raise SourceError('video_upload_disabled', 'Local MP4 upload is not enabled.', 503)
+            form = await request.form()
+            if set(form) != VIDEO_FORM_FIELDS or len(form.multi_items()) != len(VIDEO_FORM_FIELDS):
+                raise SourceError('invalid_video_form', 'Send one MP4, rights, OCR language, request key and retention acknowledgement.')
+            if file.content_type not in {'video/mp4', 'application/octet-stream'}:
+                raise SourceError('invalid_video_type', 'Use an authorized supported MP4 file.')
+            repository = sources(request)
+            content = await file.read(MAX_VIDEO_BYTES + 1)
+            if not content or len(content) > MAX_VIDEO_BYTES:
+                raise SourceError('video_too_large', 'Upload a non-empty MP4 file of at most 100 MB.', 413)
+            actor_id = await run_in_threadpool(actor, request, principal)
+            response.headers['Cache-Control'] = 'no-store'
+            return await run_in_threadpool(VideoRepository(repository).register, principal.tenant_id, project_id, actor_id,
+                filename=file.filename or '', content=content, rights=authorization_mode, language=language,
+                idempotency_key=idempotency_key, auto_process=True)
+        finally:
+            await file.close()
 
     @app.post('/api/v1/projects/{project_id}/sources/audio', response_model=Registration, status_code=202)
     async def upload_audio(

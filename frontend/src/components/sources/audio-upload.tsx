@@ -55,7 +55,7 @@ export function AudioUpload({ projectId, onCompleted, playlistItems = [], source
   return <section className="stack" aria-labelledby={`${id}-title`}>
     <h3 id={`${id}-title`}>Experimental local WAV transcription</h3>
     <p>The operator enabled local ASR. Availability does not guarantee model readiness or recognition accuracy. No paid/cloud fallback or automatic model download.</p>
-    <p>20 MB / 10 minutes maximum; WAV signed 16-bit PCM, 16 kHz, mono only. Video, compressed audio and URL downloads are not supported.</p>
+    <p>20 MB / 10 minutes maximum; WAV signed 16-bit PCM, 16 kHz, mono only. This WAV form does not accept video, compressed audio or URL downloads.</p>
     <form onSubmit={(event) => void upload(event)} className="stack" aria-label="Upload authorized WAV" aria-busy={pending}>
       <input type="hidden" name="idempotency_key" value={key} />
       <fieldset disabled={pending} className="stack">

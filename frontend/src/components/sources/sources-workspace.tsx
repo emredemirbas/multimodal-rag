@@ -13,6 +13,9 @@ import { AsrProvenance } from "@/components/sources/asr-provenance";
 import { AudioRetentionStatus } from "@/components/sources/audio-retention-status";
 import { AudioUpload } from '@/components/sources/audio-upload';
 import type { AudioCapability } from '@/lib/api/audio-contracts';
+import type { VideoCapability } from '@/lib/api/video-contracts';
+import { VideoUpload } from '@/components/sources/video-upload';
+import { VideoRetentionStatus } from '@/components/sources/video-retention-status';
 
 const FAILURE_MESSAGES: Record<string, string> = {
   invalid_transcript: "Check cue timestamps and text, then upload a corrected SRT/VTT file.",
@@ -43,6 +46,15 @@ const FAILURE_MESSAGES: Record<string, string> = {
   visual_ocr_empty: "No nonblank OCR text was recognized. Inspect the retained frames; no searchable text was invented.",
   invalid_visual_index: "The saved OCR index failed verification. The operator must create a new index from a valid retained gallery; old evidence is unchanged.",
   invalid_visual_provenance: "Visual evidence provenance could not be verified. Inspect source processing before retrying.",
+  video_expired: "The original video expired before extraction finished. Upload a new authorized MP4.",
+  video_processing_unavailable: "Local visual processing is unavailable. Start local-visual and its worker; retries are bounded by original eligibility.",
+  visual_unavailable: "The local visual service is unavailable or differs from the pinned profile. Check local-visual and processing settings.",
+  visual_profile_changed: "The accepted OCR profile changed. Restore the pinned profile or upload a new authorized MP4.",
+  video_timeout: "Extraction exceeded its delivery limit. Free local resources; automatic retries remain bounded by original expiry.",
+  local_visual_unavailable: "The isolated visual service is unavailable. Start local-visual and free local resources; retries are bounded by original expiry.",
+  local_visual_busy: "Local visual capacity is busy. Processing retries automatically within its attempt and original-expiry limits.",
+  invalid_visual_request: "The native worker rejected this video. Use the supported codec, dimensions, zero-based timeline and duration, then upload a corrected authorized MP4.",
+  invalid_visual_response: "The native result failed integrity verification. Inspect local-visual; no unverified OCR was published. A retired original requires a new upload.",
 };
 
 function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
@@ -58,7 +70,7 @@ function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
   </div>;
 }
 
-function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnabled }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void>; audioEnabled: boolean }) {
+function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnabled, videoEnabled }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void>; audioEnabled: boolean; videoEnabled: boolean }) {
   const [state, action] = useActionState(uploadSourceAction, INITIAL_SOURCE_ACTION);
   const [metadataState, metadataAction] = useActionState(metadataSourceAction, INITIAL_SOURCE_ACTION);
   const [uploadKey, setUploadKey] = useState("");
@@ -83,7 +95,7 @@ function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnable
             setFileSelected(Boolean(file));
             setFileError(file && (file.size === 0 || file.size > 2_000_000) ? "Choose a non-empty file of at most 2 MB." : "");
           }} />
-        <p id={`${id}-file-help`} className="field-hint">UTF-8 text, up to 2 MB. {audioEnabled ? 'Use the separate experimental form below for supported WAV. Video/compressed audio uploads are not supported.' : 'Audio/video uploads are not yet available.'}</p>
+        <p id={`${id}-file-help`} className="field-hint">UTF-8 text, up to 2 MB. {videoEnabled ? 'Use the separate experimental forms for operator-enabled media; this form accepts subtitles only.' : audioEnabled ? 'Use the separate experimental form below for supported WAV. Video/compressed audio uploads are not supported.' : 'Audio/video uploads are not yet available.'}</p>
       </div>
       <div className="field">
         <label htmlFor={`${id}-playlist-item`}>Transcript belongs to</label>
@@ -167,8 +179,8 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
   </>;
 }
 
-export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false } }: {
-  projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string; audioCapability?: AudioCapability | null;
+export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false }, videoCapability = { enabled: false } }: {
+  projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string; audioCapability?: AudioCapability | null; videoCapability?: VideoCapability | null;
 }) {
   const [sources, setSources] = useState(initialSources);
   const [playlistItems, setPlaylistItems] = useState(initialPlaylistItems);
@@ -201,9 +213,10 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
   }, [refresh]);
   const working = sources.some(isProcessing);
   const cleaningAudio = sources.some((source) => source.audio_retention && ["temporary", "expired", "cleanup_pending"].includes(source.audio_retention.status));
+  const cleaningVideo = sources.some((source) => source.video_retention && ["temporary", "expired", "cleanup_pending"].includes(source.video_retention.status));
 
   useEffect(() => {
-    if (!working && !cleaningAudio) return;
+    if (!working && !cleaningAudio && !cleaningVideo) return;
     let timer: ReturnType<typeof setInterval> | undefined;
     let stopped = false;
     async function poll() {
@@ -217,13 +230,15 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     if (!document.hidden) timer = setInterval(() => { void poll(); }, 5_000);
     document.addEventListener("visibilitychange", visibility);
     return () => { stopped = true; clearInterval(timer); document.removeEventListener("visibilitychange", visibility); };
-  }, [working, cleaningAudio, projectId, refresh]);
+  }, [working, cleaningAudio, cleaningVideo, projectId, refresh]);
 
   return <div className="stack stack--large">
     {archived ? <p>Restore the project to add sources. Existing sources and recovery controls remain available.</p> : <>
-      <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} audioEnabled={audioCapability?.enabled === true} />
+      <AddSource projectId={projectId} sources={sources} playlistItems={playlistItems} onCompleted={refresh} audioEnabled={audioCapability?.enabled === true} videoEnabled={videoCapability?.enabled === true} />
       {audioCapability?.enabled ? <AudioUpload projectId={projectId} onCompleted={refresh} playlistItems={playlistItems} sources={sources} /> :
         <p className="field-hint">{audioCapability === null ? 'Audio upload availability could not be verified. Reload this page; transcript uploads remain available.' : 'Experimental local WAV upload is off. The operator must explicitly install ASR weights, start local-asr and opt in before audio can be uploaded. Transcript uploads need none of these steps.'}</p>}
+      {videoCapability?.enabled ? <VideoUpload projectId={projectId} onCompleted={refresh} /> :
+        <p className="field-hint">{videoCapability === null ? 'Video upload availability could not be verified. Reload this page; transcript uploads remain available.' : 'Experimental local MP4 upload is off. The operator must explicitly start local-visual and its worker, then opt in. No audio transcription or video player is enabled.'}</p>}
     </>}
     <div className="form-actions">
       <h3 ref={heading} tabIndex={-1}>Sources</h3>
@@ -232,6 +247,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
     {error ? <p role="alert">{error}</p> : null}
     <p role="status" aria-live="polite">{working ? "Processing continues in the background. This list updates every five seconds while visible." : `${sources.length} source${sources.length === 1 ? "" : "s"}. No processing is currently running.`}</p>
     {cleaningAudio ? <p className="field-hint">Original audio retention status also refreshes every five seconds while visible. Expiry is not proof of deletion.</p> : null}
+    {cleaningVideo ? <p className="field-hint">Original video retention status also refreshes every five seconds while visible. Expiry is not proof of deletion.</p> : null}
     {sources.filter((source) => source.kind === "youtube_playlist").map((playlist) => {
       const items = playlistItems.filter((item) => item.playlist_source_id === playlist.id).sort((a, b) => a.position - b.position);
       const linked = items.map((item) => sources.find((source) => source.id === item.transcript_source_id));
@@ -258,6 +274,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         <p>{source.status.replaceAll("_", " ")} · generation {source.generation} · {source.segment_count} indexed segments</p>
         <AsrProvenance origin={source.asr_origin} />
         {source.audio_retention ? <AudioRetentionStatus projectId={projectId} retention={source.audio_retention} onRefresh={refresh} /> : null}
+        {source.video_retention ? <VideoRetentionStatus projectId={projectId} retention={source.video_retention} onRefresh={refresh} /> : null}
         {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.kind === "video" ? 'The operator must create a new retained-OCR index job; public video reprocessing is not enabled' : source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
           source.active_embedding_space ? <p className="field-hint">Search index: {source.active_embedding_space.startsWith('qwen3-0.6b:') ? 'Qwen3 Embedding 0.6B · 1024 dimensions' : 'Deterministic hash · 64 dimensions'}</p> : null}
         {source.job ? <>
@@ -271,7 +288,9 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {source.job.stage === 'waiting_capacity' ? <p>Playlist processing slots are busy. Waiting does not consume a retry attempt.{source.audio_retention ? ' The one-hour original-audio eligibility still includes this waiting time.' : ''}</p> : null}
         </> : <p className="field-hint">Validation-only source: upload a transcript to use processing controls.</p>}
         {source.status === "metadata_ready" ? <p>{source.kind === "video" ? "Visual preparation is complete, but this video is not indexed for questions or citations. Only fully retained selected frames can be inspected." : "Metadata only. Upload an authorized transcript to create searchable evidence. Playlist videos are not processed automatically."}</p> : null}
-        {source.job?.failure_code ? <p role="status">{FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
+          {source.job?.failure_code ? <p role="status">{source.kind === 'video' && source.job.failure_code === 'processing_configuration_changed'
+            ? 'Restore the embedding mode pinned when this video was accepted, then retry derived processing as its original initiator. A new retained-OCR index is an internal operator command; public video reprocess is not enabled.'
+            : FAILURE_MESSAGES[source.job.failure_code] ?? "Processing could not finish. Retry or upload a corrected source."} ({source.job.failure_code})</p> : null}
         {source.active_generation !== null && source.active_generation !== source.generation ? <p>Previously indexed generation {source.active_generation} remains available{source.reindex_required ? ' for saved citation inspection' : ''} until replacement succeeds.</p> : null}
         <div className="form-actions">
           {source.kind === "video" && (source.frame_count ?? 0) > 0 ? <Link className="button button--secondary" prefetch={false} href={`/projects/${projectId}/sources/${source.id}/frames`}>View selected frames</Link> : null}

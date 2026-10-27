@@ -47,10 +47,13 @@ class Settings:
     asr_base_url: str = 'http://asr:8090'
     visual_base_url: str = 'http://visual:8091'
     audio_upload_enabled: bool = False
+    video_upload_enabled: bool = False
 
     def __post_init__(self) -> None:
         if type(self.audio_upload_enabled) is not bool:
             raise ValueError('AUDIO_UPLOAD_ENABLED must be a boolean value')
+        if type(self.video_upload_enabled) is not bool:
+            raise ValueError('VIDEO_UPLOAD_ENABLED must be a boolean value')
         from .local_model import checked_local_url
         from .asr.client import checked_asr_url
         from .vision.client import checked_visual_url
@@ -129,4 +132,5 @@ class Settings:
             asr_base_url=os.getenv('ASR_BASE_URL', 'http://asr:8090'),
             visual_base_url=os.getenv('VISUAL_BASE_URL', 'http://visual:8091'),
             audio_upload_enabled=_environment_flag('AUDIO_UPLOAD_ENABLED', False),
+            video_upload_enabled=_environment_flag('VIDEO_UPLOAD_ENABLED', False),
         )

@@ -179,6 +179,26 @@ are checked before citations/history/evidence are returned, not inferred from
 mutable metadata. Browser links use existing protected gallery/image boundaries;
 no raw/signed public object URL or fake player. Public MP4 upload stays closed.
 
+ADR 0026's subsequent experimental boundary is separately gated by
+`VIDEO_UPLOAD_ENABLED=false`; it authorizes no wider codec/size/language/retention
+or downloader/provider. Explicit standalone rights/selected-frame retention
+consent precedes existing atomic jobs. API authenticates/gates before reads; BFF
+checks same-origin/UUID/configuration first and never forwards client credentials.
+Count actual wire bytes (100 MB +16 KiB) before multipart parsing, bound stalled
+reads to 30 seconds and reject excessive BFF markers/unknown or duplicate fields.
+Each process admits only one video delivery and releases its slot on every exit.
+The API's bounded 256 MiB tmpfs fits the spooled file; it is not durable storage or
+a change to other upload limits. No native codec is loaded into API/BFF workers.
+
+The BFF verifies source project/type/rights/language/lifecycle and original job
+before emitting only receipt IDs. Delivery interruption is not job cancellation;
+preserve an uncertain unchanged draft/key. Typed raw lifecycle comes from scoped
+input/cleanup rows and keeps expiry distinct from confirmed deletion. Failed
+cleanup retry remains scoped to its original initiator. Existing protected frame
+reads, unreviewed OCR policy and complete object/checkpoint/chat deletion remain
+authoritative. No audio transcription, player, playlist mapping, scene/description
+quality or default enablement is implied. See `sprint4/video-upload-plan.md`.
+
 ### Untrusted code execution
 
 Risk: learner code escapes, consumes resources, scans networks, steals secrets, or affects other runs.

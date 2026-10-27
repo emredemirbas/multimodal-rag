@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from ..models import AuthorizationMode, Source
-from ..provenance import AsrOrigin, AudioRetention
+from ..provenance import AsrOrigin, AudioRetention, VideoRetention
 
 
 class SourceError(Exception):
@@ -49,6 +49,7 @@ class ManagedSource(Source):
     reindex_required: bool = False
     asr_origin: AsrOrigin | None = None
     audio_retention: AudioRetention | None = None
+    video_retention: VideoRetention | None = None
 
 
 class PlaylistMetadataItem(BaseModel):

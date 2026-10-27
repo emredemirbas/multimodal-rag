@@ -93,6 +93,16 @@ initiator may retry derived work. This is ordinary durable job coordination, not
 a LangGraph flow. Existing manual mode and public upload gates stay unchanged.
 See `sprint4/video-workflow-plan.md`.
 
+ADR 0026 exposes the accepted standalone workflow through a separate default-off
+MP4 multipart API/BFF/form. Native decoding remains exclusively in the isolated
+service; authenticated actual-byte/time/part bounds precede parsing. API and BFF
+each admit one video delivery per process without queuing large bodies. Only API
+tmpfs capacity grows to 256 MiB so its existing multipart spool can fit 100 MB;
+subtitle/chat/WAV limits do not change. Source inventory's typed video-original
+projection tracks expiry vs retirement vs confirmed cleanup across generations;
+the accessible UI continues polling after indexing. Configuration is not native
+readiness/quality; original-video playback/audio/playlist association are absent.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

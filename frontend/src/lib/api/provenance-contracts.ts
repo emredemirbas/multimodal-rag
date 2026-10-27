@@ -20,6 +20,8 @@ export interface AudioRetention {
   cleanup_id: string | null;
   deleted_at: string | null;
 }
+export type VideoRetention = AudioRetention;
+export const parseVideoRetention = (value: unknown): VideoRetention | null => parseAudioRetention(value);
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid media provenance");
