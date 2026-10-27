@@ -48,6 +48,27 @@ celery_app.worker_main(['worker','--pool=solo','--concurrency=1','--loglevel=CRI
 '''
 
 
+def description_test_broker_url():
+    """Match the other owned-worker probes, including Compose's CI defaults."""
+    return os.getenv('TEST_REDIS_URL', f"redis://127.0.0.1:{os.getenv('REDIS_PORT', '6380')}/0")
+
+
+@pytest.mark.parametrize('explicit_url,port,expected', [
+    ('redis://127.0.0.1:16380/2', '16381', 'redis://127.0.0.1:16380/2'),
+    (None, '16381', 'redis://127.0.0.1:16381/0'),
+    (None, None, 'redis://127.0.0.1:6380/0'),
+])
+def test_description_worker_test_broker_configuration(monkeypatch, explicit_url, port, expected):
+    # Configuration only: never connect to a default/owner Redis for these cases.
+    monkeypatch.delenv('TEST_REDIS_URL', raising=False)
+    monkeypatch.delenv('REDIS_PORT', raising=False)
+    if explicit_url is not None:
+        monkeypatch.setenv('TEST_REDIS_URL', explicit_url)
+    if port is not None:
+        monkeypatch.setenv('REDIS_PORT', port)
+    assert description_test_broker_url() == expected
+
+
 @pytest.mark.integration
 @pytest.mark.worker_integration
 def test_killed_last_frame_worker_resumes_without_repeat_model_call_or_duplicate_handoff(ingestion):
@@ -58,7 +79,9 @@ def test_killed_last_frame_worker_resumes_without_repeat_model_call_or_duplicate
     repo.artifacts=S3ArtifactStore(repo.settings)
     _,publication=long_gallery(ingestion,text='user_id',count=1)
     item=queue(ingestion,publication)
-    broker=os.environ['TEST_REDIS_URL'];prefix='description-probe-'+uuid4().hex+':';name='description-'+uuid4().hex
+    broker=description_test_broker_url()
+    prefix='description-probe-'+uuid4().hex+':'
+    name='description-'+uuid4().hex
     redis=Redis.from_url(broker);redis.ping();client=Celery('description_probe',broker=broker)
     client.conf.broker_transport_options={'global_keyprefix':prefix,'socket_connect_timeout':3,'socket_timeout':5}
     workers=[]

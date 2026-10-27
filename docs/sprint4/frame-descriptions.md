@@ -191,6 +191,30 @@ Starlette/httpx test-client deprecation warning remains visible. Hosted baseline
 `d3c2f2b` has four green jobs in run 40581184918; these subsequent changes need
 their own hosted run after push.
 
+### Hosted CI configuration correction (2026-10-28)
+
+The exact description commit `b594890` passed the backend unit, backend integration
+and frontend jobs in [run 40589057804](https://github.com/emredemirbas/multimodal-rag/actions/runs/40589057804),
+but its images job failed in the real worker/checkpoint integration step:
+`test_killed_last_frame_worker_resumes_without_repeat_model_call_or_duplicate_handoff`
+raised `KeyError: TEST_REDIS_URL`. That optional override existed in the local
+disposable-service harness, but CI uses the Compose host port configuration.
+The other worker probes already support that environment. This was a test setup
+defect, not a model, image build, application migration or frontend failure.
+
+Match the established test configuration: use explicit `TEST_REDIS_URL` when
+provided; otherwise use loopback `REDIS_PORT`, default 6380. Three connection-free
+regressions cover explicit-URL precedence, a custom port with no URL, and both
+settings absent. Reproducing CI locally with the URL removed and only a **new
+disposable Redis's random port** failed before the fix, then all four checks in
+the corrected worker test file passed (3.15s), including actual owned-process
+SIGKILL/recovery, no repeated model call, usage once, one index handoff and cleanup.
+No existing application service was used. No test skipped, deadline increased,
+assertion weakened, dependency changed or model downloaded. Application code,
+schema, owner `.env` and upload/model opt-ins are unchanged. The corrective push
+must be verified in its own hosted run; earlier local results are not a green CI
+claim for `b594890`.
+
 Independent review on owned/licensed real audiovisual examples and a recorded
 human acceptance decision remain the last full Sprint 4 gate. Synthetic cards,
 this native diagram, schema checks and passing test counts do not close it.
