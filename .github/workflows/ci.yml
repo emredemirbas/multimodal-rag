@@ -172,6 +172,14 @@ jobs:
           python-version: "3.12"
       - name: Install integration dependencies
         run: python -m pip install -e './backend[dev]'
+      - name: Verify automatic native video, retained-frame and OCR-index handoffs
+        env:
+          PYTHONPATH: backend
+          VIDEO_WORKFLOW_SMOKE: "1"
+        run: >-
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
+          visual-inspect -m app.vision.http_selftest --fixture |
+          python scripts/smoke_video_workflow.py
       - name: Verify actual worker/checkpoint recovery, playlist slots and MinIO cleanup
         env:
           PYTHONPATH: backend

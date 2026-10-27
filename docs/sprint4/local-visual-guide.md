@@ -222,3 +222,16 @@ extraction identity and earlier citations remain stable across reindexing, with
 no extra native call or raw retention. Complete source/project deletion still
 removes all private chunks, evidence, derived chat and PNGs. Public MP4 upload and
 representative scene/technical OCR quality remain separate gates.
+
+## Opt-in automatic private workflow
+
+ADR 0025/migration 0017 allows trusted private `VideoRepository.register` callers
+to set `auto_process=True`. Acceptance pins the configured embedding space; the
+two success handoffs atomically create gallery/index jobs and outbox records in
+the parent's transaction. Existing manual callers are unchanged. Do not use the
+connection/continuation parameters as public commands; they exist only for these
+fenced internal handoffs. Derivatives remain retryable by their original initiator
+after raw deletion without another native call. Archive is not cancellation;
+explicit cancel stops the current stage. See `video-workflow-plan.md` and
+`video-workflow-validation.md`, plus the README's opt-in authored native smoke.
+This still adds no product upload form, MP4 API or original-video player.

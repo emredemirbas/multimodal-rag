@@ -1,6 +1,7 @@
 """Private authorized MP4 registration, raw lifecycle and atomic prepared result."""
 import hashlib
 import json
+import logging
 import unicodedata
 from uuid import uuid4
 
@@ -14,8 +15,11 @@ from ..store import ProjectNotFoundError
 from ..vision.checkpoints import CHECKPOINT_VERSION, VisualCheckpoints
 from ..vision.contracts import VisualIdentity
 from ..vision.media import MAX_VIDEO_BYTES, validate_mp4
+from ..vision import workflow
 from .contracts import Job, Registration, SourceCommand, SourceError
 from .media import MediaRepository
+
+LOGGER = logging.getLogger('tutorial_workspace.jobs')
 
 
 class VideoRepository:
@@ -23,7 +27,9 @@ class VideoRepository:
         self.repository = repository
         self.reservations = MediaRepository(repository)  # Existing write-ahead cleanup primitives only.
 
-    def register(self, tenant, project, actor, *, filename, content, rights, language, idempotency_key):
+    def register(self, tenant, project, actor, *, filename, content, rights, language, idempotency_key, auto_process=False):
+        if type(auto_process) is not bool:
+            raise SourceError('invalid_video_workflow', 'Select an explicit video processing mode.')
         try:
             validate_mp4(content)
             name = filename.rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
@@ -38,7 +44,9 @@ class VideoRepository:
         if not isinstance(language, str) or language not in {'en', 'tr', 'en+tr'}:
             raise SourceError('invalid_visual_language', 'Select English, Turkish or experimental combined OCR.')
         digest = hashlib.sha256(content).hexdigest()
-        request_hash = hashlib.sha256(json.dumps(['video-visual-v1', name, digest, rights.value, language]).encode()).hexdigest()
+        request_fields = ['video-visual-v1', name, digest, rights.value, language]
+        if auto_process: request_fields.append(workflow.VERSION)
+        request_hash = hashlib.sha256(json.dumps(request_fields).encode()).hexdigest()
         source, reservation = uuid4(), uuid4()
         repo, reservations = self.repository, self.reservations
         key = video_prefix(tenant, project, source, 1) + 'input.mp4'
@@ -95,6 +103,8 @@ class VideoRepository:
                        FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND id=%s AND source_id=%s AND generation=1''',
                     (key, digest, len(content), language, tenant, project, job.id, source),
                 )
+                if auto_process:
+                    workflow.register(repo, connection, tenant, project, source, job, actor)
                 repo.store._record_audit(connection, tenant_id=tenant, project_id=project, actor_user_id=actor, action='source.created')
                 connection.execute('DELETE FROM artifact_cleanup WHERE tenant_id=%s AND project_id=%s AND id=%s',
                                    (tenant, project, reservation))
@@ -205,10 +215,14 @@ class VideoRepository:
                    WHERE tenant_id=%s AND project_id=%s AND id=%s''', (tenant, project, job),
             )
             retire_video(connection, tenant, project, source, job)
+            next_job = workflow.after_preparation(repo, connection, claim)
             if not connection.execute('SELECT clock_timestamp()<least(%s,%s) AS valid',
                                       (live['lease_until'], live['expires_at'])).fetchone()['valid']:
                 connection.rollback()
                 return False
+        if next_job is not None:
+            LOGGER.info(json.dumps({'event': 'video_gallery_queued', 'tenant_id': tenant,
+                'project_id': str(project), 'job_id': str(job), 'next_job_id': str(next_job.id)}))
         return True
 
 

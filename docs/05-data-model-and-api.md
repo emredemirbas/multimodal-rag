@@ -309,6 +309,17 @@ index presence does not mean compatibility with the current configured search.
 Source inventory exposes that mismatch. Protected evidence reads are no-store
 on success and errors. No new public MP4 command/upload endpoint is added.
 
+Migration 0017/ADR 0025 adds opt-in `video_workflows`: full input/job/source/
+generation/actor FK, fixed workflow version, immutable configured embedding target
+and nullable scoped publication/index job-generation pairs. Source/project
+deletion cascades through this metadata. Private `auto_process=True` registration
+includes the mode in its request identity; manual registrations keep their old
+hash. Preparation plus first child/outbox, and gallery completion plus second
+child/outbox, each commit under the same parent fence/final wall-clock check.
+Existing source/job DTOs follow the latest generation; no public API field or
+video upload route is introduced. Only the original actor may retry derived
+automatic work. Archive does not cancel already accepted workflow stages.
+
 ### Projects
 
 - `POST /projects`

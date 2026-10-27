@@ -326,6 +326,32 @@ accuracy, add scene detection/descriptions or complete Alpha 2. See the
 [index scope](docs/sprint4/visual-index-plan.md) and
 [verification](docs/sprint4/visual-index-validation.md).
 
+Private registration can now opt into `auto_process=True` (ADR 0025, migration
+0017). Extraction completion atomically queues retained-frame adoption; gallery
+completion atomically queues the OCR index. Both handoffs use the existing scoped
+outbox, preserve the original actor and use the embedding space pinned at input
+acceptance, even if the visual worker has a different default. Existing manual
+mode is unchanged. Cancel stops the current stage; original-initiator derived
+retry does not re-fetch raw video or rerun OCR. Already accepted work continues
+through archive, which is not cancellation. Public MP4 upload and its raw-cleanup
+UI **remain closed**. See [workflow scope](docs/sprint4/video-workflow-plan.md) and
+[verification](docs/sprint4/video-workflow-validation.md).
+
+The opt-in native smoke accepts only a test-authored MP4 on stdin and creates and
+removes its own new development project. It requires running visual/ingestion
+workers, scheduler, API, frontend, backend dependencies, and explicit matching
+development credentials/ports in the environment; it never reads `.env` or runs
+migrations. CI runs it on its disposable stack with hash/extractive providers:
+
+```bash
+docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python \
+  visual-inspect -m app.vision.http_selftest --fixture | \
+  VIDEO_WORKFLOW_SMOKE=1 PYTHONPATH=backend python scripts/smoke_video_workflow.py
+```
+
+This authored-card smoke demonstrates actual queue/native/application wiring,
+not representative OCR accuracy or original-video playback.
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

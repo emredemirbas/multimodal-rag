@@ -59,7 +59,7 @@ not block subtitle uploads or allowlisted metadata adapters.
 |---|---|---|
 | Transcription provider | Local-only Whisper base through an application-owned interface; no managed/paid fallback | Confirmed WAV scope, 2026-10-21; foundation only, ADR 0018 |
 | Authorized binary media limits | Initial WAV path: at most 20 MB / 10 minutes; 16-bit PCM / 16 kHz / mono | Confirmed WAV scope, 2026-10-21; experimental API/form added 2026-10-23, default opt-in flag remains false (ADR 0020) |
-| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0024; isolated service/jobs, raw cleanup, retained gallery and versioned OCR-text indexing/citations; no product upload |
+| Local visual path | Authorized MP4 <=100 MB / 10 minutes, <=20 selected frames, local English/Turkish OCR | Delegated 2026-10-26, ADRs 0021–0025; isolated service/jobs, raw cleanup, retained gallery, OCR-text citations and opt-in atomic private handoffs; no product upload |
 | Binary input retention | Temporary originals only; delete after success, cancellation or permanent failure; retain derived transcript | Confirmed WAV scope, 2026-10-21; private lifecycle delivered 2026-10-22, inspection 2026-10-23 |
 
 The implementation order and current assumptions are recorded in
@@ -192,6 +192,14 @@ not an invented duration. Original extraction origin and old answers survive new
 index generations. Blank OCR creates no evidence. This supersedes only the gallery
 slice's indexing/citation deferral; public MP4 upload, scene/description features,
 representative OCR quality and full Alpha 2 remain open. See `sprint4/visual-index-plan.md`.
+
+ADR 0025 adds an explicit private automatic mode linking those already accepted
+stages atomically through the existing PostgreSQL outbox. Pin embedding target at
+input acceptance, preserve original initiator and store full scoped child job
+relationships. Old manual mode is unchanged. Archive does not cancel accepted
+work; explicit cancellation prevents further stages, and only the original actor
+can retry derived automatic work. No public upload, new retention/format/provider,
+quality approval or paid fallback. See `sprint4/video-workflow-plan.md`.
 
 ## Decide before Sprint 5
 

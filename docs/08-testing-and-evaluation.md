@@ -243,6 +243,16 @@ Frontend contracts must accept frame points but reject transcript points/mixed
 origins, and preserve literal OCR, exact protected frame links and honest index
 state. See `sprint4/visual-index-validation.md`.
 
+The opt-in automatic video mode additionally verifies original receipt replay,
+concurrent duplicate deliveries, full child/input FKs, parent/child/outbox rollback
+at both handoffs, actual final wall-clock expiry and lease recovery. Test original-
+initiator derived retry, cancel/revocation, archived continuation, empty OCR and
+registration-pinned embedding mode despite different visual-worker defaults.
+Repeat real SIGKILL/saved-result recovery in manual and automatic modes. Run the
+actual native automatic workflow + frame citation/API/SSR/PNG + confirmed cleanup
+smoke in the hosted image job, separately from fixture-only inference tests. See
+`sprint4/video-workflow-validation.md`; public upload/quality gates stay closed.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

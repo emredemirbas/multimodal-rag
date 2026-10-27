@@ -3,6 +3,7 @@ import hashlib
 import logging
 import json
 import re
+from contextlib import nullcontext
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from ..artifacts.storage import object_prefix
@@ -53,10 +54,13 @@ class VisualGalleryRepository:
             raise SourceError('visual_input_changed', 'The prepared video or processing identity changed.', 409)
         return row, identity
 
-    def enqueue(self, tenant, project, source, visual_job, actor, idempotency_key):
+    def enqueue(self, tenant, project, source, visual_job, actor, idempotency_key, *, connection=None, continuation=False):
+        """Internal command; an automatic continuation joins its parent's transaction."""
+        if continuation and connection is None:
+            raise ValueError('Automatic continuations require their parent transaction')
         SourceCommand(idempotency_key=idempotency_key)
         repo = self.repository
-        with repo.store._connect() as connection:
+        with (repo.store._connect() if connection is None else nullcontext(connection)) as connection:
             state = repo._project(connection, tenant, project, actor)
             current = repo._source(connection, tenant, project, source)
             receipt = connection.execute(
@@ -73,7 +77,7 @@ class VisualGalleryRepository:
                 job = connection.execute('SELECT * FROM processing_jobs WHERE tenant_id=%s AND project_id=%s AND id=%s',
                                         (tenant, project, receipt['job_id'])).fetchone()
                 return Registration(source=current, job=Job.model_validate(job), deduplicated=True)
-            if state['status'] != 'active':
+            if state['status'] != 'active' and not continuation:
                 raise SourceError('project_archived', 'Restore the project before preparing selected frames.', 409)
             run, _ = self._prepared(connection, tenant, project, source, visual_job, actor)
             if connection.execute('SELECT 1 FROM memberships WHERE tenant_id=%s AND user_id=%s FOR KEY SHARE',
@@ -194,11 +198,15 @@ class VisualGalleryRepository:
                     connection.rollback()
                     return False
                 complete = len(rows) == len(snapshot.frames)
+                next_job = None
                 if complete:
                     connection.execute('UPDATE visual_publications SET published_at=clock_timestamp() WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND job_id=%s AND generation=%s', self._scope(claim))
                     connection.execute("UPDATE processing_jobs SET status='succeeded',stage='frames_retained',progress_percent=100,continuation_pending=false,lease_token=NULL,lease_expires_at=NULL,finished_at=now(),updated_at=now() WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND id=%s AND generation=%s", self._scope(claim))
                     connection.execute("UPDATE sources SET status='metadata_ready',frame_count=%s,retention_class='permitted_visual',updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s", (len(rows), tenant, project, source))
                     repo._finish_attempt(connection, tenant, project, job, 'succeeded', None)
+                    # Local import avoids the index -> gallery dependency cycle.
+                    from .workflow import after_publication
+                    next_job = after_publication(repo, connection, claim)
                 else:
                     repo._finish_attempt(connection, tenant, project, job, 'checkpointed', None)
                     connection.execute("UPDATE processing_jobs SET status='pending',stage='waiting_visual_continuation',progress_percent=%s,continuation_pending=true,available_at=now()+interval '2 seconds',lease_token=NULL,lease_expires_at=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND id=%s AND generation=%s", (10 + len(rows)*80//len(snapshot.frames), *self._scope(claim)))
@@ -209,7 +217,8 @@ class VisualGalleryRepository:
                     return False
             adopted = True
             LOGGER.info(json.dumps({'event': 'visual_frame_adopted', 'tenant_id': tenant, 'project_id': str(project),
-                'job_id': str(job), 'retained_frames': len(rows), 'gallery_complete': complete}))
+                'job_id': str(job), 'retained_frames': len(rows), 'gallery_complete': complete,
+                'index_queued': complete and next_job is not None}))
             return complete
         finally:
             if not adopted: self.reservations._due(reservation, tenant, project)

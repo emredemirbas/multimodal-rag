@@ -14,7 +14,7 @@ from ..config import Settings
 from ..models import AuthorizationMode, EvidenceSegment
 from ..postgres import PostgresStore
 from ..store import ProjectNotFoundError
-from ..embedding_profiles import HASH_SPACE, configured_space
+from ..embedding_profiles import HASH_SPACE, QWEN_SPACE, configured_space
 from .chunking import PROCESSING_VERSION, decode_transcript
 from .contracts import Cleanup, Job, ManagedSource, Registration, SourceError, SourceList
 from .adapters import TranscriptAdapter, YouTubeAdapter
@@ -112,14 +112,18 @@ class SourceRepository:
             (tenant, project, uuid4(), job, source, generation, delay),
         )
 
-    def _new_job(self, connection, tenant: str, project: UUID, source: UUID, actor: UUID, generation: int, job_type: str = 'transcript') -> Job:
+    def _new_job(self, connection, tenant: str, project: UUID, source: UUID, actor: UUID, generation: int, job_type: str = 'transcript',
+                 *, target_embedding_space: str | None = None) -> Job:
+        if target_embedding_space is not None and (job_type not in {'transcript', 'visual_index'}
+                                                   or target_embedding_space not in {HASH_SPACE, QWEN_SPACE}):
+            raise SourceError('processing_configuration_changed', 'The pinned embedding space is not supported.', 409)
         job_id = uuid4()
         row = connection.execute(
             '''INSERT INTO processing_jobs (tenant_id,project_id,id,source_id,job_type,stage,status,
                idempotency_key,generation,actor_user_id,target_embedding_space)
                VALUES (%s,%s,%s,%s,%s,'queued','pending',%s,%s,%s,%s) RETURNING *''',
             (tenant, project, job_id, source, job_type, f'ingest-{job_id}', generation, actor,
-             configured_space(self.settings.embedding_provider) if job_type in {'transcript', 'visual_index'} else None),
+             (target_embedding_space or configured_space(self.settings.embedding_provider)) if job_type in {'transcript', 'visual_index'} else None),
         ).fetchone()
         SourceRepository.enqueue(connection, tenant, project, source, job_id, generation)
         return Job.model_validate(row)
@@ -238,6 +242,12 @@ class SourceRepository:
             elif command == 'retry':
                 if job.status not in {'failed', 'cancelled'}:
                     raise SourceError('invalid_state', 'Only failed or cancelled processing can be retried.', 409)
+                workflow = connection.execute(
+                    'SELECT actor_user_id FROM video_workflows WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
+                    (tenant, project, source),
+                ).fetchone() if current.kind == 'video' else None
+                if workflow and workflow['actor_user_id'] != actor:
+                    raise SourceError('visual_initiator_required', 'The original video initiator must retry this workflow.', 409)
                 if job.max_attempts >= 12:
                     raise SourceError('retry_limit', 'Retry limit reached; upload a new source after correcting the problem.', 429)
                 connection.execute(

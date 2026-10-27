@@ -83,6 +83,16 @@ Gallery state reports active index generation/space separately. Model context is
 unreviewed OCR, not image understanding. No raw/native access, original extension,
 public MP4 upload or new provider. See `sprint4/visual-index-plan.md`.
 
+ADR 0025/migration 0017 links these existing stages only for explicit private
+automatic registrations. PostgreSQL stores original actor/input/policy/embedding
+target and scoped child job identities. Successful parent completion and child
+job/outbox creation share a transaction and final wall-clock fence. The visual
+worker cannot substitute its own embedding default. Accepted work continues
+through archival; cancellation/revocation stops progression, and only the original
+initiator may retry derived work. This is ordinary durable job coordination, not
+a LangGraph flow. Existing manual mode and public upload gates stay unchanged.
+See `sprint4/video-workflow-plan.md`.
+
 Resumable indexing (ADR 0017) stages semantic batches under the existing job lease.
 The scheduler/outbox continues bounded deliveries without consuming failure
 retries. No staging row participates in retrieval or citation inspection; the

@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import struct
+from contextlib import nullcontext
 from uuid import NAMESPACE_URL, uuid5
 
 from ..embedding_profiles import HASH_SPACE, QWEN_SPACE, QWEN_MODEL, QWEN_DIGEST
@@ -62,11 +63,14 @@ class VisualIndexRepository:
             raise SourceError('artifact_integrity', 'The retained gallery is incomplete.')
         return row, frames
 
-    def enqueue(self, tenant, project, source, publication, actor, idempotency_key):
+    def enqueue(self, tenant, project, source, publication, actor, idempotency_key, *, connection=None,
+                target_embedding_space=None, continuation=False):
         """Internal command. A new key explicitly requests a new index generation."""
+        if continuation and connection is None:
+            raise ValueError('Automatic continuations require their parent transaction')
         SourceCommand(idempotency_key=idempotency_key)
         repo = self.repository
-        with repo.store._connect() as connection:
+        with (repo.store._connect() if connection is None else nullcontext(connection)) as connection:
             state = repo._project(connection, tenant, project, actor)
             current = repo._source(connection, tenant, project, source)
             receipt = connection.execute(
@@ -80,7 +84,7 @@ class VisualIndexRepository:
                 if receipt['command'] != 'index_visual' or receipt['publication_job_id'] != publication:
                     raise SourceError('idempotency_conflict', 'This command key was used for different input.', 409)
                 return Registration(source=current, job=Job.model_validate(receipt), deduplicated=True)
-            if state['status'] != 'active':
+            if state['status'] != 'active' and not continuation:
                 raise SourceError('project_archived', 'Restore the project before indexing frames.', 409)
             origin, _ = self._publication(connection, tenant, project, source, publication, actor)
             if connection.execute('SELECT 1 FROM memberships WHERE tenant_id=%s AND user_id=%s FOR KEY SHARE',
@@ -90,7 +94,8 @@ class VisualIndexRepository:
                 raise SourceError('source_busy', 'Wait for or cancel the current source job.', 409)
             generation = current.generation + 1
             connection.execute('DELETE FROM visual_index_chunks WHERE tenant_id=%s AND project_id=%s AND source_id=%s', (tenant, project, source))
-            job = repo._new_job(connection, tenant, project, source, actor, generation, 'visual_index')
+            job = repo._new_job(connection, tenant, project, source, actor, generation, 'visual_index',
+                                target_embedding_space=target_embedding_space)
             connection.execute(
                 '''INSERT INTO visual_index_runs (tenant_id,project_id,source_id,job_id,generation,
                    publication_job_id,publication_generation,processing_version) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',

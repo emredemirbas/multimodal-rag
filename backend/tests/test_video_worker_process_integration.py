@@ -56,7 +56,8 @@ celery_app.worker_main(['worker','--pool=solo','--concurrency=1','--loglevel=CRI
 
 @pytest.mark.integration
 @pytest.mark.worker_integration
-def test_actual_visual_sigkill_resumes_saved_result_without_get_or_provider_and_retires_minio(ingestion):
+@pytest.mark.parametrize('auto_process', [False, True])
+def test_actual_visual_sigkill_resumes_saved_result_without_get_or_provider_and_retires_minio(ingestion, auto_process):
     if os.getenv('TEST_REAL_WORKER') != '1':
         pytest.skip('Set TEST_REAL_WORKER=1 with disposable Redis and MinIO')
     repo, service, principal, project, actor = ingestion
@@ -94,7 +95,7 @@ def test_actual_visual_sigkill_resumes_saved_result_without_get_or_provider_and_
             str(row['job_id']), row['generation']], queue=queue, expires=60)
 
     try:
-        item = register_video(ingestion)
+        item = register_video(ingestion, auto_process=auto_process)
         first = start(True)
         assert dispatch_once(repo, publish) == 1
         deadline = time.monotonic() + 25
@@ -136,7 +137,15 @@ def test_actual_visual_sigkill_resumes_saved_result_without_get_or_provider_and_
         assert not repo.artifacts.client.list_objects_v2(Bucket=repo.artifacts.bucket, Prefix=f'{principal.tenant_id}/{project.id}/').get('Contents')
         assert service.ask(principal, project.id, 'GET /health').abstained
         current = repo.get_source(principal.tenant_id, project.id, item.source.id)
-        assert current.status == 'metadata_ready' and current.active_generation is None
+        assert current.status == ('processing' if auto_process else 'metadata_ready') and current.active_generation is None
+        if auto_process:
+            assert current.job.job_type == 'visual_publish' and current.generation == 2
+            with repo.store._connect() as connection:
+                handoff = connection.execute('SELECT publication_job_id FROM video_workflows WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
+                                             (principal.tenant_id, project.id, item.source.id)).fetchone()
+                assert handoff['publication_job_id'] == current.job.id
+                assert connection.execute('SELECT count(*) AS n FROM visual_publications WHERE tenant_id=%s AND project_id=%s AND source_id=%s',
+                                          (principal.tenant_id, project.id, item.source.id)).fetchone()['n'] == 1
     finally:
         for worker in workers:
             if worker.poll() is None:
