@@ -265,6 +265,20 @@ index/frame citations and a 100,000,000-byte MP4 through real API spooling on fr
 services, then confirm complete scoped deletion. Keep those diagnostics separate
 from representative code-OCR/scene quality. See `sprint4/video-upload-validation.md`.
 
+### Local OCR and selected-frame quality diagnostics
+
+The explicit visual evaluator binds operator-owned references to MP4 bytes and
+expected video metadata. Offline binding is declared; native digest/byte checks
+precede inference and metadata checks follow it. Ordered half-open label intervals
+measure retained-PTS coverage, **not scene recall**. Score all sampled frames,
+report missed intervals separately, and keep normalized WER/CER distinct from
+case-sensitive NFC-only literal CER, identifier recall and unwanted blank-view OCR.
+Zero denominators remain null, insertions/rates above one remain visible and total
+alignment work is bounded before scoring. Strict JSON/PNG/profile/timeline and safe
+CLI tests are software evidence, not reviewed quality. Native authored card results
+must retain the known mixed-language failure; no release threshold or automatic
+enablement. See `sprint4/visual-evaluation-guide.md` and its validation record.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:

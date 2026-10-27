@@ -5,36 +5,18 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import re
-from typing import Annotated, Literal, Sequence
+from typing import Annotated, Literal
 import unicodedata
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ..evaluation import MAX_EDIT_CELLS, NORMALIZATION, edit_distance, has_identifier, words
 from .contracts import SpeechSegment, TranscriptionSlice
 from .wav import SAMPLE_RATE, SLICE_FRAMES
 
-NORMALIZATION = "nfc-en-tr-words-v1"
 MAX_JSON_BYTES = 131_072
-MAX_EDIT_CELLS = 8_000_000
 Digest = Annotated[str, Field(min_length=64, max_length=64, pattern=r"^[a-f0-9]{64}$")]
 Identifier = Annotated[str, Field(min_length=1, max_length=128)]
-
-
-def words(text: str, language: str) -> list[str]:
-    text = unicodedata.normalize("NFC", text)
-    if language == "tr":
-        text = text.replace("I", "ı").replace("İ", "i")
-    text = text.casefold()
-    return "".join(
-        char if char == "_" or unicodedata.category(char)[0] in "LNM" else " "
-        for char in text
-    ).split()
-
-
-def has_identifier(text: str, identifier: str) -> bool:
-    # Delimited literal spelling, not a parser or a substring/casefold match.
-    return re.search(r"(?<!\w)" + re.escape(identifier) + r"(?!\w)", text) is not None
 
 
 def occurrences(tokens: list[str], phrase: list[str]) -> list[int]:
@@ -118,22 +100,6 @@ def verify_audio(reference: Reference, content: bytes, input_frames: int) -> Non
     if (reference.input_frames != input_frames
             or reference.audio_sha256 != hashlib.sha256(content).hexdigest()):
         raise ValueError("Reference does not describe this exact WAV")
-
-
-def edit_distance(reference: Sequence, hypothesis: Sequence) -> int:
-    """Unit-cost Levenshtein distance, with a linear-space bounded work table."""
-    if len(reference) * len(hypothesis) > MAX_EDIT_CELLS:
-        raise ValueError("Alignment work limit exceeded; use a shorter labeled clip")
-    if len(reference) < len(hypothesis):
-        reference, hypothesis = hypothesis, reference
-    previous = list(range(len(hypothesis) + 1))
-    for row, expected in enumerate(reference, 1):
-        current = [row]
-        for column, actual in enumerate(hypothesis, 1):
-            current.append(min(previous[column] + 1, current[-1] + 1,
-                               previous[column - 1] + (expected != actual)))
-        previous = current
-    return previous[-1]
 
 
 def _rate(errors: int, count: int) -> float | None:

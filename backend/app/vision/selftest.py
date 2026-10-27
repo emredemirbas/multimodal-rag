@@ -1,4 +1,5 @@
 """Authored high-contrast cards only; not a representative OCR quality benchmark."""
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -8,6 +9,8 @@ import tempfile
 
 from ..asr.isolation import block_outbound_sockets
 from .local import LocalVisualProvider, NativeRunner
+from .contracts import WireResult
+from .evaluate import EvaluationRun, Reference, evaluate
 
 
 def authored_video() -> bytes:
@@ -48,8 +51,8 @@ def validate_results(content, results):
         raise ValueError("Authored card OCR diagnostic failed")
     mixed = results["en+tr"].frames[1].text.replace("I", "ı").replace("İ", "i").casefold()
     environment = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"}
-    command = [sys.executable, "-m", "app.vision.smoke", "--authorized-input", "--language", "en"]
-    delivered = subprocess.run([*command, "--synthetic-card-check"], input=content,
+    command = [sys.executable, "-m", "app.vision.smoke", "--authorized-input"]
+    delivered = subprocess.run([*command, "--language", "en", "--synthetic-card-check"], input=content,
         env=environment, capture_output=True, timeout=30)
     if delivered.returncode or delivered.stderr:
         raise ValueError("Operator stdin command failed")
@@ -60,12 +63,36 @@ def validate_results(content, results):
         env=environment, capture_output=True, timeout=5)
     if rejected.returncode != 1 or rejected.stdout or b"PRIVATE_INVALID_VIDEO" in rejected.stderr:
         raise ValueError("Malformed input did not fail safely")
+    # Fixed authored labels, not text copied from recognition. Report all modes,
+    # including known combined-language limitations; do not assert quality rates.
+    reference = Reference.model_validate({"schema_version": "visual-reference-v1",
+        "label_status": "synthetic", "input_sha256": hashlib.sha256(content).hexdigest(),
+        "input_bytes": len(content), "video": {"duration_ms": 20000, "width": 960,
+            "height": 540, "fps_numerator": 2, "fps_denominator": 1},
+        "intervals": [{"start_ms": 0, "end_ms": 10000, "language": "en", "text": "HEALTH CHECK"},
+                      {"start_ms": 10000, "end_ms": 20000, "language": "tr", "text": "SAĞLIK KONTROLÜ"}]})
+    diagnostics = {language: evaluate(reference, EvaluationRun(schema_version="visual-result-v1",
+        input_bytes=len(content), result=WireResult.from_result(result)))
+        for language, result in results.items()}
+    with tempfile.TemporaryDirectory(prefix="visual-labels-", dir="/tmp") as directory:
+        labels = Path(directory) / "reference.json"
+        labels.write_text(reference.model_dump_json(), encoding="utf-8")
+        evaluated = subprocess.run([*command, "--language", "tr", "--reference", str(labels)],
+            input=content, env=environment, capture_output=True, timeout=30)
+        if evaluated.returncode or evaluated.stderr:
+            raise ValueError("Native labeled diagnostic failed")
+        native = json.loads(evaluated.stdout)
+        if (native["input_binding"] != "verified-mp4-bytes" or native["quality_approval"] != "not_established"
+                or native["sampling"]["covered_intervals"] != 2 or b"HEALTH CHECK" in evaluated.stdout
+                or b"SA\xc4\x9eLIK" in evaluated.stdout):
+            raise ValueError("Native diagnostic binding, coverage or privacy failed")
     # Retain the observed combined-language failure as a separate diagnostic,
     # never reinterpret explicit-language success as universal recognition.
     print(json.dumps({"results": {language: result.summary() for language, result in results.items()},
         "authored_card_checks": "passed-explicit-languages",
         "combined_language_turkish_exact": bool(re.search(r"\bsağlık\s+kontrolü\b", mixed)),
         "inherited_network_denial": True, "operator_cli_and_safe_rejection": True,
+        "ocr_sampling_diagnostics": diagnostics, "native_reference_cli": native,
         "fixture_bytes": len(content)}, sort_keys=True))
 
 

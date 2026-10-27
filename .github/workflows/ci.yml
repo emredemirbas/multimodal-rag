@@ -126,7 +126,7 @@ jobs:
           and not s.get("volumes") and not s.get("environment");
           assert int(s["pids_limit"]) == 32 and int(s["mem_limit"]) == int(s["memswap_limit"]) == 1073741824;
           print("PASS: standalone visual tool isolation configuration")'
-      - name: Verify isolated native visual parsing with authored English and Turkish cards
+      - name: Verify isolated native visual parsing and OCR diagnostics with authored cards
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.selftest

@@ -250,3 +250,15 @@ draft/key when acceptance is uncertain. See `video-upload-plan.md` and
 `video-upload-validation.md` for the separately reported actual public native and
 100 MB spooling probes. Earlier authored/combined-language quality limitations
 remain unchanged; no representative code-OCR or scene recall is established.
+
+## Explicit OCR and sampling diagnostics
+
+The operator probe now also accepts mutually exclusive `--reference` labels bound
+to exact MP4 bytes and expected metadata. It reports retained-PTS interval coverage,
+all-sample normalized/literal OCR errors, identifiers and blank-view diagnostics
+without exporting text/frames or changing the sampling policy. Coverage is not
+scene recall; missed intervals cannot be hidden by good OCR on retained frames.
+See `visual-evaluation-guide.md` for independent labels, read-only native use and
+strict limits. No application API, retention, upload default or quality threshold
+changes. The authored native self-test now reports these diagnostics for all three
+language modes, retaining the known combined-language limitation.

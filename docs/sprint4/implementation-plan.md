@@ -56,3 +56,9 @@ transcript/frame alignment or representative visual-quality evaluation. General
 quality/release thresholds remain open; the owner selected free local portfolio
 mode rather than a hosted production launch. Do not call the constrained authored
 native probes full Sprint 4, general multimodal quality or Alpha 2 completion.
+
+The local visual evaluation follow-up supplies operator-owned exact-input labels,
+retained-PTS interval coverage, normalized/literal OCR and identifier diagnostics
+without changing sampling or enabling a model/upload. This measures a single clip,
+not a reviewed representative benchmark or scene-quality approval. See
+`visual-evaluation-plan.md` and `visual-evaluation-guide.md`.

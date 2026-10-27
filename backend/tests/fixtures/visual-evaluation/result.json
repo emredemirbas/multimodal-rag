@@ -1,0 +1,50 @@
+{
+  "schema_version": "visual-result-v1",
+  "input_bytes": 1000,
+  "result": {
+    "protocol": "local-visual-http-v1",
+    "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "identity": {
+      "provider": "local-ffmpeg-tesseract",
+      "engines": {
+        "ffmpeg": "5.1.9",
+        "tesseract": "5.3.0"
+      },
+      "language_data": {
+        "eng": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "tur": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "language": "en",
+      "policy": "visual-uniform5s-cap20-gray960x540-exact-pixels-png-v1",
+      "profile": "local-visual-v1:61b8781eba032b481de7deb9f5dea2df72608594390b2ec472a1bcca3376f014"
+    },
+    "video": {
+      "duration_ms": 20000,
+      "width": 960,
+      "height": 540,
+      "fps_numerator": 2,
+      "fps_denominator": 1
+    },
+    "candidates": 4,
+    "frames": [
+      {
+        "sample_target_ms": 0,
+        "timestamp_ms": 0,
+        "width": 16,
+        "height": 16,
+        "image_sha256": "3552bb8bf493ba63896f7abfb3ee3d899bf7312cd0b3d87691a639344b051238",
+        "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAADUlEQVR4nGNgGAXIAAABEAABoJMRpQAAAABJRU5ErkJggg==",
+        "text": "Use fastapi health"
+      },
+      {
+        "sample_target_ms": 10000,
+        "timestamp_ms": 10000,
+        "width": 16,
+        "height": 16,
+        "image_sha256": "30c2c2e17100004eb1aba639c9fe87d8652742a9ef0fbdc28078227b3a90f169",
+        "image_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAAD0lEQVR4nGNgRAMMI1sAAIkQAQF8thosAAAAAElFTkSuQmCC",
+        "text": "unexpected"
+      }
+    ]
+  }
+}

@@ -10,12 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 RUN pip install --no-cache-dir 'pydantic==2.14.1'
-COPY app/__init__.py ./app/__init__.py
+COPY app/__init__.py app/evaluation.py ./app/
 COPY app/asr/__init__.py app/asr/isolation.py ./app/asr/
 # Deliberately exclude trusted-worker/database checkpoint code from the parser.
 COPY app/vision/__init__.py app/vision/media.py app/vision/local.py app/vision/native.py \
      app/vision/contracts.py app/vision/client.py app/vision/server.py app/vision/smoke.py \
-     app/vision/selftest.py app/vision/http_selftest.py ./app/vision/
+     app/vision/selftest.py app/vision/http_selftest.py app/vision/evaluate.py ./app/vision/
 
 USER 1000:1000
 ENTRYPOINT ["python", "-m", "app.vision.smoke"]

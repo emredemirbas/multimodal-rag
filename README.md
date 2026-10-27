@@ -396,6 +396,17 @@ required `VIDEO_WORKFLOW_SMOKE=1`). This exercises production BFF/API/SSR, actua
 OCR/citations/retention, a 100,000,000-byte MP4 and owned-project cleanup. CI uses
 that explicit opt-in only on its fresh stack. It does not enable the owner's app.
 
+### Measure OCR and retained-frame coverage
+
+An explicit local operator evaluator accepts labels bound to an exact supported
+MP4. It reports missed labeled time intervals, normalized word/character errors,
+case-sensitive literal character errors, technical identifiers and unexpected OCR
+on blank views. No application data access, text/frame export, model download or
+paid call. Sampling coverage is not scene recall; every sampled frame is scored,
+and poor measurements do not automatically enable uploads or approve quality.
+See the [offline/native evaluation guide](docs/sprint4/visual-evaluation-guide.md)
+and [separate validation record](docs/sprint4/visual-evaluation-validation.md).
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

@@ -211,6 +211,13 @@ time, multipart count and per-process delivery concurrency, and fit the accepted
 100 MB file in a bounded API tmpfs. The user's actual `.env`, application data and
 running services are not changed. See `sprint4/video-upload-plan.md`.
 
+The subsequent operator-only visual diagnostic adds exact-input-bound labels,
+retained-PTS interval coverage and normalized/literal OCR error measurements.
+It does not change sampling, retention, upload defaults or providers. Coverage is
+not scene recall; missing intervals stay separate from sampled-frame OCR scores.
+Declared review status and authored native cards establish no representative
+quality threshold. See `sprint4/visual-evaluation-guide.md`.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |
