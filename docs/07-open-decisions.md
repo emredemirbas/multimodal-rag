@@ -218,6 +218,12 @@ not scene recall; missing intervals stay separate from sampled-frame OCR scores.
 Declared review status and authored native cards establish no representative
 quality threshold. See `sprint4/visual-evaluation-guide.md`.
 
+The change-aware continuation is initially an operator-only candidate prototype,
+with its own identity and no managed `WireResult`/checkpoint/profile change. No
+application scene-aware sampling or quality approval is implied. See
+`sprint4/scene-selection-plan.md`. The first portfolio finish line is now explicitly
+under review in `09-delivery-status.md`; keep the original roadmap until selected.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

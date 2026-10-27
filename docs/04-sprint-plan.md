@@ -6,6 +6,11 @@ boundaries; hosted release milestones and staffing estimates below are historica
 planning references. Local answer generation can complete the earlier RAG slice
 without enabling paid providers or jumping to assignments/grading.
 
+For the current consolidated status and two explicitly different finish lines
+(RAG portfolio v1 versus the full learning loop), see `09-delivery-status.md`.
+Its 1–3 and 8–12+ active-week estimates are planning judgements with assumptions,
+not a percentage-complete measure, automatic scope reduction or delivery promise.
+
 ## Estimation assumptions
 
 - Team: three full-time engineers covering frontend, backend, and AI/platform

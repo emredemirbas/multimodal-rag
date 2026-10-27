@@ -4,6 +4,10 @@ A local, zero-service-spend GitHub portfolio project: authorized programming
 tutorials become searchable, citation-backed learning material. Assignments and
 feedback remain on the roadmap; this is not a production/SaaS deployment.
 
+Current stage: **Sprint 4**, with a constrained local multimodal workflow, not a
+finished learning/assessment platform. See the consolidated
+[delivery status, remaining work and estimated finish lines](docs/09-delivery-status.md).
+
 Sprint 0 validated the transcript-to-cited-answer path. Sprint 1 adds the product
 foundation around it:
 
@@ -28,7 +32,11 @@ lexical. Old indexes are never mixed with the 1024-D model space. Binary media/A
 is off by default; the restricted local WAV path below is an experimental opt-in.
 The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
-Frame extraction, OCR/vision and full multimodal Alpha 2 remain unimplemented.
+Subsequent slices add isolated MP4 frame/OCR processing, retained galleries,
+frame-backed citations and standalone uploads behind `VIDEO_UPLOAD_ENABLED=false`.
+Managed scene-aware selection, vision descriptions, verified transcript/frame
+alignment and representative multimodal/Alpha 2 quality remain open. The new
+change-candidate operator prototype does not yet change managed sampling.
 
 Optional isolated Whisper-base now connects authorized restricted WAV upload to
 a dedicated media queue, resumable transcription, retained VTT/indexing, versioned
@@ -50,6 +58,7 @@ indexing batches are never exposed as evidence.
 6. [`docs/06-security-and-content-policy.md`](docs/06-security-and-content-policy.md)
 7. [`docs/07-open-decisions.md`](docs/07-open-decisions.md)
 8. [`docs/08-testing-and-evaluation.md`](docs/08-testing-and-evaluation.md)
+9. [`docs/09-delivery-status.md`](docs/09-delivery-status.md)
 
 Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
@@ -406,6 +415,11 @@ paid call. Sampling coverage is not scene recall; every sampled frame is scored,
 and poor measurements do not automatically enable uploads or approve quality.
 See the [offline/native evaluation guide](docs/sprint4/visual-evaluation-guide.md)
 and [separate validation record](docs/sprint4/visual-evaluation-validation.md).
+
+An additional [isolated change-candidate experiment](docs/sprint4/scene-selection-guide.md)
+compares a one-second thumbnail scan against the actual current uniform pipeline
+on an authored transient view. It does not yet change the app's sampling/profile,
+stored evidence or upload defaults; no representative scene/code-quality claim.
 
 ## Optional real local AI (no API key or service bill)
 

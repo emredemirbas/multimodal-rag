@@ -62,3 +62,9 @@ retained-PTS interval coverage, normalized/literal OCR and identifier diagnostic
 without changing sampling or enabling a model/upload. This measures a single clip,
 not a reviewed representative benchmark or scene-quality approval. See
 `visual-evaluation-plan.md` and `visual-evaluation-guide.md`.
+
+The next bounded component is an isolated change-candidate comparison, not a change
+to the managed uniform profile. It scans thumbnails with actual source PTS, ranks
+bounded visual changes and preserves temporal returns; an authored transient view
+is compared with the actual old pipeline. Managed policy/manifest integration and
+representative quality remain open. See `scene-selection-plan.md`.

@@ -130,6 +130,10 @@ jobs:
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.selftest
+      - name: Compare isolated change candidates with actual uniform sampling
+        run: >-
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
+          visual-inspect -m app.vision.scene_selftest
       - name: Verify private visual service is opt-in and credential-free
         run: >-
           docker compose --profile local-visual config --format json |

@@ -279,6 +279,16 @@ CLI tests are software evidence, not reviewed quality. Native authored card resu
 must retain the known mixed-language failure; no release threshold or automatic
 enablement. See `sprint4/visual-evaluation-guide.md` and its validation record.
 
+### Change-candidate experiment (not managed sampling)
+
+The isolated change probe adds source-PTS thumbnail scanning, deterministic
+noise/ranking/budget tests and an authored transient/return comparison with the
+actual old uniform pipeline. Validate timeline coverage, geometry/count/output
+bounds and native restrictions without changing old profile/checkpoint digests.
+The prototype's own identity is not managed visual evidence. One-second grayscale
+heuristics can miss small/brief code changes; authored success is not representative
+scene recall or approved quality. See `sprint4/scene-selection-validation.md`.
+
 ## Assignment evaluation
 
 Maintain a reviewed set of generated assignments and score:
