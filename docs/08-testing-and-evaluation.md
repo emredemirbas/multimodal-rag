@@ -115,6 +115,19 @@ terminal/code probes include a one-digit change, cursor noise and a sub-second
 view. Their negative results remain visible and do not promote a default or
 quality threshold. See `sprint4/code-policy-evaluation-guide.md` and validation.
 
+### Frame/transcript temporal inspection
+
+The frame/transcript timeline additionally tests half-open point/span boundaries,
+positive/negative offsets, bounded overlapping/long legacy spans, both immutable
+generation pins, old evidence after reprocessing, ASR origin, one read-only
+repeatable-read snapshot during concurrent deletion, archive/read access and
+tenant/project/membership/source deletion fences. Web tests reject misbound
+responses and implicit pairing, preserve literal hostile text, show gaps/truncation
+and require the same-recording assertion. The existing authored native workflow
+smoke now checks actual subtitle-worker -> alignment API -> production SSR under
+both selection policies, including old-generation links and complete deletion.
+This demonstrates wiring, not representative or verified audiovisual quality.
+
 ### Local ASR foundation
 
 The local WAV ASR foundation adds strict RIFF/PCM limits, fake local HTTP identity/

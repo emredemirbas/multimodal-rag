@@ -35,8 +35,10 @@ video-to-subtitle associations and bounded independent transcript processing.
 Subsequent slices add isolated MP4 frame/OCR processing, retained galleries,
 frame-backed citations and standalone uploads behind `VIDEO_UPLOAD_ENABLED=false`.
 Experimental change-aware selection is an explicit local worker opt-in; uniform
-sampling remains default. Vision descriptions, verified transcript/frame alignment
-and representative multimodal/Alpha 2 quality remain open.
+sampling remains default. The retained gallery also offers a version-pinned
+frame/transcript timeline with explicit user-asserted source pairing. Image-model
+descriptions and independent audiovisual/quality verification remain open; the
+finite Sprint 4 closure checklist is in the linked delivery status.
 
 Optional isolated Whisper-base now connects authorized restricted WAV upload to
 a dedicated media queue, resumable transcription, retained VTT/indexing, versioned
@@ -64,12 +66,12 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-Sprint 2 hosted CI passed for `d0ba720` after replacing the removed MinIO image.
-The owner committed playlists/local answers as `feb762e`. Semantic commit `d979a08`
-passed [hosted CI](https://github.com/emredemirbas/multimodal-rag/actions/runs/38263085923).
-This does not cover the resumable-indexing follow-up; its hosted result has not
-yet been verified. Evidence is recorded in
-[`docs/sprint3/semantic-search-validation.md`](docs/sprint3/semantic-search-validation.md).
+The latest separately verified hosted baseline is `322a520`, with all four jobs
+successful in [CI run 40577619469](https://github.com/emredemirbas/multimodal-rag/actions/runs/40577619469).
+That previous run does not certify subsequent commits. Current gates and the
+distinction between software tests and representative quality are in the
+[delivery status](docs/09-delivery-status.md); historical records retain their
+original component-level results.
 
 ## Run locally
 
@@ -404,6 +406,21 @@ On a disposable opted-in stack, add `VIDEO_UPLOAD_SMOKE=1` and
 required `VIDEO_WORKFLOW_SMOKE=1`). This exercises production BFF/API/SSR, actual
 OCR/citations/retention, a 100,000,000-byte MP4 and owned-project cleanup. CI uses
 that explicit opt-in only on its fresh stack. It does not enable the owner's app.
+
+### Inspect frames alongside a transcript
+
+When both sources are published in the same project, open **View selected frames
+→ Align with a transcript**. Choose a transcript of the same recording, confirm
+that assertion and set a whole-millisecond offset (normally 0). A positive offset
+looks later in the transcript. The page pins both published generations, shows
+actual frame/OCR beside overlapping transcript excerpts and links to stable full
+evidence. Missing spans and shortened excerpts are explicit; nearby cues are not
+substituted. Old pinned views survive transcript reprocessing.
+
+This is read-only temporal inspection, not automatic audiovisual verification,
+semantic agreement, a combined citation or a saved source relationship. No model
+call, playable original or default/media setting changes. See
+[timeline behavior and validation](docs/sprint4/timeline-alignment.md).
 
 ### Measure OCR and retained-frame coverage
 

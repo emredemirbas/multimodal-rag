@@ -10,8 +10,9 @@ import os
 import sys
 import struct
 import time
+import traceback
 from urllib.error import HTTPError
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
 
@@ -160,6 +161,64 @@ def main():
                 manifest = connection.execute('SELECT selection_manifest FROM visual_runs WHERE tenant_id=%s AND project_id=%s AND job_id=%s',
                     (tenant, project, original.job.id)).fetchone()['selection_manifest']
                 assert manifest['selected_timestamps_ms'] == expected_pts and len(manifest['samples']) == 20
+        # An independently authored transcript of this known test recording. The
+        # product still labels the association user-asserted, never verified.
+        transcript = ('WEBVTT\n\n00:00.000 --> 00:01.000\n'
+            'Alignment introduction &lt;script&gt;not executable&lt;/script&gt;.\n\n'
+            '00:10.000 --> 00:11.000\nAlignment closing view.\n')
+        boundary = 'align-smoke-' + uuid4().hex
+        body = (f'--{boundary}\r\nContent-Disposition: form-data; name="authorization_mode"\r\n\r\nowner_upload\r\n'
+            f'--{boundary}\r\nContent-Disposition: form-data; name="idempotency_key"\r\n\r\nalign-{uuid4().hex}\r\n'
+            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="owned-alignment.vtt"\r\nContent-Type: text/vtt\r\n\r\n'
+            f'{transcript}\r\n--{boundary}--\r\n').encode()
+        subtitle = json.loads(request(path + '/sources/uploads', body, 'POST', 202,
+            content_type='multipart/form-data; boundary=' + boundary)[0])
+        text_source = subtitle['source']['id']
+        def transcript_ready():
+            job = json.loads(request(path + '/jobs/' + subtitle['job']['id'])[0])
+            assert job['status'] not in {'failed', 'cancelled'}
+            return job['status'] == 'succeeded'
+        wait(transcript_ready)
+        alignment_path = f'{path}/sources/{original.source.id}/alignment'
+        parameters = dict(transcript_source_id=text_source, assert_same_recording='true', offset_ms=0,
+            visual_generation=2, transcript_generation=1)
+        paired, headers = request(alignment_path + '?' + urlencode(parameters))
+        paired = json.loads(paired)
+        assert 'no-store' in headers['Cache-Control'] and paired['semantics_verified'] is False
+        assert paired['relationship'] == 'user_asserted' and paired['gallery']['origin'] == gallery['origin']
+        assert paired['matched_frames'] == (1 if change_selection else 2)
+        assert paired['items'][0]['matches'][0]['excerpt'] == 'Alignment introduction <script>not executable</script>.'
+        chooser = f'/projects/{project}/sources/{original.source.id}/frames/align'
+        selection = request(chooser, frontend=True)[0].decode()
+        assert 'I assert that this transcript describes the same recording' in selection and 'owned-alignment.vtt' in selection
+        # With a loading boundary Next can stream a meta/RSC redirect in HTTP
+        # 200; urllib follows HTTP redirects, not browser-rendered redirects.
+        # Validate the pinned destination, then read that exact local view.
+        unpinned = {key: value for key, value in parameters.items() if key not in {'visual_generation', 'transcript_generation'}}
+        paired_html = request(chooser + '?' + urlencode(unpinned), frontend=True)[0].decode()
+        if 'not verified audiovisual identity' not in paired_html:
+            assert 'NEXT_REDIRECT' in paired_html or 'http-equiv="refresh"' in paired_html
+            assert chooser in paired_html and 'visual_generation=2' in paired_html and 'transcript_generation=1' in paired_html
+            paired_html = request(chooser + '?' + urlencode(parameters), frontend=True)[0].decode()
+        assert 'Frame and transcript timeline' in paired_html and 'not verified audiovisual identity' in paired_html
+        assert '&lt;script&gt;not executable&lt;/script&gt;' in paired_html and '<script>not executable</script>' not in paired_html
+        first_span = paired['items'][0]['matches'][0]['segment_id']
+        assert f'/evidence/{first_span}' in paired_html
+        if change_selection: assert 'No transcript span contains this timestamp' in paired_html
+        shifted = json.loads(request(alignment_path + '?' + urlencode({**parameters, 'offset_ms': -600000}))[0])
+        assert shifted['matched_frames'] == 0 and all(not item['matches'] for item in shifted['items'])
+        reprocessed = json.loads(request(f'{path}/sources/{text_source}/reprocess',
+            {'idempotency_key': 'align-reprocess-' + uuid4().hex}, 'POST', 202)[0])
+        def reindex_ready():
+            job = json.loads(request(path + '/jobs/' + reprocessed['job']['id'])[0])
+            assert job['status'] not in {'failed', 'cancelled'}
+            return job['status'] == 'succeeded'
+        wait(reindex_ready)
+        old = json.loads(request(alignment_path + '?' + urlencode(parameters))[0])
+        assert old['items'] == paired['items'] and old['transcript']['active_generation'] == 2
+        old_html = request(chooser + '?' + urlencode(parameters), frontend=True)[0].decode()
+        assert 'older published generation' in old_html
+        print('PASS: actual subtitle worker -> user-asserted temporal alignment API/production SSR, pinned generations, escaped text, gaps/offsets and stable evidence after reprocessing.')
         if public_upload and os.getenv('VIDEO_UPLOAD_LARGE_SMOKE')=='1':
             padding=100_000_000-len(fixture)
             assert padding>=8
@@ -182,6 +241,7 @@ def main():
             for table in ('video_workflows', 'visual_runs', 'visual_checkpoint_frames', 'retained_visual_frames', 'content_segments'):
                 assert not connection.execute(f'SELECT 1 FROM {table} WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()
         request(f'{path}/evidence/{citation["segment_id"]}', expected=404)
+        request(alignment_path + '?' + urlencode(parameters), expected=404)
         print('PASS: '+('public BFF/MP4/retention UI -> ' if public_upload else '')+'actual native MP4 -> automatic gallery/outbox -> OCR index -> frame citation/API/SSR/PNG -> confirmed raw and owned-project cleanup. Fixture OCR quality only.')
         if change_selection: print('PASS: explicit change selection, six exact-PTS frames including a temporal return, persisted full scan and cited transient OCR at 3000 ms.')
     finally:
@@ -193,4 +253,5 @@ def main():
 if __name__ == '__main__':
     try: main()
     except Exception as error:
-        raise SystemExit(f'FAIL: video workflow smoke ({type(error).__name__}); inspect safe service status.') from None
+        line = traceback.extract_tb(error.__traceback__)[-1].lineno
+        raise SystemExit(f'FAIL: video workflow smoke ({type(error).__name__}, check line {line}); no raw payload or exception logged.') from None

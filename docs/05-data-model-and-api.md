@@ -371,6 +371,7 @@ and protected original cleanup retry retain their initiator fences.
 - `POST /projects/{project_id}/sources/audio` (experimental, opt-in, 202)
 - `GET /projects/{project_id}/sources`
 - `GET /projects/{project_id}/sources/{source_id}`
+- `GET /projects/{project_id}/sources/{source_id}/alignment` (published frame/transcript temporal inspection)
 - `POST /projects/{project_id}/sources/{source_id}/retry`
 - `POST /projects/{project_id}/sources/{source_id}/cancel`
 - `POST /projects/{project_id}/sources/{source_id}/reprocess`
@@ -412,6 +413,21 @@ deletion returns a `202` cleanup ticket. Project deletion keeps `204` and return
 authorized after project deletion; `POST` to its `/retry` command restarts failed
 cleanup. Old processing versions retain immutable evidence; only the active
 generation participates in retrieval. Durable cleanup records survive cascades.
+
+### Temporal evidence inspection
+
+Temporal inspection requires `transcript_source_id`, `assert_same_recording=true`,
+an optional integer `offset_ms` in −600000..600000 and either both
+`visual_generation`/`transcript_generation` or neither. Unknown/duplicate fields
+are rejected. Select only complete published same-tenant/project sources in one
+read-only snapshot. Return at most 20 frames with five overlapping transcript
+spans each, 4,000-character flagged excerpts, stable evidence IDs and original
+processing provenance. Match `start <= actual_frame_pts + offset < end`; never
+substitute a nearby cue. Unavailable published inputs return 409, missing/foreign
+sources or explicit unpublished generations 404. Success and errors are private,
+no-store. No source relationship, content/citation, usage row or schema is created;
+the relationship remains `user_asserted`, `semantics_verified=false`. The server
+page pins both selected generations before rendering. See `sprint4/timeline-alignment.md`.
 
 ### Chat
 

@@ -630,3 +630,5 @@ h3 {
 .chat-turn { border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; }
 .evidence-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .citation-link { display: inline-block; min-height: 2.75rem; padding: .3rem 0; }
+.alignment-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+@media (max-width: 52rem) { .alignment-columns { grid-template-columns: 1fr; } }

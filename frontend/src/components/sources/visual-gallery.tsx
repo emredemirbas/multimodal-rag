@@ -3,6 +3,7 @@ import { timestamp } from "@/lib/api/chat-contracts";
 import type { VisualGallery as Gallery } from "@/lib/api/visual-contracts";
 import { visualSelectionNotice } from "@/lib/api/visual-contracts";
 import { RetainedFrameImage } from "@/components/sources/retained-frame-image";
+import { alignmentHref } from "@/lib/api/alignment-contracts";
 
 export function VisualGallery({ projectId, gallery }: { projectId: string; gallery: Gallery }) {
   return <article className="panel stack" aria-labelledby="gallery-title">
@@ -12,6 +13,7 @@ export function VisualGallery({ projectId, gallery }: { projectId: string; galle
     <p>{gallery.searchable ? `OCR is indexed at generation ${gallery.active_index_generation}. Questions use evidence in the matching embedding space; saved citations remain inspectable.` : "This gallery is not indexed for questions or citations yet."} No audio transcription or playable original video is provided.</p>
     {gallery.searchable ? <p className="field-hint">Active OCR embedding space: {gallery.active_embedding_space}</p> : null}
     {!gallery.origin ? <p role="status">No complete retained gallery is available yet. Incomplete processing results are not shown.</p> : <>
+      <Link prefetch={false} className="button button--secondary" href={alignmentHref(projectId, gallery.source_id)}>Align with a transcript</Link>
       <section aria-label="Automatic visual processing provenance" className="stack">
         <p>Extraction generation {gallery.origin.generation} · gallery generation {gallery.generation} · OCR language {gallery.origin.language}{gallery.origin.language === "en+tr" ? " (experimental combined language)" : ""}</p>
         <p className="field-hint">FFmpeg {gallery.origin.engines.ffmpeg} · Tesseract {gallery.origin.engines.tesseract}</p>

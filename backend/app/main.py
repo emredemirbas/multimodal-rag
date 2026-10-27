@@ -48,6 +48,7 @@ from .artifacts.storage import ArtifactStore, S3ArtifactStore
 from .sources.contracts import Cleanup, Job, ManagedSource, MetadataRegistration, Registration, SourceCommand, SourceError, SourceList
 from .sources.repository import SourceRepository
 from .sources.transcript import MAX_PAGES, TranscriptPage, TranscriptRepository
+from .sources.alignment import AlignmentRepository, TimelineAlignment, MAX_OFFSET
 from .sources.upload_limit import UploadLimitMiddleware
 from .sources.audio_upload import AUDIO_FORM_FIELDS, AUDIO_OPTIONAL_FIELDS, AudioCapability
 from .sources.video_upload import VIDEO_FORM_FIELDS, VideoCapability
@@ -173,7 +174,7 @@ def create_app(
             raise
         route = request.scope.get("route")
         route_path = getattr(route, "path", "unmatched")
-        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image', '/api/v1/projects/{project_id}/evidence/{segment_id}'}:
+        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image', '/api/v1/projects/{project_id}/evidence/{segment_id}', '/api/v1/projects/{project_id}/sources/{source_id}/alignment'}:
             response.headers['Cache-Control'] = 'private, no-store'
             response.headers['X-Content-Type-Options'] = 'nosniff'
             response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
@@ -576,6 +577,20 @@ def create_app(
         data = VisualGalleryRepository(sources(request)).image(principal.tenant_id, project_id, frame_id, actor(request, principal))
         return Response(content=data, media_type='image/png', headers={'Cache-Control': 'private, no-store',
             'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-origin'})
+
+    @app.get('/api/v1/projects/{project_id}/sources/{source_id}/alignment', response_model=TimelineAlignment)
+    def align_evidence(project_id: UUID, source_id: UUID, transcript_source_id: UUID,
+                       assert_same_recording: Literal['true'], request: Request, principal: CurrentPrincipal,
+                       response: Response, offset_ms: int = Query(default=0, ge=-MAX_OFFSET, le=MAX_OFFSET),
+                       visual_generation: int | None = Query(default=None, ge=1, le=2_147_483_647),
+                       transcript_generation: int | None = Query(default=None, ge=1, le=2_147_483_647)):
+        allowed = {'transcript_source_id', 'assert_same_recording', 'offset_ms', 'visual_generation', 'transcript_generation'}
+        if any(key not in allowed or len(request.query_params.getlist(key)) != 1 for key in request.query_params):
+            raise SourceError('invalid_alignment', 'Use one value for each supported comparison field.', 422)
+        response.headers['Cache-Control'] = 'private, no-store'
+        return AlignmentRepository(sources(request)).read(principal.tenant_id, project_id, actor(request, principal),
+            source_id, transcript_source_id, assert_same_recording=assert_same_recording == 'true',
+            offset_ms=offset_ms, visual_generation=visual_generation, transcript_generation=transcript_generation)
 
     @app.get("/api/v1/projects/{project_id}/evidence/{segment_id}", response_model=EvidenceView)
     def inspect_evidence(project_id: UUID, segment_id: UUID, request: Request, principal: CurrentPrincipal):

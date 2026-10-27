@@ -1,86 +1,55 @@
-# Sprint 4 — ordered authorized-transcript playlist slice
+# Sprint 4 — implementation and finite closure checklist
 
-Date: 2026-10-11
-Status: Ordered-transcript slice implemented and locally validated; full
-multimodal/Alpha 2 remains open. The dependency-audit blocker is resolved by the
-tested pinned lint adapter; hosted CI still requires a push. See
-`validation-record.md`.
+Updated: 2026-10-27. The original playlist slice is in `validation-record.md` and
+ADR 0014. This is the consolidated current plan, not a fresh sprint for every
+supporting component. Full multimodal/Alpha 2 is not yet approved.
 
-## Scope and material assumptions
+## Delivered application flows
 
-The owner asked to continue after committing the Sprint 3 local baseline. Start
-Sprint 4 with ordered playlist relationships and independently recoverable
-authorized subtitle processing. The managed LLM/ASR/vision provider, binary input
-limits and temporary media retention remain open. The owner subsequently chose
-zero-service-spend portfolio mode: optional local Ollama answers are added as a
-follow-up to the earlier RAG slice (ADR 0015), not binary media. Do not enable media,
-download videos/captions, or make paid model calls without those decisions.
+- Ordered playlist snapshots, explicit authorized transcript/lesson associations,
+  bounded per-video concurrency, partial failure and independent retry/resume.
+- Optional restricted local WAV -> isolated ASR -> retained transcript/index,
+  resumable jobs, immutable processing provenance and verified original cleanup.
+- Optional restricted MP4 -> isolated native frame/OCR -> durable gallery ->
+  indexed frame evidence/citations; atomic outbox handoffs, recovery and complete
+  source/project deletion. Public upload/retention UI is independently default off.
+- Default uniform/exact-pixel selection plus experimental opt-in change selection,
+  pinned identities/manifests/actual PTS. Paired authored measurements preserve
+  known one-digit/sub-second misses and cursor noise, not a quality endorsement.
+- A read-only **frame/transcript timeline** from the retained gallery, with an
+  explicit user-asserted recording relationship, signed offset, half-open span
+  matching, unmatched states, old-generation links and distinct source origins.
+  This does not verify source identity or semantic agreement, persist a pairing
+  or silently modify retrieval. See `timeline-alignment.md` for scope/validation.
 
-YouTube metadata continues through the existing official, allowlisted adapter and
-requires a server-side Data API key. Tests use synthetic responses; live provider
-availability is not inferred from fixtures. Every transcript needs its own rights
-assertion. The user explicitly selects the playlist video it represents; the
-application records that assertion, not a verified audiovisual alignment.
+Keep the owner's zero-paid-service portfolio target (ADR 0015), upload opt-ins,
+existing formats/languages/resource limits and retention. Metadata uses only the
+official allowlisted adapter and never implies downloading rights. No model
+download, enabled capability or running owner-stack change is incidental.
 
-## Delivery
+## Remaining full Sprint 4 gates — do not grow this list with optional experiments
 
-- Add immutable ordered metadata snapshots with provider playlist-item identity,
-  video identity and metadata generation. Preserve the last successful snapshot
-  on a failed refresh. Carry transcript relationships to a refreshed item only
-  when both provider item and video identities still match.
-- Atomically associate an authorized upload and its queued job with a scoped
-  playlist item. Include the item in the upload idempotency hash. Replacing a
-  transcript requires the previous job to be terminal; the previous independent
-  source and its evidence are not silently deleted.
-- Fence worker claims under the project lock, with a default maximum of two
-  active transcript jobs per playlist (configurable 1–4). Waiting for a slot does
-  not consume a processing attempt. Requeue waiting jobs through the durable
-  outbox. Existing retry/cancel/lease recovery remains per video.
-- Show ordered items, explicit truncation, missing transcripts, per-video state,
-  partial failure and independent retry controls. Keep source controls and polling
-  accessible and stop polling hidden/terminal views.
-- Preserve tenant/project scope, prior citations and source/project deletion.
-  Removing playlist metadata unlinks but does not delete independently uploaded
-  transcripts; the named confirmation must explain that behavior.
-- Test migration upgrades, authorization, ordering/refresh, concurrent slot claims,
-  idempotency, partial failure/resume, deletion and web contracts/states.
+- [ ] **Structured image-model descriptions** with a free local application-owned
+  provider, versioned provenance, useful failure/recovery and inspectable frame
+  evidence. Model/hardware/download setup is not silently assumed. OCR relabelled
+  as a description is not image understanding. No paid fallback.
+- [ ] **Independent quality and audiovisual verification** on owned/licensed real
+  examples: code/terminal/visual-only questions, relevant-frame retrieval,
+  deduplication and transcript/frame source/timing correctness, including known
+  failures. Human review and any acceptance threshold must be recorded honestly.
+  Current synthetic diagnostics and user assertions do not satisfy this gate.
 
-## Remaining Sprint 4 work
+The original exit still requires a 10-video playlist to process/partially fail/
+resume, relevant visual benchmark evidence and suppressed duplicates. Preserve
+existing software/native workflow evidence in the validation records; do not
+equate passing software counts with representative quality. Additional selection
+prototypes/evaluator infrastructure are not new closure prerequisites unless a
+specific regression requires them. Fix defects and finish these two gates.
 
-Since this original playlist slice, ADRs 0018–0026 have delivered constrained local
-WAV transcription and MP4 selected-frame/OCR foundations, isolated services/jobs,
-raw cleanup, resumable derived processing, exact-pixel deduplication, retained
-gallery/frame citations and separately default-off experimental upload boundaries.
-They do not deliver scene-aware selection, vision descriptions, verified
-transcript/frame alignment or representative visual-quality evaluation. General
-quality/release thresholds remain open; the owner selected free local portfolio
-mode rather than a hosted production launch. Do not call the constrained authored
-native probes full Sprint 4, general multimodal quality or Alpha 2 completion.
+## Decisions before the next sprint
 
-The local visual evaluation follow-up supplies operator-owned exact-input labels,
-retained-PTS interval coverage, normalized/literal OCR and identifier diagnostics
-without changing sampling or enabling a model/upload. This measures a single clip,
-not a reviewed representative benchmark or scene-quality approval. See
-`visual-evaluation-plan.md` and `visual-evaluation-guide.md`.
-
-The next bounded component is an isolated change-candidate comparison, not a change
-to the managed uniform profile. It scans thumbnails with actual source PTS, ranks
-bounded visual changes and preserves temporal returns; an authored transient view
-is compared with the actual old pipeline. Managed policy/manifest integration and
-representative quality remain open. See `scene-selection-plan.md`.
-
-The next component adds v2 identity/protocol/checkpoint manifests and migration
-0018, keeping v1 serialization/digests intact. All scan metadata is bounded and
-revalidated; temporal returns survive gallery/index/citation projection. The native
-producer remains uniform until its separate integration gate. See
-`selection-manifest-plan.md` and ADR 0027; this still is not full Sprint 4.
-
-ADR 0028 connects that native producer/service/worker gate with explicit `change`,
-preserving uniform default and existing job pins. Native fractional-PTS and
-authored managed OCR/citation/cleanup probes are in `change-ocr-validation.md`;
-representative quality, descriptions and verified alignment remain open.
-
-The subsequent paired measurement keeps both policies unchanged and adds five
-original authored code/terminal probes, exact shared-pixel OCR, interval gains/
-losses and combined work preflight. Negative cases are retained; there is no
-quality/default promotion. See `code-policy-evaluation-plan.md` and guide.
+Do not silently reduce the original learning-platform roadmap to a smaller demo.
+The portfolio-v1 versus full learning-loop finish line remains the owner's choice
+in `../09-delivery-status.md`. Before Sprint 5, resolve difficulty/extensions,
+source selection and official-document retrieval behavior in `../07-open-decisions.md`.
+The current timeline view makes none of those choices.

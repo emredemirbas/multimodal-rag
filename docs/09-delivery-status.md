@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-27. Hosted baseline: `5cf6da8`. These are planning estimates, not a
+Date: 2026-10-27. Hosted baseline: `322a520`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -13,7 +13,7 @@ Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
 That baseline passes all four hosted CI jobs:
-[run 40573984408](https://github.com/emredemirbas/multimodal-rag/actions/runs/40573984408).
+[run 40577619469](https://github.com/emredemirbas/multimodal-rag/actions/runs/40577619469).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -21,7 +21,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 |---|---|
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
-| Sprint 4: playlist and multimodal evidence | Constrained WAV/MP4/OCR and experimental opt-in change-aware selection exist; descriptions, verified transcript/frame alignment and representative evaluation remain open |
+| Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection and user-asserted frame/transcript timeline exist; image descriptions and independent audiovisual/quality verification remain open |
 | Sprint 5: learning objectives and assignments | Not implemented; product decisions must be resolved first |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
@@ -54,36 +54,29 @@ are judgement-based planning bands, not measured remaining labor or calendar
 automation. Sporadic sessions, CPU limits and human evaluation change elapsed time.
 Re-estimate after the owner selects a finish line and after the first runner spike.
 
-## Next bounded step
+## Sprint 4 closure — two remaining gates
 
-Continue the existing Sprint 4 plan while that choice is pending. The isolated
-candidate prototype is complete within its documented scope and its hosted checks
-are green; see `sprint4/scene-selection-validation.md`. The following private
-v2 selection-manifest/checkpoint component (ADR 0027/migration 0018) preserves all
-bounded score/hash records, revalidates ranking, keeps legacy digests and supports
-temporal-return gallery/index/citation provenance. See
-`sprint4/selection-manifest-plan.md` and its separate validation record.
+The current continuation adds the user-visible read-only frame/transcript timeline:
+explicit same-recording assertion, signed offset, actual-PTS/span matching, honest
+gaps, stable evidence links and both published generations pinned in the URL.
+It does not automatically verify the recording, persist a pairing or alter search.
+See `sprint4/timeline-alignment.md` for API/UI behavior and validation.
 
-The native integration is implemented as ADR 0028: actual scan/selected
-OCR -> pinned v2 service/worker -> existing managed evidence, with real fractional
-source-FPS/PTS and authored public upload/citation/cleanup probes. See
-`sprint4/change-ocr-validation.md`. Uniform remains the default; no change was
-enabled on the owner's stack. This producer is included in the green hosted
-baseline above.
+Keep the remaining list finite; no more sampling/evaluator experiments are assumed
+prerequisites simply because they are possible:
 
-The next paired measurement follow-up is now implemented: identical-input/label/
-OCR-family binding, gained/lost interval coverage, separately weighted shared-
-image OCR and five fixed authored code/terminal probes. Change mode captures a
-brief terminal error, loses a one-digit edit that uniform captures, uses all 20
-slots for cursor motion and, like uniform, misses a 0.4s view. Uniform stays
-default. See `sprint4/code-policy-evaluation-validation.md` for full regression,
-native measurements and limitations. The hosted baseline is not a CI result for
-this subsequent diagnostic follow-up.
+1. Structured image-model descriptions with a free local provider, provenance and
+   the same frame evidence/safety/recovery guarantees. No paid fallback or silently
+   assumed model download/hardware.
+2. Independent review of owned/licensed real examples for visual retrieval/code
+   quality and audiovisual source/timing correctness. User assertions and tiny
+   synthetic probes are not representative quality or verified alignment.
 
-Next gather independently reviewed owned/licensed real-terminal examples before
-any representative quality or policy decision. Descriptions and verified
-audiovisual alignment also remain open. Do not equate these tiny authored
-successes/failures or software test counts with full scene understanding or Alpha 2.
+The consolidated checklist is `sprint4/implementation-plan.md`. Existing measured
+one-digit/sub-second misses, cursor noise and mixed-language OCR errors remain
+visible in `sprint4/code-policy-evaluation-validation.md`; uniform stays default.
+The paired diagnostics are included in that green hosted baseline. It does not
+certify this subsequent timeline commit until its exact hosted run is verified.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

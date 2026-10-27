@@ -83,6 +83,8 @@ export function publicErrorMessage(error: unknown): string {
     video_upload_timeout: "Upload delivery timed out. It may already be queued; refresh sources or resend the unchanged file with the same request key.",
     video_reupload_required: "The original video is retired. Extracting again requires a new authorized MP4 upload.",
     visual_initiator_required: "The original video initiator must retry this processing workflow.",
+    alignment_not_ready: "Wait for a complete retained gallery and a successfully published transcript, then retry the comparison.",
+    invalid_alignment: "Choose a transcript from the same recording, confirm the pairing and use a whole-millisecond offset between −600000 and +600000.",
   };
   if (sourceErrors[error.code]) return sourceErrors[error.code];
 

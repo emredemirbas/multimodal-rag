@@ -243,6 +243,13 @@ all-frame metrics. The authored set includes misses/noise and is not representat
 review or a release threshold; uniform/default-off media stay unchanged. See
 `sprint4/code-policy-evaluation-plan.md` and its guide/validation record.
 
+The frame/transcript timeline adds an explicitly user-asserted, read-only temporal
+comparison of existing published evidence. It pins generations/offset, preserves
+gaps and original origins and never persists a pairing or claims verified source/
+semantic identity. No provider/download/default or later-sprint product decision.
+See `sprint4/timeline-alignment.md`; the finite closure list is in the current
+Sprint 4 implementation plan.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

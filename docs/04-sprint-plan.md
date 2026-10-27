@@ -151,15 +151,14 @@ Exit:
 
 **Duration:** 2 weeks
 
-**Implementation status (2026-10-11):** Ordered authorized-transcript playlist
-slice implemented and locally validated: metadata snapshots, video/upload links,
-bounded processing, partial failure and independent recovery. This is not full
-multimodal/Alpha 2 completion. ASR/vision, binary retention and reviewed quality
-decisions remain open. The development dependency advisory is resolved through a
-tested, pinned lint adapter; full audit passes locally. Playlist/local-answer
-commit `feb762e` and semantic commit `d979a08` passed hosted CI. The new resumable
-indexing follow-up is locally validated; its hosted result has not yet been verified. See
-`docs/sprint4/validation-record.md` and `docs/sprint3/resumable-indexing-validation.md`.
+**Current implementation status (2026-10-27):** Ordered playlists, constrained
+optional local WAV/MP4 jobs, retained frame/OCR evidence/citations, opt-in change
+selection and user-asserted frame/transcript temporal inspection exist. The
+consolidated finite closure checklist is `sprint4/implementation-plan.md`:
+image-model descriptions and independent audiovisual/quality verification remain.
+Do not add optional sampling/evaluator experiments as new exit prerequisites.
+This is not full multimodal/Alpha 2 approval or a reduced learning-platform scope.
+See `sprint4/timeline-alignment.md` and `09-delivery-status.md` for current evidence.
 
 Deliver:
 
@@ -175,6 +174,11 @@ Exit:
 - a 10-video playlist can process, partially fail, and resume;
 - visual benchmark questions retrieve relevant frames;
 - duplicate frames are suppressed.
+
+### Historical delivery boundaries
+
+The notes below describe what was delivered/deferred at each earlier component
+boundary, not new work to repeat or the current consolidated closure checklist.
 
 The 2026-10-21 local WAV ASR foundation (ADR 0018) is an earlier media slice, not
 full Sprint 4 completion: restricted validation, immutable local weights and

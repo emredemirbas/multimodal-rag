@@ -233,32 +233,42 @@ class VisualGalleryRepository:
         if row is None: raise ProjectNotFoundError('source not found')
         return row
 
-    def gallery(self, tenant, project, source, actor):
+    def gallery(self, tenant, project, source, actor, *, generation=None):
         with self.repository.store._connect() as connection:
             connection.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
-            current = self._read_scope(connection, tenant, project, source, actor)
-            publication = connection.execute(
-                'SELECT * FROM visual_publications WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND published_at IS NOT NULL ORDER BY generation DESC LIMIT 1',
-                (tenant, project, source),
-            ).fetchone()
-            if publication is None: return VisualGallery(source_id=source, source_filename=current['filename'])
-            run, snapshot = self._snapshot(connection, publication, None)
-            rows = self._rows(connection, publication)
-            self._verify_rows(publication, snapshot, rows)
-            if len(rows) != len(snapshot.frames): raise SourceError('artifact_integrity', 'The selected-frame gallery is incomplete.')
-            identity = VisualIdentity.model_validate(snapshot.identity)
-            indexed = connection.execute(
-                '''SELECT 1 FROM processing_versions WHERE tenant_id=%s AND project_id=%s AND source_id=%s
-                   AND generation=%s AND visual_publication_job_id=%s''',
-                (tenant, project, source, current['active_generation'], publication['job_id']),
-            ).fetchone() is not None
-            return VisualGallery(source_id=source, source_filename=current['filename'], generation=publication['generation'],
-                processing_version=VERSION, published_at=publication['published_at'],
-                searchable=indexed, active_index_generation=current['active_generation'] if indexed else None,
-                active_embedding_space=current['active_embedding_space'] if indexed else None,
-                origin=VisualOrigin(job_id=run['job_id'], generation=run['generation'], profile=identity.profile,
-                    language=identity.language, engines=identity.engines.model_dump(), checkpoint_version=run['checkpoint_version'], prepared_at=run['prepared_at']),
-                items=[RetainedFrame.model_validate(row) for row in rows])
+            return self.read_snapshot(connection, tenant, project, source, actor, generation=generation)
+
+    def read_snapshot(self, connection, tenant, project, source, actor, *, generation=None):
+        """Share a caller-owned read snapshot; never expose private publications."""
+        if generation is not None and (type(generation) is not int or not 1 <= generation <= 2_147_483_647):
+            raise SourceError('validation_error', 'Invalid gallery generation.', 422)
+        current = self._read_scope(connection, tenant, project, source, actor)
+        publication = connection.execute(
+            '''SELECT * FROM visual_publications WHERE tenant_id=%s AND project_id=%s AND source_id=%s
+               AND published_at IS NOT NULL AND (%s::integer IS NULL OR generation=%s)
+               ORDER BY generation DESC LIMIT 1''',
+            (tenant, project, source, generation, generation),
+        ).fetchone()
+        if publication is None:
+            if generation is not None: raise ProjectNotFoundError('gallery generation not found')
+            return VisualGallery(source_id=source, source_filename=current['filename'])
+        run, snapshot = self._snapshot(connection, publication, None)
+        rows = self._rows(connection, publication)
+        self._verify_rows(publication, snapshot, rows)
+        if len(rows) != len(snapshot.frames): raise SourceError('artifact_integrity', 'The selected-frame gallery is incomplete.')
+        identity = VisualIdentity.model_validate(snapshot.identity)
+        indexed = connection.execute(
+            '''SELECT 1 FROM processing_versions WHERE tenant_id=%s AND project_id=%s AND source_id=%s
+               AND generation=%s AND visual_publication_job_id=%s''',
+            (tenant, project, source, current['active_generation'], publication['job_id']),
+        ).fetchone() is not None
+        return VisualGallery(source_id=source, source_filename=current['filename'], generation=publication['generation'],
+            processing_version=VERSION, published_at=publication['published_at'],
+            searchable=indexed, active_index_generation=current['active_generation'] if indexed else None,
+            active_embedding_space=current['active_embedding_space'] if indexed else None,
+            origin=VisualOrigin(job_id=run['job_id'], generation=run['generation'], profile=identity.profile,
+                language=identity.language, engines=identity.engines.model_dump(), checkpoint_version=run['checkpoint_version'], prepared_at=run['prepared_at']),
+            items=[RetainedFrame.model_validate(row) for row in rows])
 
     def image(self, tenant, project, frame, actor):
         def read():
@@ -278,7 +288,7 @@ class VisualGalleryRepository:
                 return row
         row = read()
         # Verify the complete immutable manifest before any object key is fetched.
-        gallery = self.gallery(tenant, project, row['source_id'], actor)
+        gallery = self.gallery(tenant, project, row['source_id'], actor, generation=row['generation'])
         if frame not in {item.id for item in gallery.items}: raise ProjectNotFoundError('frame not found')
         data = self.repository.artifacts.get(row['object_key'], 600000)
         try:
