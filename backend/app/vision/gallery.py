@@ -11,7 +11,7 @@ from ..models import AuthorizationMode
 from ..sources.contracts import Job, Registration, SourceCommand, SourceError
 from ..sources.media import MediaRepository
 from ..store import ProjectNotFoundError
-from .checkpoints import CHECKPOINT_VERSION, VisualCheckpoints
+from .checkpoints import VisualCheckpoints, checkpoint_version
 from .contracts import VisualIdentity, checked_png
 from .gallery_contracts import RetainedFrame, VisualGallery, VisualOrigin
 
@@ -49,7 +49,7 @@ class VisualGalleryRepository:
             AuthorizationMode(row['authorization_mode'])
         except ValueError:
             raise SourceError('visual_profile_changed', 'The prepared visual identity could not be verified.', 409) from None
-        if (row['profile'] != identity.profile or row['checkpoint_version'] != CHECKPOINT_VERSION
+        if (row['profile'] != identity.profile or row['checkpoint_version'] != checkpoint_version(identity)
                 or row['input_sha256'] != row['source_sha'] or row['authorization_mode'] != row['source_rights']):
             raise SourceError('visual_input_changed', 'The prepared video or processing identity changed.', 409)
         return row, identity

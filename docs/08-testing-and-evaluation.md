@@ -90,6 +90,16 @@ text, version recovery and owned-data cleanup, with no answer generation.
 - recovery from rate limits, missing captions, deleted videos, and partial playlists;
 - cost per processed hour.
 
+### Versioned visual-selection integrity
+
+The later visual selection-manifest component has separate golden legacy wire/
+digest tests, bounded full-scan/ranking/score validation, temporal-return evidence,
+scoped DB save/retry/corruption/cancellation/deletion checks, migration upgrade and
+v1/v2 public-origin/UI tests. Its producer is a controlled fixture, not active
+native scene-aware ingestion. Keep actual unchanged uniform HTTP/OCR and authored
+candidate comparisons separate from these storage/integrity results. See
+`sprint4/selection-manifest-validation.md`.
+
 ### Local ASR foundation
 
 The local WAV ASR foundation adds strict RIFF/PCM limits, fake local HTTP identity/

@@ -16,14 +16,10 @@ from time import monotonic
 from ..asr.isolation import block_outbound_sockets
 from .local import INPUT_OPTIONS, NativeRunner, require_isolation
 from .media import MAX_FRAMES, MAX_VIDEO_BYTES, VideoInfo, parse_pgm, parse_probe, validate_mp4
+from .selection import (ANCHORS, MAX_HEIGHT, MAX_SCAN_FRAMES, MAX_WIDTH, MIN_CHANGED_PPM,
+                        PIXEL_DELTA, SCAN_INTERVAL_MS, selection_indices)
 
 POLICY = "visual-change-probe-1s-gray160x90-d24-p002-cap20-v1"
-MAX_SCAN_FRAMES = 600
-SCAN_INTERVAL_MS = 1000
-MAX_WIDTH, MAX_HEIGHT = 160, 90
-PIXEL_DELTA = 24
-MIN_CHANGED_PPM = 2000
-ANCHORS = 4
 
 
 @dataclass(frozen=True)
@@ -83,17 +79,9 @@ def select_candidates(samples: list[Thumbnail], info: VideoInfo) -> dict:
     if info.duration_ms - samples[-1].timestamp_ms > max_gap:
         raise ValueError("Scan stopped before the end of the video")
 
-    anchor_indices = {min(range(len(points)), key=lambda index:
-        (abs(points[index]['timestamp_ms'] - ordinal * (info.duration_ms - 1) // (ANCHORS - 1)),
-         points[index]['timestamp_ms'])) for ordinal in range(ANCHORS)}
-    eligible = [index for index, point in enumerate(points) if point['changed_ppm'] >= MIN_CHANGED_PPM]
-    ranked = sorted(eligible, key=lambda index: (-points[index]['changed_ppm'],
-        -points[index]['mean_absolute_difference_ppm'], points[index]['timestamp_ms']))
-    selected = set(anchor_indices)
-    for index in ranked:
-        if len(selected) >= MAX_FRAMES:
-            break
-        selected.add(index)
+    anchor_indices, eligible, selected = selection_indices(
+        [point['timestamp_ms'] for point in points], [point['changed_pixel_count'] for point in points],
+        [point['mean_absolute_difference_ppm'] for point in points], len(samples[0].pixels), info.duration_ms)
     return {"scan_samples": len(samples), "thumbnail_width": samples[0].width,
         "thumbnail_height": samples[0].height, "eligible_changes": len(eligible),
         "omitted_changes": sum(index not in selected for index in eligible),

@@ -12,9 +12,14 @@ from ..sources.repository import SourceRepository
 from .contracts import VisualIdentity, WireResult, encode_wire
 from .local import VisualResult
 from .media import validate_mp4
+from .selection import CHANGE_POLICY
 
 LOGGER = logging.getLogger('tutorial_workspace.jobs')
 CHECKPOINT_VERSION = 'visual-checkpoint-v1'
+
+
+def checkpoint_version(identity: VisualIdentity) -> str:
+    return 'visual-checkpoint-v2' if identity.policy == CHANGE_POLICY else CHECKPOINT_VERSION
 
 
 @dataclass(frozen=True)
@@ -84,7 +89,7 @@ class VisualCheckpoints:
             identity = VisualIdentity.model_validate(row['identity'])
         except ValueError:
             raise SourceError('visual_profile_changed', 'Restore the pinned visual processing profile.', 409) from None
-        if row['profile'] != identity.profile or row['checkpoint_version'] != CHECKPOINT_VERSION:
+        if row['profile'] != identity.profile or row['checkpoint_version'] != checkpoint_version(identity):
             raise SourceError('visual_profile_changed', 'Restore the pinned visual processing profile.', 409)
         if (row['input_sha256'] != live['content_sha256'] or row['authorization_mode'] != live['authorization_mode']
                 or row['actor_user_id'] != live['actor_user_id'] or row['processing_expires_at'] != live['expires_at']):
@@ -110,7 +115,7 @@ class VisualCheckpoints:
                    authorization_mode,input_sha256,input_bytes,identity,profile,checkpoint_version,processing_expires_at)
                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING''',
                 (*self._scope(claim), claim['actor_user_id'], live['authorization_mode'], digest, len(content),
-                 Jsonb(identity.model_dump()), identity.profile, CHECKPOINT_VERSION, live['expires_at']),
+                 Jsonb(identity.model_dump()), identity.profile, checkpoint_version(identity), live['expires_at']),
             )
             run = self._run(connection, claim, live)
             if run['identity'] != identity.model_dump() or run['input_bytes'] != len(content):
@@ -144,10 +149,11 @@ class VisualCheckpoints:
             characters = sum(len(frame.text) for frame in result.frames)
             connection.execute(
                 '''UPDATE visual_runs SET video_metadata=%s,candidates=%s,saved_frames=%s,image_bytes=%s,
-                   ocr_characters=%s,result_sha256=%s,saved_at=clock_timestamp()
+                   ocr_characters=%s,result_sha256=%s,selection_manifest=%s,saved_at=clock_timestamp()
                    WHERE tenant_id=%s AND project_id=%s AND job_id=%s AND source_id=%s AND generation=%s''',
                 (Jsonb(result.video.model_dump()), result.candidates, len(result.frames), image_bytes,
-                 characters, result_digest(result), *self._scope(claim)),
+                 characters, result_digest(result),
+                 Jsonb(result.selection.model_dump()) if result.selection is not None else None, *self._scope(claim)),
             )
             connection.execute(
                 '''UPDATE processing_jobs SET stage='visual_checkpointed',progress_percent=greatest(progress_percent,60),updated_at=now()
@@ -158,7 +164,8 @@ class VisualCheckpoints:
                 return False
         LOGGER.info(json.dumps({'event': 'visual_result_checkpoint', 'tenant_id': claim['tenant_id'],
             'project_id': str(claim['project_id']), 'job_id': str(claim['id']), 'generation': claim['generation'],
-            'frames': len(result.frames), 'image_bytes': image_bytes, 'ocr_characters': characters}))
+            'frames': len(result.frames), 'image_bytes': image_bytes, 'ocr_characters': characters,
+            'selection_scan_samples': len(result.selection.samples) if result.selection is not None else 0}))
         return True
 
     def load(self, claim) -> VisualResult | None:
@@ -189,7 +196,8 @@ class VisualCheckpoints:
                 or sum(len(row['ocr_text']) for row in rows) != run['ocr_characters']
                 or any(hashlib.sha256(row['ocr_text'].encode()).hexdigest() != row['text_sha256'] for row in rows)):
             raise SourceError('invalid_visual_checkpoint', 'The saved visual result failed integrity validation.', 503)
-        result = validated_result({'input_sha256': run['input_sha256'], 'identity': run['identity'],
+        result = validated_result({'protocol': 'local-visual-http-v2' if run['checkpoint_version'] == 'visual-checkpoint-v2' else 'local-visual-http-v1',
+            'selection': run['selection_manifest'], 'input_sha256': run['input_sha256'], 'identity': run['identity'],
             'video': run['video_metadata'], 'candidates': run['candidates'], 'frames': [
                 {'sample_target_ms': row['sample_target_ms'], 'timestamp_ms': row['timestamp_ms'],
                  'width': row['width'], 'height': row['height'], 'image_sha256': row['image_sha256'],

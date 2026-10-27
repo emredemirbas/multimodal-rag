@@ -80,3 +80,10 @@ Application integration still needs a separately versioned/persisted candidate
 manifest, old-digest compatibility, worker/auth/retry/deletion tests and truthful
 UI/provenance. That is the next gate, not a claim made by this standalone experiment.
 See `scene-selection-plan.md` and `scene-selection-validation.md`.
+
+The subsequent storage/contract component is documented in
+`selection-manifest-plan.md` (ADR 0027, migration 0018). It prepares a distinct
+managed v2 result and persists/revalidates its full bounded scan manifest, with
+legacy-digest tests and gallery/index/citation version support. This standalone
+CLI still emits only its original prototype report; neither it nor the native
+application service produces managed v2 OCR yet. Ordinary uploads remain uniform.

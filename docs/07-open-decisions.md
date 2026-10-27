@@ -224,6 +224,13 @@ application scene-aware sampling or quality approval is implied. See
 `sprint4/scene-selection-plan.md`. The first portfolio finish line is now explicitly
 under review in `09-delivery-status.md`; keep the original roadmap until selected.
 
+ADR 0027 supplies the next versioned selection-manifest/checkpoint contract and
+additive migration 0018, preserving old digests and temporal-return provenance.
+This is an accepted integrity/storage choice, not approval of scene/code quality
+or a new native default. Application service/worker producer integration remains
+open; ordinary uploads still use uniform v1. See
+`sprint4/selection-manifest-plan.md`.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

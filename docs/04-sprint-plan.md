@@ -259,6 +259,13 @@ invent visible durations. This is OCR-text RAG, not image-model understanding.
 Public MP4 upload, scene/description features and representative quality/Alpha 2
 exit criteria remain open. See `docs/sprint4/visual-index-validation.md`.
 
+The change-selection continuation now has an isolated candidate experiment and
+a versioned private manifest/checkpoint contract (ADR 0027, migration 0018).
+Legacy digests/citations remain unchanged; v2 retains temporal returns and the
+bounded scan/ranking record. Native producer/service integration and representative
+quality remain open: application uploads still use uniform v1. See
+`docs/sprint4/selection-manifest-plan.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

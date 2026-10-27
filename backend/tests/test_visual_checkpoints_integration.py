@@ -26,6 +26,7 @@ from app.vision.media import FrameEvidence, VideoInfo, encode_png
 from test_ingestion_integration import MemoryArtifacts, ingestion, register, run
 from test_postgres_integration import isolated_postgres_url
 from test_visual_service import content, identity, result
+from test_visual_selection import change_result
 
 pytestmark = pytest.mark.integration
 
@@ -54,12 +55,13 @@ def scope(claim):
     return claim['tenant_id'], claim['project_id'], claim['id']
 
 
-def saved(ingestion):
+def saved(ingestion, snapshot=None):
     source, job, data = seed(ingestion)
     claim = claim_for(ingestion, source, job)
     checkpoints = VisualCheckpoints(ingestion[0])
-    assert not checkpoints.begin(claim, data, identity()).result_saved
-    assert checkpoints.save(claim, result())
+    snapshot = snapshot or WireResult.from_result(result())
+    assert not checkpoints.begin(claim, data, snapshot.identity).result_saved
+    assert checkpoints.save(claim, snapshot)
     return claim, checkpoints, data
 
 
@@ -145,9 +147,11 @@ def test_max_frame_count_and_unicode_character_byte_bounds_roundtrip(ingestion):
 
 @pytest.mark.parametrize('fence', ['tenant', 'project', 'source', 'generation', 'token', 'actor', 'cancel',
     'membership', 'delete_source', 'delete_project', 'lease', 'expiry', 'cancellation_flag'])
-def test_all_operations_fence_scope_initiating_actor_generation_token_and_eligibility(ingestion, fence):
+@pytest.mark.parametrize('selection_version', [1, 2])
+def test_all_operations_fence_scope_initiating_actor_generation_token_and_eligibility(ingestion, fence, selection_version):
     repo, service, principal, project, actor = ingestion
-    claim, checkpoints, data = saved(ingestion)
+    snapshot = change_result() if selection_version == 2 else WireResult.from_result(result())
+    claim, checkpoints, data = saved(ingestion, snapshot)
     changed = dict(claim)
     if fence == 'tenant':
         outsider = AuthenticatedPrincipal(provider='test', subject='other', tenant_id='other')
@@ -172,8 +176,8 @@ def test_all_operations_fence_scope_initiating_actor_generation_token_and_eligib
         expression = "now()-interval '2 hours'" if fence == 'expiry' else "now()-interval '1 second'"
         with repo.store._connect() as connection:
             connection.execute(f'UPDATE processing_jobs SET {column}={expression} WHERE tenant_id=%s AND project_id=%s AND id=%s', scope(claim))
-    assert checkpoints.begin(changed, data, identity()) is None
-    assert not checkpoints.save(changed, result()) and checkpoints.load(changed) is None
+    assert checkpoints.begin(changed, data, snapshot.identity) is None
+    assert not checkpoints.save(changed, snapshot) and checkpoints.load(changed) is None
     if fence.startswith('delete_'):
         with repo.store._connect() as connection:
             for table in ['visual_runs', 'visual_checkpoint_frames']:
@@ -391,7 +395,7 @@ def test_additive_migration_preserves_published_pre_checkpoint_data_and_checksum
         assert {key: preserved[key] for key in previous} == previous
         after = connection.execute('SELECT version,sha256 FROM schema_migrations ORDER BY version').fetchall()
         assert after[:len(before)] == before
-        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql', '0016_retained_ocr_index.sql', '0017_video_workflows.sql']
+        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql', '0016_retained_ocr_index.sql', '0017_video_workflows.sql', '0018_visual_selection_manifest.sql']
         assert connection.execute('SELECT count(*) AS n FROM video_workflows').fetchone()['n'] == 0
         assert connection.execute('SELECT count(*) AS n FROM visual_runs WHERE tenant_id=%s AND project_id=%s',
                                    (principal.tenant_id, project.id)).fetchone()['n'] == 0

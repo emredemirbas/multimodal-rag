@@ -68,3 +68,9 @@ to the managed uniform profile. It scans thumbnails with actual source PTS, rank
 bounded visual changes and preserves temporal returns; an authored transient view
 is compared with the actual old pipeline. Managed policy/manifest integration and
 representative quality remain open. See `scene-selection-plan.md`.
+
+The next component adds v2 identity/protocol/checkpoint manifests and migration
+0018, keeping v1 serialization/digests intact. All scan metadata is bounded and
+revalidated; temporal returns survive gallery/index/citation projection. The native
+producer remains uniform until its separate integration gate. See
+`selection-manifest-plan.md` and ADR 0027; this still is not full Sprint 4.

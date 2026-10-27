@@ -251,6 +251,16 @@ frame/text/result hashes and accepted counts. Storage is bounded private staging
 not a published frame/evidence model or final object-store adoption. No API,
 registration/dispatcher/task, original-media storage or usage publication is added.
 
+Migration 0018/ADR 0027 later adds nullable bounded `selection_manifest` JSON to
+that fully scoped run. v1 remains manifest-free with unchanged canonical bytes/
+digests. The new fixed v2 profile/protocol/checkpoint requires all <=600 thumbnail
+score/hash records and an exactly recomputable <=20-point selection, matched to
+complete actual-PTS frames. Temporal pixel returns are allowed only in v2.
+Save/load/gallery integrity checks cover even unselected records; source/project
+cascades remove them. Public gallery/evidence/citation origin only extends to the
+matching v2 profile/checkpoint version, not scan data. Native service/producer
+defaults are not changed by this storage component.
+
 Migration 0014/ADR 0022 subsequently adds private `video_inputs`, with a full
 tenant/project/job/source/generation FK, actor, fixed job-created + one-hour expiry,
 bounded input digest/size/language, generated raw key and scoped cleanup FK.

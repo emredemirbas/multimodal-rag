@@ -4,6 +4,15 @@ import { VisualGallery } from "@/components/sources/visual-gallery";
 import { visualFixture, projectId } from "../../../test-support/visual-fixture";
 
 describe("selected-frame gallery", () => {
+  it("labels change-aware evidence and temporal returns without implying complete coverage", () => {
+    const gallery = visualFixture();
+    gallery.origin!.profile = `local-visual-v2:${"a".repeat(64)}`;
+    gallery.origin!.checkpoint_version = "visual-checkpoint-v2";
+    render(<VisualGallery projectId={projectId} gallery={gallery} />);
+    expect(screen.getByText(/Experimental change-aware selection/)).toHaveTextContent("Brief or small changes can be missed");
+    expect(screen.getByText(/Matching images at different times/)).toHaveTextContent("do not establish continuous visibility");
+    expect(screen.queryByText(/Uniform sampling/)).toBeNull();
+  });
   it("shows indexed OCR without implying image understanding or original playback", () => {
     render(<VisualGallery projectId={projectId} gallery={{ ...visualFixture(), searchable: true, active_index_generation: 3, active_embedding_space: "signed-hash-v1:64" }} />);
     expect(screen.getByText(/OCR is indexed at generation 3/)).toHaveTextContent("matching embedding space");

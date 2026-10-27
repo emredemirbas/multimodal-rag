@@ -25,11 +25,18 @@ class VisualOrigin(BaseModel):
     human_reviewed: Literal[False] = False
     job_id: UUID
     generation: int = Field(ge=1)
-    profile: str = Field(pattern=r'^local-visual-v1:[a-f0-9]{64}$')
+    profile: str = Field(pattern=r'^local-visual-v[12]:[a-f0-9]{64}$')
     language: Literal['en', 'tr', 'en+tr']
     engines: dict[str, str]
     checkpoint_version: str
     prepared_at: datetime
+
+    @model_validator(mode='after')
+    def consistent_version(self):
+        expected = 'visual-checkpoint-v2' if self.profile.startswith('local-visual-v2:') else 'visual-checkpoint-v1'
+        if self.checkpoint_version != expected:
+            raise ValueError('Inconsistent visual provenance version')
+        return self
 
 
 def checked_visual_origin(row):

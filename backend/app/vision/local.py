@@ -1,7 +1,7 @@
 """Explicit stateless native parser; never instantiate inside API/ordinary workers."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import errno
 import hashlib
 import json
@@ -76,6 +76,7 @@ class VisualResult:
     identity: dict
     candidates: int
     frames: tuple[FrameEvidence, ...]
+    selection: dict | None = field(default=None, repr=False)
 
     def summary(self) -> dict:
         return {"outcome": "component-complete", "quality_approval": "not_established",

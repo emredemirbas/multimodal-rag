@@ -10,10 +10,11 @@ from typing import Literal
 import unicodedata
 import zlib
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 from .media import (MAX_FRAMES, MAX_IMAGE_BYTES, POLICY, FrameEvidence, VideoInfo,
                     sample_times, unique_json)
+from .selection import CHANGE_POLICY, ChangeSelection
 
 Language = Literal["en", "tr", "en+tr"]
 MAX_RESPONSE_BYTES = 18_000_000
@@ -39,14 +40,15 @@ class VisualIdentity(StrictModel):
     engines: Engines
     language_data: LanguageData
     language: Language
-    policy: Literal[POLICY]
-    profile: str = Field(pattern=r"^local-visual-v1:[0-9a-f]{64}$")
+    policy: Literal[POLICY, CHANGE_POLICY]
+    profile: str = Field(pattern=r"^local-visual-v[12]:[0-9a-f]{64}$")
 
     @model_validator(mode="after")
     def profile_matches(self):
         digest = hashlib.sha256(json.dumps(self.model_dump(exclude={"profile"}),
             sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        if self.profile != "local-visual-v1:" + digest:
+        prefix = "local-visual-v1:" if self.policy == POLICY else "local-visual-v2:"
+        if self.profile != prefix + digest:
             raise ValueError("Visual profile does not match its identity")
         return self
 
@@ -112,15 +114,38 @@ class WireFrame(StrictModel):
 
 
 class WireResult(StrictModel):
-    protocol: Literal["local-visual-http-v1"] = "local-visual-http-v1"
+    protocol: Literal["local-visual-http-v1", "local-visual-http-v2"] = "local-visual-http-v1"
     input_sha256: str = Field(pattern=SHA256)
     identity: VisualIdentity
     video: VideoInfo
     candidates: int = Field(ge=1, le=MAX_FRAMES)
     frames: list[WireFrame] = Field(repr=False, min_length=1, max_length=MAX_FRAMES)
+    # Omitting this field for v1 preserves old wire bytes and checkpoint digests.
+    selection: ChangeSelection | None = Field(default=None, repr=False)
+
+    @model_serializer(mode="wrap")
+    def serialize_result(self, handler):
+        value = handler(self)
+        if self.selection is None:
+            value.pop("selection", None)
+        return value
 
     @model_validator(mode="after")
     def validate_timeline(self):
+        if self.identity.policy == CHANGE_POLICY:
+            if self.protocol != "local-visual-http-v2" or self.selection is None:
+                raise ValueError("Change-aware results require the v2 protocol and manifest")
+            self.selection.validate_video(self.video)
+            selected = self.selection.selected_timestamps_ms
+            if (self.candidates != len(selected) or len(self.frames) != len(selected)
+                    or [frame.sample_target_ms for frame in self.frames] != selected
+                    or [frame.timestamp_ms for frame in self.frames] != selected
+                    or len({(frame.width, frame.height) for frame in self.frames}) != 1):
+                raise ValueError("Frames do not match the complete change selection")
+            # Temporal returns and anchors intentionally retain matching pixels.
+            return self
+        if self.protocol != "local-visual-http-v1" or self.selection is not None:
+            raise ValueError("Uniform results require the unchanged v1 protocol")
         times = sample_times(self.video.duration_ms)
         if self.candidates != len(times) or not 1 <= Fraction(self.video.fps_numerator, self.video.fps_denominator) <= 60:
             raise ValueError("Invalid candidate count or frame rate")
@@ -140,7 +165,8 @@ class WireResult(StrictModel):
 
     @classmethod
     def from_result(cls, result):
-        return cls.model_validate({"input_sha256": result.input_sha256, "identity": result.identity,
+        return cls.model_validate({"protocol": "local-visual-http-v2" if result.selection is not None else "local-visual-http-v1",
+            "selection": result.selection, "input_sha256": result.input_sha256, "identity": result.identity,
             "video": result.info.model_dump(), "candidates": result.candidates,
             "frames": [{"sample_target_ms": f.sample_target_ms, "timestamp_ms": f.timestamp_ms,
                 "width": f.width, "height": f.height, "image_sha256": f.image_sha256,
@@ -150,7 +176,8 @@ class WireResult(StrictModel):
     def result(self):
         from .local import VisualResult
         return VisualResult(self.input_sha256, self.video, self.identity.model_dump(), self.candidates,
-                            tuple(frame.evidence() for frame in self.frames))
+                            tuple(frame.evidence() for frame in self.frames),
+                            self.selection.model_dump() if self.selection is not None else None)
 
 
 def encode_wire(value: StrictModel | dict) -> bytes:

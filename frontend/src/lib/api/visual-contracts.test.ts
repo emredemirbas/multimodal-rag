@@ -1,11 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseVisualGallery } from "@/lib/api/visual-contracts";
+import { parseVisualGallery, parseVisualOrigin, visualSelectionNotice } from "@/lib/api/visual-contracts";
 import { visualFixture, sourceId, projectId } from "../../../test-support/visual-fixture";
 vi.mock("@/lib/api/client", () => ({ requestJson: vi.fn() }));
 import { requestJson } from "@/lib/api/client";
 import { getVisualGallery } from "@/lib/api/visuals";
 
 describe("selected frame contracts", () => {
+  it("keeps legacy and change-aware profiles paired with their checkpoint versions", () => {
+    const old = visualFixture().origin!;
+    const next = { ...old, profile: `local-visual-v2:${"a".repeat(64)}`, checkpoint_version: "visual-checkpoint-v2" };
+    expect(parseVisualOrigin(old)).toEqual(old);
+    expect(parseVisualOrigin(next)).toEqual(next);
+    expect(() => parseVisualOrigin({ ...next, checkpoint_version: old.checkpoint_version })).toThrow();
+    expect(() => parseVisualOrigin({ ...old, checkpoint_version: next.checkpoint_version })).toThrow();
+    expect(visualSelectionNotice(old)).toBe("Uniform sampling can miss useful changes.");
+    expect(visualSelectionNotice(next)).toContain("Experimental change-aware selection");
+    expect(visualSelectionNotice(null)).toBe("Selected frames may miss useful changes.");
+    expect(parseVisualGallery({ ...visualFixture(), origin: next }).origin).toEqual(next);
+  });
   it("preserves literal OCR and exact origin while stripping unknown keys", () => {
     expect(parseVisualGallery({ ...visualFixture(), object_key: "PRIVATE" })).toEqual(visualFixture());
   });

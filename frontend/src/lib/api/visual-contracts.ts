@@ -38,11 +38,19 @@ export function retainedFrameHref(project: string, source: string, frame: string
 export function parseVisualOrigin(value: unknown): VisualOrigin | null {
   if (value === null || value === undefined) return null;
   const raw = record(value), engines = record(raw.engines), profile = text(raw.profile, 80);
-  if (raw.machine_generated !== true || raw.human_reviewed !== false || !/^local-visual-v1:[a-f0-9]{64}$/.test(profile)
-      || !["en", "tr", "en+tr"].includes(String(raw.language)) || raw.checkpoint_version !== "visual-checkpoint-v1") throw new Error("Invalid visual provenance");
+  const version = profile.startsWith("local-visual-v2:") ? "visual-checkpoint-v2" : "visual-checkpoint-v1";
+  if (raw.machine_generated !== true || raw.human_reviewed !== false || !/^local-visual-v[12]:[a-f0-9]{64}$/.test(profile)
+      || !["en", "tr", "en+tr"].includes(String(raw.language)) || raw.checkpoint_version !== version) throw new Error("Invalid visual provenance");
   return { machine_generated: true, human_reviewed: false, job_id: id(raw.job_id), generation: integer(raw.generation, 1, 2_147_483_647), profile,
     language: raw.language as VisualOrigin["language"], engines: { ffmpeg: text(engines.ffmpeg, 64), tesseract: text(engines.tesseract, 64) },
-    checkpoint_version: "visual-checkpoint-v1", prepared_at: date(raw.prepared_at) };
+    checkpoint_version: version, prepared_at: date(raw.prepared_at) };
+}
+
+export function visualSelectionNotice(origin: VisualOrigin | null | undefined): string {
+  if (!origin) return "Selected frames may miss useful changes.";
+  return origin?.profile.startsWith("local-visual-v2:")
+    ? "Experimental change-aware selection (1-second thumbnails, up to 20 points). Brief or small changes can be missed; motion can consume the budget. Matching images at different times do not establish continuous visibility."
+    : "Uniform sampling can miss useful changes.";
 }
 
 export function parseVisualGallery(value: unknown): VisualGallery {

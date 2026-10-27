@@ -252,11 +252,11 @@ is synthetic, not representative speech-quality evidence. WAV opt-in stays off.
 
 ## Optional local MP4/frame/OCR tool
 
-The first visual component is a separate, explicit no-network tool for authorized
+The standalone visual command is a separate, explicit no-network tool for authorized
 H.264 MP4 (<=100 MB / 10 minutes). It extracts at most 20 uniform candidates,
 preserves actual timestamps, removes exact duplicate images and runs local
-English/Turkish OCR. It is **not yet a video upload, scene detector or visual RAG
-feature**; application APIs/UI still reject MP4. No paid provider is used.
+English/Turkish OCR. This command does not upload or publish application evidence;
+the separate opt-in MP4 API/UI workflow is described below. No paid provider is used.
 
 ```bash
 docker compose build visual-inspect
@@ -420,6 +420,13 @@ An additional [isolated change-candidate experiment](docs/sprint4/scene-selectio
 compares a one-second thumbnail scan against the actual current uniform pipeline
 on an authored transient view. It does not yet change the app's sampling/profile,
 stored evidence or upload defaults; no representative scene/code-quality claim.
+
+The following [versioned selection-manifest component](docs/sprint4/selection-manifest-plan.md)
+(ADR 0027, migration 0018) preserves all bounded scan scores/hashes, revalidates
+ranking, protects temporal-return timestamps and keeps legacy checkpoint digests
+unchanged. Gallery/citation contracts distinguish v1/v2 provenance without exposing
+private scan records. This is storage/contract preparation: the native producer
+and ordinary uploads **still use uniform v1** until the next explicit integration.
 
 ## Optional real local AI (no API key or service bill)
 

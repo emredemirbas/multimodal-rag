@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-27. Baseline: `3057da4`. These are planning estimates, not a
+Date: 2026-10-27. Hosted baseline: `d46a0a7`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -12,8 +12,8 @@ and constrained MP4 -> retained frames/OCR -> indexed frame citations exist.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The last verified tree passes 719 backend tests and all four hosted CI jobs:
-[run 40557426182](https://github.com/emredemirbas/multimodal-rag/actions/runs/40557426182).
+That baseline passes 758 backend tests and all four hosted CI jobs:
+[run 40566345896](https://github.com/emredemirbas/multimodal-rag/actions/runs/40566345896).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -56,16 +56,19 @@ Re-estimate after the owner selects a finish line and after the first runner spi
 
 ## Next bounded step
 
-Continue the existing Sprint 4 plan while that choice is pending. Prototype
-change-aware frame candidates in the existing isolated operator tool, compare
-against the current uniform baseline on an authored transient scene, and keep
-all application protocols/profiles/checkpoints/defaults unchanged. See
-`sprint4/scene-selection-plan.md`. This prototype is not deployed scene-aware RAG.
+Continue the existing Sprint 4 plan while that choice is pending. The isolated
+candidate prototype is complete within its documented scope and its hosted checks
+are green; see `sprint4/scene-selection-validation.md`. The following private
+v2 selection-manifest/checkpoint component (ADR 0027/migration 0018) preserves all
+bounded score/hash records, revalidates ranking, keeps legacy digests and supports
+temporal-return gallery/index/citation provenance. See
+`sprint4/selection-manifest-plan.md` and its separate validation record.
 
-This local follow-up now passes **758 backend tests** and the actual isolated
-authored transient comparison; see `sprint4/scene-selection-validation.md`.
-The hosted baseline above remains attributed to its exact earlier SHA, not inferred
-as a CI result for this follow-up. No application sampling/default was changed.
+Next connect the isolated native scan and selected-frame OCR producer to the
+explicitly pinned service/worker v2 policy, including actual fractional-rate PTS
+and an actual end-to-end workflow. This is not yet deployed scene-aware RAG:
+ordinary uploads and the native service still use uniform v1. The hosted baseline
+above is not a CI result for the subsequent manifest follow-up.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those
