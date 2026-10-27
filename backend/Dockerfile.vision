@@ -16,7 +16,8 @@ COPY app/asr/__init__.py app/asr/isolation.py ./app/asr/
 COPY app/vision/__init__.py app/vision/media.py app/vision/local.py app/vision/native.py \
      app/vision/contracts.py app/vision/client.py app/vision/server.py app/vision/smoke.py \
      app/vision/selftest.py app/vision/http_selftest.py app/vision/evaluate.py \
-     app/vision/scene.py app/vision/scene_selftest.py app/vision/selection.py ./app/vision/
+     app/vision/scene.py app/vision/scene_selftest.py app/vision/selection.py app/vision/change.py \
+     app/vision/change_selftest.py ./app/vision/
 
 USER 1000:1000
 ENTRYPOINT ["python", "-m", "app.vision.smoke"]

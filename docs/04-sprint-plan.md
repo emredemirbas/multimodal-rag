@@ -266,6 +266,10 @@ bounded scan/ranking record. Native producer/service integration and representat
 quality remain open: application uploads still use uniform v1. See
 `docs/sprint4/selection-manifest-plan.md`.
 
+ADR 0028 then adds actual isolated v2 OCR and opt-in managed selection, with native
+fractional-PTS and complete authored workflow probes. Default uniform and all
+remaining quality/Alpha 2 gates stay unchanged. See `docs/sprint4/change-ocr-guide.md`.
+
 ## Sprint 5 — Learning model and case studies
 
 **Duration:** 2 weeks

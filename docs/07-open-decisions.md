@@ -231,6 +231,12 @@ or a new native default. Application service/worker producer integration remains
 open; ordinary uploads still use uniform v1. See
 `sprint4/selection-manifest-plan.md`.
 
+ADR 0028 connects that v2 contract to real isolated OCR with explicit
+`VISUAL_SELECTION=change`. Uniform stays default; existing pins survive changes
+to configuration. No new formats/providers/retention or paid calls. Authored
+fractional-PTS/workflow checks do not settle representative scene/code quality.
+See `sprint4/change-ocr-plan.md` and `change-ocr-guide.md`.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

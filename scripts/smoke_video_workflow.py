@@ -50,6 +50,8 @@ def main():
     repo = SourceRepository(store, S3ArtifactStore(settings), settings)
 
     public_upload = os.getenv('VIDEO_UPLOAD_SMOKE') == '1'
+    change_selection = os.getenv('VIDEO_CHANGE_SMOKE') == '1'
+    language = 'en' if change_selection else 'tr'
     def request(path, body=None, method='GET', expected=200, *, frontend=False, content_type='application/json'):
         headers = {'Content-Type': content_type}
         if not frontend: headers['Authorization'] = 'Bearer ' + settings.development_auth_token
@@ -80,11 +82,11 @@ def main():
             subject=settings.development_auth_subject, tenant_id=settings.development_auth_tenant))
         tenant = settings.development_auth_tenant
         args = dict(filename='authored-cards.mp4', content=fixture, rights=AuthorizationMode.OWNER_UPLOAD,
-                    language='tr', idempotency_key='smoke-video-' + uuid4().hex, auto_process=True)
+                    language=language, idempotency_key='smoke-video-' + uuid4().hex, auto_process=True)
         def public_register(data, key, filename='authored-cards.mp4'):
             boundary='video-smoke-'+uuid4().hex
             body=(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: video/mp4\r\n\r\n'.encode()+data+b'\r\n')
-            fields=dict(authorization_mode='owner_upload',language='tr',idempotency_key=key,retention_acknowledged='accepted')
+            fields=dict(authorization_mode='owner_upload',language=language,idempotency_key=key,retention_acknowledged='accepted')
             body+=(''.join(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n' for name,value in fields.items())+f'--{boundary}--\r\n').encode()
             payload,headers=request(f'/api/projects/{project}/sources/video',body,'POST',202,frontend=True,content_type='multipart/form-data; boundary='+boundary)
             receipt=json.loads(payload)
@@ -111,15 +113,25 @@ def main():
         gallery = json.loads(request(f'{path}/sources/{original.source.id}/frames')[0])
         assert gallery['searchable'] and gallery['active_index_generation'] == 3
         assert gallery['origin']['job_id'] == str(original.job.id)
-        assert [f['timestamp_ms'] for f in gallery['items']] == [0, 10000]
-        assert 'sağlık kontrolü' in gallery['items'][1]['ocr_text'].replace('I', 'ı').replace('İ', 'i').casefold()
-        answer = json.loads(request(path + '/questions', {'question': 'HEALTH CHECK', 'source_ids': [str(original.source.id)]}, 'POST')[0])
+        if change_selection:
+            expected_pts = [0, 3000, 4000, 7000, 13000, 19000]
+            expected_citation_pts, question = 3000, 'BRIEF VIEW'
+            assert gallery['origin']['profile'].startswith('local-visual-v2:')
+            assert gallery['origin']['checkpoint_version'] == 'visual-checkpoint-v2'
+            assert 'BRIEF VIEW' in gallery['items'][1]['ocr_text']
+        else:
+            expected_pts, expected_citation_pts, question = [0, 10000], 0, 'HEALTH CHECK'
+            assert 'sağlık kontrolü' in gallery['items'][1]['ocr_text'].replace('I', 'ı').replace('İ', 'i').casefold()
+        assert [f['timestamp_ms'] for f in gallery['items']] == expected_pts
+        answer = json.loads(request(path + '/questions', {'question': question, 'source_ids': [str(original.source.id)]}, 'POST')[0])
         assert not answer['abstained']
         citation = answer['citations'][0]
-        assert citation['modality'] == 'frame' and citation['start_ms'] == citation['end_ms'] == 0
-        assert citation['frame_id'] == gallery['items'][0]['id'] and citation['visual_origin'] == gallery['origin']
+        assert citation['modality'] == 'frame' and citation['start_ms'] == citation['end_ms'] == expected_citation_pts
+        expected_frame = gallery['items'][expected_pts.index(expected_citation_pts)]
+        assert citation['frame_id'] == expected_frame['id'] and citation['visual_origin'] == gallery['origin']
         rendered = request(f'/projects/{project}/evidence/{citation["segment_id"]}', frontend=True)[0].decode()
         assert 'Automatic frame OCR' in rendered and 'not human-reviewed' in rendered
+        if change_selection: assert 'Experimental change-aware selection' in rendered
         assert f'#frame-{citation["frame_id"]}' in rendered and 'No original-video player' in rendered
         png, headers = request(f'/api/projects/{project}/frames/{citation["frame_id"]}/image', frontend=True)
         assert png.startswith(b'\x89PNG\r\n\x1a\n') and 'no-store' in headers['Cache-Control']
@@ -142,7 +154,12 @@ def main():
             workspace=request(f'/projects/{project}',frontend=True)[0].decode()
             assert 'Original video deletion confirmed.' in workspace and 'View selected frames' in workspace
         objects = repo.artifacts.client.list_objects_v2(Bucket=repo.artifacts.bucket, Prefix=f'{tenant}/{project}/').get('Contents', [])
-        assert len(objects) == 2 and all(o['Key'].endswith('/frame.png') for o in objects)
+        assert len(objects) == len(expected_pts) and all(o['Key'].endswith('/frame.png') for o in objects)
+        if change_selection:
+            with store._connect() as connection:
+                manifest = connection.execute('SELECT selection_manifest FROM visual_runs WHERE tenant_id=%s AND project_id=%s AND job_id=%s',
+                    (tenant, project, original.job.id)).fetchone()['selection_manifest']
+                assert manifest['selected_timestamps_ms'] == expected_pts and len(manifest['samples']) == 20
         if public_upload and os.getenv('VIDEO_UPLOAD_LARGE_SMOKE')=='1':
             padding=100_000_000-len(fixture)
             assert padding>=8
@@ -162,9 +179,11 @@ def main():
         wait(lambda: json.loads(request(f'{path}/cleanup/{receipt["X-Cleanup-ID"]}')[0])['status'] == 'completed', 60)
         assert not repo.artifacts.client.list_objects_v2(Bucket=repo.artifacts.bucket, Prefix=f'{tenant}/{project}/').get('Contents')
         with store._connect() as connection:
-            assert not connection.execute('SELECT 1 FROM video_workflows WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()
+            for table in ('video_workflows', 'visual_runs', 'visual_checkpoint_frames', 'retained_visual_frames', 'content_segments'):
+                assert not connection.execute(f'SELECT 1 FROM {table} WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()
         request(f'{path}/evidence/{citation["segment_id"]}', expected=404)
         print('PASS: '+('public BFF/MP4/retention UI -> ' if public_upload else '')+'actual native MP4 -> automatic gallery/outbox -> OCR index -> frame citation/API/SSR/PNG -> confirmed raw and owned-project cleanup. Fixture OCR quality only.')
+        if change_selection: print('PASS: explicit change selection, six exact-PTS frames including a temporal return, persisted full scan and cited transient OCR at 3000 ms.')
     finally:
         if not deleted:
             _, receipt = request(path, method='DELETE', expected=204)

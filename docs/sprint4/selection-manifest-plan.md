@@ -42,3 +42,7 @@ extraction must reproduce exact selected PTS even at fractional source frame rat
 not silently substitute a nearby later frame for a rounded millisecond target.
 Native budgets, credentials, network isolation and accepted media formats must not expand.
 Representative scene/code quality and transcript/frame alignment remain open.
+
+Subsequent implementation note: ADR 0028 now delivers the explicit native producer/
+service/worker gate. See `change-ocr-plan.md`, guide and validation record. Uniform
+default, original evidence pins and the remaining quality boundary are preserved.

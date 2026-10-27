@@ -71,19 +71,20 @@ Do not use this heuristic to remove code evidence globally or call it a vision
 description/semantic scene detector. Technical-identifier and representative
 visual labels still require separate review.
 
-## Before connecting it to managed evidence
+## Prototype boundary and managed follow-up
 
 This profile deliberately cannot be parsed as an existing `VisualIdentity` and
 produces no `WireResult`. Do not label these points with the old uniform policy,
 alter old checkpoints, or assume the source list is already using this algorithm.
-Application integration still needs a separately versioned/persisted candidate
-manifest, old-digest compatibility, worker/auth/retry/deletion tests and truthful
-UI/provenance. That is the next gate, not a claim made by this standalone experiment.
+Managed integration needs its separately versioned/persisted manifest, legacy
+compatibility, worker/auth/retry/deletion coverage and truthful UI/provenance;
+those are not claims made by this standalone experiment.
 See `scene-selection-plan.md` and `scene-selection-validation.md`.
 
 The subsequent storage/contract component is documented in
 `selection-manifest-plan.md` (ADR 0027, migration 0018). It prepares a distinct
 managed v2 result and persists/revalidates its full bounded scan manifest, with
 legacy-digest tests and gallery/index/citation version support. This standalone
-CLI still emits only its original prototype report; neither it nor the native
-application service produces managed v2 OCR yet. Ordinary uploads remain uniform.
+CLI still emits only its original prototype report. The separate ADR 0028 native
+producer now delivers v2 OCR with explicit `VISUAL_SELECTION=change`; ordinary
+defaults remain uniform. See `change-ocr-guide.md` and its validation record.

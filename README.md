@@ -34,9 +34,9 @@ The initial Sprint 4 slice adds ordered playlist metadata snapshots, explicit
 video-to-subtitle associations and bounded independent transcript processing.
 Subsequent slices add isolated MP4 frame/OCR processing, retained galleries,
 frame-backed citations and standalone uploads behind `VIDEO_UPLOAD_ENABLED=false`.
-Managed scene-aware selection, vision descriptions, verified transcript/frame
-alignment and representative multimodal/Alpha 2 quality remain open. The new
-change-candidate operator prototype does not yet change managed sampling.
+Experimental change-aware selection is an explicit local worker opt-in; uniform
+sampling remains default. Vision descriptions, verified transcript/frame alignment
+and representative multimodal/Alpha 2 quality remain open.
 
 Optional isolated Whisper-base now connects authorized restricted WAV upload to
 a dedicated media queue, resumable transcription, retained VTT/indexing, versioned
@@ -425,8 +425,11 @@ The following [versioned selection-manifest component](docs/sprint4/selection-ma
 (ADR 0027, migration 0018) preserves all bounded scan scores/hashes, revalidates
 ranking, protects temporal-return timestamps and keeps legacy checkpoint digests
 unchanged. Gallery/citation contracts distinguish v1/v2 provenance without exposing
-private scan records. This is storage/contract preparation: the native producer
-and ordinary uploads **still use uniform v1** until the next explicit integration.
+private scan records. Its native integration now offers experimental
+`VISUAL_SELECTION=change` (ADR 0028); **uniform remains default**. See the
+[change-aware OCR guide](docs/sprint4/change-ocr-guide.md) for operator CLI,
+managed opt-in, pinned-job recovery and limitations. Actual fractional-PTS and
+authored upload-to-citation checks are not representative scene/code quality.
 
 ## Optional real local AI (no API key or service bill)
 

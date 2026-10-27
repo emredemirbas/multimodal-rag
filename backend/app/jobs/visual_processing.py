@@ -29,7 +29,12 @@ def process_video(repository, tenant, project, source, job, generation):
                 return False
             data, record = original
             provider = build_visual_provider(repository.settings)
-            identity = state[0] if state else provider.ready(record['requested_language'])
+            if state:
+                identity = state[0]  # Configuration drift must not rewrite a pinned generation.
+            elif repository.settings.visual_selection == 'change':
+                identity = provider.ready(record['requested_language'], selection='change')
+            else:
+                identity = provider.ready(record['requested_language'])
             if identity.language != record['requested_language']:
                 raise SourceError('visual_profile_changed', 'Restore the original video OCR language/profile.', 409)
             cursor = checkpoints.begin(claim, data, identity)

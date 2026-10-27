@@ -17,7 +17,7 @@ from ..asr.isolation import block_outbound_sockets
 from .local import INPUT_OPTIONS, NativeRunner, require_isolation
 from .media import MAX_FRAMES, MAX_VIDEO_BYTES, VideoInfo, parse_pgm, parse_probe, validate_mp4
 from .selection import (ANCHORS, MAX_HEIGHT, MAX_SCAN_FRAMES, MAX_WIDTH, MIN_CHANGED_PPM,
-                        PIXEL_DELTA, SCAN_INTERVAL_MS, selection_indices)
+                        PIXEL_DELTA, SCAN_INTERVAL_MS, ChangeSelection, selection_indices)
 
 POLICY = "visual-change-probe-1s-gray160x90-d24-p002-cap20-v1"
 
@@ -36,7 +36,7 @@ def _parameters():
         "min_changed_ppm": MIN_CHANGED_PPM, "anchors": ANCHORS, "max_selected_points": MAX_FRAMES}
 
 
-def select_candidates(samples: list[Thumbnail], info: VideoInfo) -> dict:
+def _scored_points(samples: list[Thumbnail], info: VideoInfo) -> list[dict]:
     """All scores use actual thumbnail pixels/PTS; no inferred visible duration."""
     info = VideoInfo.model_validate(info.model_dump())
     if not 1 <= Fraction(info.fps_numerator, info.fps_denominator) <= 60:
@@ -78,6 +78,11 @@ def select_candidates(samples: list[Thumbnail], info: VideoInfo) -> dict:
         previous = sample
     if info.duration_ms - samples[-1].timestamp_ms > max_gap:
         raise ValueError("Scan stopped before the end of the video")
+    return points
+
+
+def select_candidates(samples: list[Thumbnail], info: VideoInfo) -> dict:
+    points = _scored_points(samples, info)
 
     anchor_indices, eligible, selected = selection_indices(
         [point['timestamp_ms'] for point in points], [point['changed_pixel_count'] for point in points],
@@ -89,6 +94,47 @@ def select_candidates(samples: list[Thumbnail], info: VideoInfo) -> dict:
         "points": [{**point, "anchor": index in anchor_indices,
                     "change": point['changed_ppm'] >= MIN_CHANGED_PPM}
                    for index, point in enumerate(points) if index in selected]}
+
+
+def manifest_for(samples: list[Thumbnail], info: VideoInfo) -> ChangeSelection:
+    points = _scored_points(samples, info)
+    _, _, selected = selection_indices([point['timestamp_ms'] for point in points],
+        [point['changed_pixel_count'] for point in points],
+        [point['mean_absolute_difference_ppm'] for point in points], len(samples[0].pixels), info.duration_ms)
+    return ChangeSelection.model_validate({'thumbnail_width': samples[0].width,
+        'thumbnail_height': samples[0].height,
+        'samples': [{key: value for key, value in point.items() if key != 'changed_ppm'} for point in points],
+        'selected_timestamps_ms': [points[index]['timestamp_ms'] for index in sorted(selected)]}).validate_video(info)
+
+
+def scan_thumbnails(source: Path, root: Path, runner: NativeRunner) -> list[Thumbnail]:
+    output = root / 'scan'
+    output.mkdir()
+    runner.run(['/usr/bin/ffmpeg', '-nostdin', '-v', 'error', '-threads', '1', '-filter_threads', '1',
+        '-copyts', *INPUT_OPTIONS, '-i', str(source), '-map', '0:v:0', '-an', '-sn', '-dn', '-vf',
+        "select='isnan(prev_selected_t)+gte(t-prev_selected_t,1)',scale=160:90:force_original_aspect_ratio=decrease:flags=bilinear,format=gray",
+        '-frames:v', str(MAX_SCAN_FRAMES + 1), '-c:v', 'pgm', '-threads', '1', '-vsync', '0',
+        '-enc_time_base', '1:1000', '-frame_pts', '1', '-f', 'image2', str(output / '%d.pgm')])
+    files = []
+    for path in output.iterdir():
+        files.append(path)
+        if len(files) > MAX_SCAN_FRAMES:
+            raise ValueError("Excessive scan output")
+    if not files:
+        raise ValueError("Missing scan output")
+    samples = []
+    for path in files:
+        if path.is_symlink() or not path.is_file() or not re.fullmatch(r'[0-9]{1,6}\.pgm', path.name):
+            raise ValueError("Invalid scan output path")
+        with path.open('rb') as stream:
+            pgm = stream.read(15_001)
+        if len(pgm) > 15_000:
+            raise ValueError("Scan image exceeds limit")
+        width, height, pixels = parse_pgm(pgm)
+        samples.append(Thumbnail(int(path.stem), width, height, pixels))
+    if monotonic() > runner.deadline:
+        raise ValueError("Scan deadline exceeded")
+    return sorted(samples, key=lambda sample: sample.timestamp_ms)
 
 
 def probe(content: bytes) -> dict:
@@ -108,31 +154,7 @@ def probe(content: bytes) -> dict:
             '-show_entries', 'format=duration,start_time:stream=codec_type,codec_name,codec_tag_string,width,height,pix_fmt,start_time,duration,avg_frame_rate,r_frame_rate:stream_side_data=rotation',
             '-of', 'json', str(source)])
         info = parse_probe(metadata)
-        output = root / 'scan'
-        output.mkdir()
-        runner.run(['/usr/bin/ffmpeg', '-nostdin', '-v', 'error', '-threads', '1', '-filter_threads', '1',
-            '-copyts', *INPUT_OPTIONS, '-i', str(source), '-map', '0:v:0', '-an', '-sn', '-dn', '-vf',
-            "select='isnan(prev_selected_t)+gte(t-prev_selected_t,1)',scale=160:90:force_original_aspect_ratio=decrease:flags=bilinear,format=gray",
-            '-frames:v', str(MAX_SCAN_FRAMES + 1), '-c:v', 'pgm', '-threads', '1', '-vsync', '0',
-            '-enc_time_base', '1:1000', '-frame_pts', '1', '-f', 'image2', str(output / '%d.pgm')])
-        files = []
-        for path in output.iterdir():
-            files.append(path)
-            if len(files) > MAX_SCAN_FRAMES:
-                raise ValueError("Excessive scan output")
-        if not files:
-            raise ValueError("Missing or excessive scan output")
-        samples = []
-        for path in files:
-            if path.is_symlink() or not path.is_file() or not re.fullmatch(r'[0-9]{1,6}\.pgm', path.name):
-                raise ValueError("Invalid scan output path")
-            with path.open('rb') as stream:
-                pgm = stream.read(15_001)
-            if len(pgm) > 15_000:
-                raise ValueError("Scan image exceeds limit")
-            width, height, pixels = parse_pgm(pgm)
-            samples.append(Thumbnail(int(path.stem), width, height, pixels))
-        selection = select_candidates(sorted(samples, key=lambda sample: sample.timestamp_ms), info)
+        selection = select_candidates(scan_thumbnails(source, root, runner), info)
         if monotonic() > runner.deadline:
             raise ValueError("Scan deadline exceeded")
     identity = {"provider": "local-ffmpeg-change-probe", "engine": engine,

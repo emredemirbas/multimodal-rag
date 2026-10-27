@@ -261,6 +261,14 @@ cascades remove them. Public gallery/evidence/citation origin only extends to th
 matching v2 profile/checkpoint version, not scan data. Native service/producer
 defaults are not changed by this storage component.
 
+ADR 0028 then connects actual v2 OCR without a schema change. Private
+`/health/ready?language=en&selection=change` and `/extract` with the same fixed query
+choose v2; old query/default stays uniform. Unknown/duplicate/additional parameters
+fail before native work. The trusted worker's `VISUAL_SELECTION` only affects
+unpinned jobs; retries restore their saved identity. No public upload parameter.
+Both policies use the existing complete manifest/gallery/index/citation/usage/
+deletion paths and unchanged native limits.
+
 Migration 0014/ADR 0022 subsequently adds private `video_inputs`, with a full
 tenant/project/job/source/generation FK, actor, fixed job-created + one-hour expiry,
 bounded input digest/size/language, generated raw key and scoped cleanup FK.

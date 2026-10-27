@@ -14,6 +14,8 @@ it('explains exact local scope/retention and renders accessible consent controls
   expect(screen.getByRole('form',{name:'Upload authorized MP4'})).toHaveAttribute('aria-busy','false');
   expect(screen.getByRole('button',{name:'Process authorized MP4'})).toBeDisabled();
   expect(screen.getByText(/Audio is ignored, not transcribed/)).toBeInTheDocument();
+  expect(screen.getByText(/completed gallery shows the pinned selection method/)).toBeInTheDocument();
+  expect(screen.queryByText(/uniformly sampled/)).toBeNull();
   expect(screen.getByText(/Expiry is not proof of physical deletion/)).toBeInTheDocument();
   expect(screen.getByRole('checkbox')).toBeRequired();
   expect(screen.getByLabelText('Frame text language')).toHaveValue('');

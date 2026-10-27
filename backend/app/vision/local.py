@@ -19,6 +19,7 @@ import unicodedata
 
 from .media import (FrameEvidence, POLICY, VideoInfo, encode_png, parse_pgm,
                     parse_probe, sample_times, validate_mp4)
+from .selection import CHANGE_POLICY
 
 Language = Literal["en", "tr", "en+tr"]
 TESSDATA = Path("/usr/share/tesseract-ocr/5/tessdata")
@@ -93,7 +94,9 @@ class VisualProvider(Protocol):
     def extract(self, content: bytes, language: Language = "en") -> VisualResult: ...
 
 
-def runtime_identity(runner: NativeRunner, language: Language) -> dict:
+def runtime_identity(runner: NativeRunner, language: Language, selection="uniform") -> dict:
+    if language not in {'en', 'tr', 'en+tr'} or selection not in {'uniform', 'change'}:
+        raise ValueError('Unsupported visual profile')
     versions = {}
     for name in ("ffmpeg", "tesseract"):
         output = runner.run(["/usr/bin/" + name, "-version" if name == "ffmpeg" else "--version"], limit=4096)
@@ -113,9 +116,19 @@ def runtime_identity(runner: NativeRunner, language: Language) -> dict:
                 digest.update(block)
         models[name] = digest.hexdigest()
     identity = {"provider": "local-ffmpeg-tesseract", "engines": versions,
-                "language_data": models, "language": language, "policy": POLICY}
-    return {**identity, "profile": "local-visual-v1:" + hashlib.sha256(
+                "language_data": models, "language": language, "policy": POLICY if selection == 'uniform' else CHANGE_POLICY}
+    prefix = 'local-visual-v1:' if selection == 'uniform' else 'local-visual-v2:'
+    return {**identity, "profile": prefix + hashlib.sha256(
         json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
+
+
+def recognize_text(runner: NativeRunner, pgm: bytes, language: Language) -> str:
+    codes = {"en": "eng", "tr": "tur", "en+tr": "eng+tur"}[language]
+    text = runner.run(["/usr/bin/tesseract", "stdin", "stdout", "--tessdata-dir",
+        str(TESSDATA), "-l", codes, "--oem", "1", "--psm", "11", "txt"], content=pgm, limit=32_768).decode("utf-8").replace("\x0c", "").strip()
+    if len(text) > 16_000 or any(unicodedata.category(char) in {"Cc", "Cs"} and char not in "\n\r\t" for char in text):
+        raise ValueError("Invalid or oversized OCR text")
+    return text
 
 
 class LocalVisualProvider:
@@ -161,11 +174,7 @@ class LocalVisualProvider:
                     if fingerprint in seen:
                         continue
                     seen.add(fingerprint)
-                    codes = {"en": "eng", "tr": "tur", "en+tr": "eng+tur"}[language]
-                    text = runner.run(["/usr/bin/tesseract", "stdin", "stdout", "--tessdata-dir",
-                        str(TESSDATA), "-l", codes, "--oem", "1", "--psm", "11", "txt"], content=pgm, limit=32_768).decode("utf-8").replace("\x0c", "").strip()
-                    if len(text) > 16_000 or any(unicodedata.category(char) in {"Cc", "Cs"} and char not in "\n\r\t" for char in text):
-                        raise ValueError("Invalid or oversized OCR text")
+                    text = recognize_text(runner, pgm, language)
                     frames.append(FrameEvidence(sample_target_ms=target, timestamp_ms=timestamp,
                         width=width, height=height, image=frame.image, text=text))
         return VisualResult(hashlib.sha256(content).hexdigest(), info, identity, len(times), tuple(frames))

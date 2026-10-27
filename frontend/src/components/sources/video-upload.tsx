@@ -43,7 +43,7 @@ export function VideoUpload({ projectId, onCompleted }: { projectId: string; onC
   return <section className="stack" aria-labelledby={`${id}-title`}>
     <h3 id={`${id}-title`}>Experimental local MP4 frame OCR</h3>
     <p>The operator enabled local visual processing. Availability is not service readiness or OCR quality approval. No paid/cloud fallback, URL downloading or automatic model download.</p>
-    <p>100 MB / 10 minutes maximum. H.264/avc1 yuv420p, up to 1080p / 60 fps, unrotated and zero-based timeline. At most 20 uniformly sampled frames; important changes can be missed. Audio is ignored, not transcribed. No original-video player or playlist association.</p>
+    <p>100 MB / 10 minutes maximum. H.264/avc1 yuv420p, up to 1080p / 60 fps, unrotated and zero-based timeline. At most 20 selected frames; important changes can be missed. The completed gallery shows the pinned selection method. Audio is ignored, not transcribed. No original-video player or playlist association.</p>
     <form onSubmit={(event) => void upload(event)} className="stack" aria-label="Upload authorized MP4" aria-busy={pending}>
       <input type="hidden" name="idempotency_key" value={key} />
       <fieldset disabled={pending} className="stack">

@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-27. Hosted baseline: `d46a0a7`. These are planning estimates, not a
+Date: 2026-10-27. Hosted baseline: `f719635`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -12,8 +12,8 @@ and constrained MP4 -> retained frames/OCR -> indexed frame citations exist.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-That baseline passes 758 backend tests and all four hosted CI jobs:
-[run 40566345896](https://github.com/emredemirbas/multimodal-rag/actions/runs/40566345896).
+That baseline passes all four hosted CI jobs:
+[run 40569511282](https://github.com/emredemirbas/multimodal-rag/actions/runs/40569511282).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -21,7 +21,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 |---|---|
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
-| Sprint 4: playlist and multimodal evidence | Constrained WAV/MP4/OCR workflow exists; scene-aware selection, descriptions, verified transcript/frame alignment and representative evaluation remain open |
+| Sprint 4: playlist and multimodal evidence | Constrained WAV/MP4/OCR and experimental opt-in change-aware selection exist; descriptions, verified transcript/frame alignment and representative evaluation remain open |
 | Sprint 5: learning objectives and assignments | Not implemented; product decisions must be resolved first |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
@@ -64,11 +64,17 @@ bounded score/hash records, revalidates ranking, keeps legacy digests and suppor
 temporal-return gallery/index/citation provenance. See
 `sprint4/selection-manifest-plan.md` and its separate validation record.
 
-Next connect the isolated native scan and selected-frame OCR producer to the
-explicitly pinned service/worker v2 policy, including actual fractional-rate PTS
-and an actual end-to-end workflow. This is not yet deployed scene-aware RAG:
-ordinary uploads and the native service still use uniform v1. The hosted baseline
-above is not a CI result for the subsequent manifest follow-up.
+The next native integration is now implemented as ADR 0028: actual scan/selected
+OCR -> pinned v2 service/worker -> existing managed evidence, with real fractional
+source-FPS/PTS and authored public upload/citation/cleanup probes. See
+`sprint4/change-ocr-validation.md`. Uniform remains the default; no change was
+enabled on the owner's stack. The hosted baseline above is not a CI result for
+this subsequent producer follow-up.
+
+Next broaden owned/authored code/terminal cases and compare the two policies with
+explicit labels/identifier and frame-coverage diagnostics. Representative quality,
+descriptions and verified audiovisual alignment are still open. Do not equate
+this tiny authored transient success with full scene understanding or Alpha 2.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

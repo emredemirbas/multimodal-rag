@@ -400,7 +400,7 @@ def test_startup_binds_then_verifies_inherited_denial_before_readiness(monkeypat
     monkeypatch.setattr(server, "block_outbound_sockets", lambda: events.append("filter"))
     monkeypatch.setattr(server, "require_isolation", lambda: events.append("parent_probe"))
     monkeypatch.setattr(server, "verify_child_isolation", lambda: events.append("child_probe"))
-    monkeypatch.setattr(server, "runtime_identity", lambda runner, language: identity(language).model_dump())
+    monkeypatch.setattr(server, "runtime_identity", lambda runner, language, selection='uniform': identity(language).model_dump())
     server.main()
     assert events == [("bind", ("0.0.0.0", 8091)), "filter", "parent_probe", "child_probe", ("serve", True), "closed"]
 

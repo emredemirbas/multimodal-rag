@@ -262,3 +262,13 @@ See `visual-evaluation-guide.md` for independent labels, read-only native use an
 strict limits. No application API, retention, upload default or quality threshold
 changes. The authored native self-test now reports these diagnostics for all three
 language modes, retaining the known combined-language limitation.
+
+## Experimental managed change-aware OCR
+
+ADR 0028 now adds explicit `--selection change` for the operator tool and
+`VISUAL_SELECTION=change` for unpinned jobs on the trusted visual worker. Default
+sampling remains uniform. The native service still receives no credentials/env;
+old jobs restore their pinned policy rather than following a changed default.
+See `change-ocr-guide.md` for setup, actual fractional-PTS/native workflow checks
+and known heuristic limits. This does not approve representative visual quality,
+enable MP4 uploads automatically or change raw/derived retention.

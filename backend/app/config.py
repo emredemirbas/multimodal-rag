@@ -46,10 +46,13 @@ class Settings:
     local_model_timeout: int = 24
     asr_base_url: str = 'http://asr:8090'
     visual_base_url: str = 'http://visual:8091'
+    visual_selection: str = 'uniform'
     audio_upload_enabled: bool = False
     video_upload_enabled: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.visual_selection, str) or self.visual_selection not in {'uniform', 'change'}:
+            raise ValueError('VISUAL_SELECTION must be uniform or change')
         if type(self.audio_upload_enabled) is not bool:
             raise ValueError('AUDIO_UPLOAD_ENABLED must be a boolean value')
         if type(self.video_upload_enabled) is not bool:
@@ -131,6 +134,7 @@ class Settings:
             local_model_timeout=int(os.getenv('LOCAL_MODEL_TIMEOUT', '24')),
             asr_base_url=os.getenv('ASR_BASE_URL', 'http://asr:8090'),
             visual_base_url=os.getenv('VISUAL_BASE_URL', 'http://visual:8091'),
+            visual_selection=os.getenv('VISUAL_SELECTION', 'uniform'),
             audio_upload_enabled=_environment_flag('AUDIO_UPLOAD_ENABLED', False),
             video_upload_enabled=_environment_flag('VIDEO_UPLOAD_ENABLED', False),
         )

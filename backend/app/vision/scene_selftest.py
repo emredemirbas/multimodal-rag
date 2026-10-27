@@ -10,16 +10,19 @@ from .local import LocalVisualProvider, NativeRunner
 from .scene import probe
 
 
-def authored_transient_video() -> bytes:
+def authored_transient_video(rate='2') -> bytes:
+    if rate not in {'2', '30000/1001', '1001/1000'}:
+        raise ValueError('Unsupported authored frame rate')
     with tempfile.TemporaryDirectory(prefix='visual-transient-', dir='/tmp') as directory:
         path = Path(directory) / 'authored.mp4'
         NativeRunner().run(['/usr/bin/ffmpeg', '-nostdin', '-v', 'error', '-f', 'lavfi', '-i',
-            "color=c=white:s=960x540:r=2:d=20,"
+            f"color=c=white:s=960x540:r={rate}:d=20,"
             "drawbox=x=0:y=0:w=iw:h=ih:color=black:t=fill:enable='gte(t,3)*lt(t,4)',"
             "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='BASE VIEW':fontsize=56:fontcolor=black:x=80:y=200:enable='lt(t,3)+gte(t,4)',"
             "drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='BRIEF VIEW':fontsize=56:fontcolor=white:x=80:y=200:enable='gte(t,3)*lt(t,4)'",
             '-c:v', 'libx264', '-threads', '1', '-pix_fmt', 'yuv420p', '-crf', '0',
-            '-preset', 'ultrafast', '-g', '1', '-t', '20', '-f', 'mp4', str(path)])
+            '-preset', 'ultrafast', '-g', '1' if rate == '2' else '60',
+            *([] if rate == '2' else ['-vsync', '0', '-r', rate]), '-t', '20', '-f', 'mp4', str(path)])
         with path.open('rb') as stream:
             content = stream.read(2_000_001)
         if len(content) > 2_000_000:

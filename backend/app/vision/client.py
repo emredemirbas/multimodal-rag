@@ -6,6 +6,7 @@ from threading import BoundedSemaphore, Timer
 from urllib.parse import urlsplit
 
 from .contracts import MAX_RESPONSE_BYTES, VisualIdentity, WireResult, decode_wire
+from .selection import CHANGE_POLICY
 from .media import validate_mp4
 
 REQUEST_SECONDS = 145
@@ -97,12 +98,13 @@ class LocalVisualClient:
                 timer.cancel()
             connection.close()
 
-    def ready(self, language="en") -> VisualIdentity:
-        if language not in {"en", "tr", "en+tr"}:
+    def ready(self, language="en", *, selection="uniform") -> VisualIdentity:
+        if language not in {"en", "tr", "en+tr"} or selection not in {'uniform', 'change'}:
             raise VisualError("invalid_visual_request")
         try:
-            identity = VisualIdentity.model_validate(self._request("/health/ready?language=" + language))
-            if identity.language != language:
+            suffix = '&selection=change' if selection == 'change' else ''
+            identity = VisualIdentity.model_validate(self._request("/health/ready?language=" + language + suffix))
+            if identity.language != language or (identity.policy == CHANGE_POLICY) != (selection == 'change'):
                 raise ValueError()
             return identity
         except (ValueError, RecursionError):
@@ -117,9 +119,11 @@ class LocalVisualClient:
         if not self.capacity.acquire(blocking=False):
             raise VisualError("local_visual_busy", transient=True)
         try:
-            if self.ready(identity.language) != identity:
+            change = identity.policy == CHANGE_POLICY
+            ready = self.ready(identity.language, selection='change') if change else self.ready(identity.language)
+            if ready != identity:
                 raise VisualError("visual_profile_changed")
-            document = self._request("/extract?language=" + identity.language, content=content, identity=identity)
+            document = self._request("/extract?language=" + identity.language + ('&selection=change' if change else ''), content=content, identity=identity)
             try:
                 result = WireResult.model_validate(document)
                 if result.identity != identity or result.input_sha256 != hashlib.sha256(content).hexdigest():

@@ -47,6 +47,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       PLAYLIST_CONCURRENCY: ${PLAYLIST_CONCURRENCY:-2}
       VISUAL_BASE_URL: http://visual:8091
+      VISUAL_SELECTION: ${VISUAL_SELECTION:-uniform}
     networks: [default, visual-private]
     depends_on:
       migrate:

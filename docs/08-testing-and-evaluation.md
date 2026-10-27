@@ -95,10 +95,17 @@ text, version recovery and owned-data cleanup, with no answer generation.
 The later visual selection-manifest component has separate golden legacy wire/
 digest tests, bounded full-scan/ranking/score validation, temporal-return evidence,
 scoped DB save/retry/corruption/cancellation/deletion checks, migration upgrade and
-v1/v2 public-origin/UI tests. Its producer is a controlled fixture, not active
+v1/v2 public-origin/UI tests. Its initial producer is a controlled fixture, not
 native scene-aware ingestion. Keep actual unchanged uniform HTTP/OCR and authored
 candidate comparisons separate from these storage/integrity results. See
 `sprint4/selection-manifest-validation.md`.
+
+ADR 0028 then supplies actual native v2 HTTP/OCR probes at verified 2, 30000/1001
+and 1001/1000 source FPS, exact selected PTS, explicit-policy client/worker and
+configuration-drift recovery checks. A disposable managed public-upload workflow
+verifies both policies, transient OCR citations, compact provenance, raw cleanup
+and complete deletion. CI runs both with explicit opt-in; uniform stays default.
+See `sprint4/change-ocr-validation.md`; none is representative scene/code quality.
 
 ### Local ASR foundation
 

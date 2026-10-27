@@ -74,3 +74,8 @@ The next component adds v2 identity/protocol/checkpoint manifests and migration
 revalidated; temporal returns survive gallery/index/citation projection. The native
 producer remains uniform until its separate integration gate. See
 `selection-manifest-plan.md` and ADR 0027; this still is not full Sprint 4.
+
+ADR 0028 connects that native producer/service/worker gate with explicit `change`,
+preserving uniform default and existing job pins. Native fractional-PTS and
+authored managed OCR/citation/cleanup probes are in `change-ocr-validation.md`;
+representative quality, descriptions and verified alignment remain open.

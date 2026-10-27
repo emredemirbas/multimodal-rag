@@ -134,6 +134,10 @@ jobs:
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.scene_selftest
+      - name: Verify actual change-aware OCR and fractional-rate selected PTS
+        run: >-
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
+          visual-inspect -m app.vision.change_selftest
       - name: Verify private visual service is opt-in and credential-free
         run: >-
           docker compose --profile local-visual config --format json |
@@ -187,6 +191,16 @@ jobs:
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.http_selftest --fixture |
           python scripts/smoke_video_workflow.py
+      - name: Verify opt-in change-aware OCR through public upload and cited evidence
+        env:
+          PYTHONPATH: backend
+          VIDEO_WORKFLOW_SMOKE: "1"
+          VIDEO_UPLOAD_SMOKE: "1"
+          VIDEO_CHANGE_SMOKE: "1"
+        run: |
+          VISUAL_SELECTION=change VIDEO_UPLOAD_ENABLED=true docker compose --profile local-visual up -d --no-deps --wait --wait-timeout 120 visual-worker
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python visual-inspect -m app.vision.change_selftest --fixture | python scripts/smoke_video_workflow.py
+          VISUAL_SELECTION=uniform VIDEO_UPLOAD_ENABLED=true docker compose --profile local-visual up -d --no-deps --wait --wait-timeout 120 visual-worker
       - name: Verify actual worker/checkpoint recovery, playlist slots and MinIO cleanup
         env:
           PYTHONPATH: backend
