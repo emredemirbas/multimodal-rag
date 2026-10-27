@@ -158,3 +158,9 @@ failure. They are not real-terminal/code/slide, brief-scene, long-input or
 representative OCR benchmarks. Review a diverse independently labeled corpus
 before selecting quality thresholds or changing the sampling policy. No vision
 description, verified transcript/frame alignment or full Sprint 4/Alpha 2 claim.
+
+The follow-up `code-policy-evaluation-guide.md` adds an explicit same-clip paired
+operator command and five authored code/terminal probes. It keeps this evaluator's
+single-policy metrics unchanged, preflights both policies' combined edit work and
+reports interval losses alongside gains plus identical shared-PTS OCR. It does not
+turn this small authored set into a representative reviewed benchmark.

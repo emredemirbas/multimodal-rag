@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-27. Hosted baseline: `f719635`. These are planning estimates, not a
+Date: 2026-10-27. Hosted baseline: `5cf6da8`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -13,7 +13,7 @@ Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
 That baseline passes all four hosted CI jobs:
-[run 40569511282](https://github.com/emredemirbas/multimodal-rag/actions/runs/40569511282).
+[run 40573984408](https://github.com/emredemirbas/multimodal-rag/actions/runs/40573984408).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -64,17 +64,26 @@ bounded score/hash records, revalidates ranking, keeps legacy digests and suppor
 temporal-return gallery/index/citation provenance. See
 `sprint4/selection-manifest-plan.md` and its separate validation record.
 
-The next native integration is now implemented as ADR 0028: actual scan/selected
+The native integration is implemented as ADR 0028: actual scan/selected
 OCR -> pinned v2 service/worker -> existing managed evidence, with real fractional
 source-FPS/PTS and authored public upload/citation/cleanup probes. See
 `sprint4/change-ocr-validation.md`. Uniform remains the default; no change was
-enabled on the owner's stack. The hosted baseline above is not a CI result for
-this subsequent producer follow-up.
+enabled on the owner's stack. This producer is included in the green hosted
+baseline above.
 
-Next broaden owned/authored code/terminal cases and compare the two policies with
-explicit labels/identifier and frame-coverage diagnostics. Representative quality,
-descriptions and verified audiovisual alignment are still open. Do not equate
-this tiny authored transient success with full scene understanding or Alpha 2.
+The next paired measurement follow-up is now implemented: identical-input/label/
+OCR-family binding, gained/lost interval coverage, separately weighted shared-
+image OCR and five fixed authored code/terminal probes. Change mode captures a
+brief terminal error, loses a one-digit edit that uniform captures, uses all 20
+slots for cursor motion and, like uniform, misses a 0.4s view. Uniform stays
+default. See `sprint4/code-policy-evaluation-validation.md` for full regression,
+native measurements and limitations. The hosted baseline is not a CI result for
+this subsequent diagnostic follow-up.
+
+Next gather independently reviewed owned/licensed real-terminal examples before
+any representative quality or policy decision. Descriptions and verified
+audiovisual alignment also remain open. Do not equate these tiny authored
+successes/failures or software test counts with full scene understanding or Alpha 2.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

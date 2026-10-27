@@ -120,7 +120,7 @@ def _scores(counts):
         "identifier_recall": _rate(counts["identifier_matches"], counts["identifier_labels"])}
 
 
-def evaluate(reference: Reference, run: EvaluationRun) -> dict:
+def _prepare(reference: Reference, run: EvaluationRun):
     # Roundtrip also revalidates mutable nested models/lists and PNG/profile data.
     reference = Reference.model_validate(reference.model_dump())
     run = EvaluationRun.model_validate(run.model_dump())
@@ -140,8 +140,19 @@ def evaluate(reference: Reference, run: EvaluationRun) -> dict:
             cells += sum(len(expected) * len(actual) for expected, actual in units)
             pairs.append((frame, units))
         paired.append((ordinal, interval, pairs))
+    return reference, run, paired, cells
+
+
+def evaluate(reference: Reference, run: EvaluationRun) -> dict:
+    reference, run, paired, cells = _prepare(reference, run)
     if cells > MAX_EDIT_CELLS:
         raise ValueError("Alignment work limit exceeded; use fewer or shorter labels")
+    return _measure(reference, run, paired)
+
+
+def _measure(reference, run, paired):
+    """Internal: callers must validate/preflight the complete work before scoring."""
+    result = run.result
 
     totals, intervals = _empty_counts(), []
     for ordinal, interval, pairs in paired:

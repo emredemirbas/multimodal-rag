@@ -17,7 +17,7 @@ COPY app/vision/__init__.py app/vision/media.py app/vision/local.py app/vision/n
      app/vision/contracts.py app/vision/client.py app/vision/server.py app/vision/smoke.py \
      app/vision/selftest.py app/vision/http_selftest.py app/vision/evaluate.py \
      app/vision/scene.py app/vision/scene_selftest.py app/vision/selection.py app/vision/change.py \
-     app/vision/change_selftest.py ./app/vision/
+     app/vision/change_selftest.py app/vision/compare.py app/vision/code_suite.py ./app/vision/
 
 USER 1000:1000
 ENTRYPOINT ["python", "-m", "app.vision.smoke"]

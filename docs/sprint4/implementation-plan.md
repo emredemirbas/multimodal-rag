@@ -79,3 +79,8 @@ ADR 0028 connects that native producer/service/worker gate with explicit `change
 preserving uniform default and existing job pins. Native fractional-PTS and
 authored managed OCR/citation/cleanup probes are in `change-ocr-validation.md`;
 representative quality, descriptions and verified alignment remain open.
+
+The subsequent paired measurement keeps both policies unchanged and adds five
+original authored code/terminal probes, exact shared-pixel OCR, interval gains/
+losses and combined work preflight. Negative cases are retained; there is no
+quality/default promotion. See `code-policy-evaluation-plan.md` and guide.

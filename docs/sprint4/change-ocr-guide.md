@@ -60,3 +60,7 @@ One-second/downscaled scans can miss brief/small edits or rank cursor motion hig
 Nearby frames are not substituted. Unchanged native limits can reject complex
 clips even within 100 MB/10-minute input bounds; this is not a performance promise
 or representative scene/code-quality result.
+
+For direct same-clip comparison and fixed authored negative cases, see
+`code-policy-evaluation-guide.md`. Keep losses, small edits, short views and motion
+costs visible; a newer policy is not automatically a better code-evidence policy.

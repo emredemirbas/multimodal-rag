@@ -431,6 +431,13 @@ private scan records. Its native integration now offers experimental
 managed opt-in, pinned-job recovery and limitations. Actual fractional-PTS and
 authored upload-to-citation checks are not representative scene/code quality.
 
+The [paired code/terminal diagnostics](docs/sprint4/code-policy-evaluation-guide.md)
+compare both policies on the same labeled input and separately measure identical
+shared frames. Five reproducible authored probes retain trade-offs: change mode
+finds a transient terminal error but misses a one-digit edit that uniform sees;
+both miss the sub-second view, and cursor motion uses the change budget. No default
+or quality threshold was changed; see the separate validation record.
+
 ## Optional real local AI (no API key or service bill)
 
 ```bash

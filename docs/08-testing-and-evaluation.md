@@ -107,6 +107,14 @@ verifies both policies, transient OCR citations, compact provenance, raw cleanup
 and complete deletion. CI runs both with explicit opt-in; uniform stays default.
 See `sprint4/change-ocr-validation.md`; none is representative scene/code quality.
 
+The paired-policy diagnostic additionally requires exact input/label/OCR-family
+binding, one validated label snapshot and combined edit-work preflight before
+scoring. Track gained **and lost** labeled intervals; separately score identical
+decoded images at shared actual PTS, preserving null denominators. Five authored
+terminal/code probes include a one-digit change, cursor noise and a sub-second
+view. Their negative results remain visible and do not promote a default or
+quality threshold. See `sprint4/code-policy-evaluation-guide.md` and validation.
+
 ### Local ASR foundation
 
 The local WAV ASR foundation adds strict RIFF/PCM limits, fake local HTTP identity/

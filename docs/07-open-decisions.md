@@ -237,6 +237,12 @@ to configuration. No new formats/providers/retention or paid calls. Authored
 fractional-PTS/workflow checks do not settle representative scene/code quality.
 See `sprint4/change-ocr-plan.md` and `change-ocr-guide.md`.
 
+The paired code/terminal follow-up measures both fixed policies without changing
+them. Gains/losses and shared-image OCR stay separate from differently weighted
+all-frame metrics. The authored set includes misses/noise and is not representative
+review or a release threshold; uniform/default-off media stay unchanged. See
+`sprint4/code-policy-evaluation-plan.md` and its guide/validation record.
+
 ## Decide before Sprint 5
 
 | Decision | Proposed default | Status |

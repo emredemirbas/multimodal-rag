@@ -138,6 +138,10 @@ jobs:
         run: >-
           docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
           visual-inspect -m app.vision.change_selftest
+      - name: Measure both policies on fixed authored code and terminal probes
+        run: >-
+          docker compose --profile visual-tools run --rm -T --no-deps --entrypoint python
+          visual-inspect -m app.vision.code_suite
       - name: Verify private visual service is opt-in and credential-free
         run: >-
           docker compose --profile local-visual config --format json |
