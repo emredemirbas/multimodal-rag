@@ -2,7 +2,10 @@ import { UUID_PATTERN } from "@/lib/api/identifiers";
 
 export interface VisualFrame { id: string; ordinal: number; timestamp_ms: number; sample_target_ms: number; width: number; height: number; ocr_text: string }
 export interface VisualOrigin { machine_generated: true; human_reviewed: false; job_id: string; generation: number;
-  profile: string; language: "en" | "tr" | "en+tr"; engines: { ffmpeg: string; tesseract: string }; checkpoint_version: string; prepared_at: string }
+  profile: string; language: "en" | "tr" | "en+tr"; engines: { ffmpeg: string; tesseract: string }; checkpoint_version: string; prepared_at: string;
+  description?: DescriptionOrigin }
+export interface DescriptionOrigin { job_id: string; generation: number; provider: "ollama-local"; model: "qwen3.5:4b";
+  model_digest: string; engine: string; prompt_version: "retained-frame-description-v1"; completed_at: string }
 export interface VisualGallery {
   source_id: string; source_filename: string; generation: number | null; processing_version: string | null;
   published_at: string | null; searchable: boolean; items: VisualFrame[];
@@ -43,7 +46,16 @@ export function parseVisualOrigin(value: unknown): VisualOrigin | null {
       || !["en", "tr", "en+tr"].includes(String(raw.language)) || raw.checkpoint_version !== version) throw new Error("Invalid visual provenance");
   return { machine_generated: true, human_reviewed: false, job_id: id(raw.job_id), generation: integer(raw.generation, 1, 2_147_483_647), profile,
     language: raw.language as VisualOrigin["language"], engines: { ffmpeg: text(engines.ffmpeg, 64), tesseract: text(engines.tesseract, 64) },
-    checkpoint_version: version, prepared_at: date(raw.prepared_at) };
+    checkpoint_version: version, prepared_at: date(raw.prepared_at),
+    ...(raw.description === undefined ? {} : { description: parseDescriptionOrigin(raw.description) }) };
+}
+
+export function parseDescriptionOrigin(value: unknown): DescriptionOrigin {
+  const row = record(value), model_digest = text(row.model_digest,64);
+  if (row.provider !== "ollama-local" || row.model !== "qwen3.5:4b" || !/^[a-f0-9]{64}$/.test(model_digest)
+      || row.prompt_version !== "retained-frame-description-v1" || !/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/.test(text(row.engine,64))) throw new Error("Invalid description origin");
+  return { job_id:id(row.job_id),generation:integer(row.generation,1,2_147_483_647),provider:row.provider,model:row.model,
+    model_digest,engine:text(row.engine,64),prompt_version:row.prompt_version,completed_at:date(row.completed_at) };
 }
 
 export function visualSelectionNotice(origin: VisualOrigin | null | undefined): string {
@@ -63,7 +75,7 @@ export function parseVisualGallery(value: unknown): VisualGallery {
   }
   const origin = parseVisualOrigin(row.origin);
   const generation = integer(row.generation, 1, 2_147_483_647);
-  if (!origin || origin.generation > generation || row.processing_version !== "retained-frames-v1" || row.items.length < 1) throw new Error("Invalid visual provenance");
+  if (!origin || origin.description || origin.generation > generation || row.processing_version !== "retained-frames-v1" || row.items.length < 1) throw new Error("Invalid visual provenance");
   const active = row.active_index_generation == null ? null : integer(row.active_index_generation, generation + 1, 2_147_483_647);
   const space = row.active_embedding_space == null ? null : text(row.active_embedding_space, 160);
   if (row.searchable !== (active !== null) || (active !== null) !== (space !== null)

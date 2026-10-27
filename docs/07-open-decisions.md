@@ -104,8 +104,9 @@ restricted WAV scope and isolated model process in ADR 0018. ADR 0019 adds priva
 durable jobs and original cleanup; ADR 0020 adds the separately gated WAV upload
 boundary, not default enablement or general speech-quality approval. Local frame/OCR
 foundation follows in ADR 0021; retained OCR-text frame evidence/citations now follow
-in ADR 0024, while visual descriptions remain unimplemented. No paid endpoint or
-cloud fallback is authorized.
+in ADR 0024. ADR 0029 adds optional retained-image descriptions through an
+explicitly pinned local Qwen3.5 vision model; setup remains operator-owned and
+quality is not established. No paid endpoint or cloud fallback is authorized.
 
 The resumable-indexing follow-up (ADR 0017) replaces the initial 128-chunk semantic
 cap with checkpointed work under the already accepted transcript input limits.
@@ -251,6 +252,15 @@ See `sprint4/timeline-alignment.md`; the finite closure list is in the current
 Sprint 4 implementation plan.
 
 ## Decide before Sprint 5
+
+The local description continuation (ADR 0029) uses the already installed local
+vision model behind a separate worker and an explicit full-digest opt-in. It does
+not authorize model downloads, cloud calls, different upload formats/retention,
+semantic audiovisual verification or automatic changes to the owner's stack.
+Complete descriptions feed separately labelled v2 visual evidence while old OCR
+citations remain stable. See `sprint4/frame-descriptions.md`. Independent real-
+example quality/audiovisual review remains required; native/schema success is not
+an acceptance threshold. This chooses no assignment or release finish line.
 
 | Decision | Proposed default | Status |
 |---|---|---|

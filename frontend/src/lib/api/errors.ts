@@ -85,6 +85,10 @@ export function publicErrorMessage(error: unknown): string {
     visual_initiator_required: "The original video initiator must retry this processing workflow.",
     alignment_not_ready: "Wait for a complete retained gallery and a successfully published transcript, then retry the comparison.",
     invalid_alignment: "Choose a transcript from the same recording, confirm the pairing and use a whole-millisecond offset between −600000 and +600000.",
+    frame_descriptions_disabled:"Local frame descriptions are disabled. Explicit local vision-model setup and operator opt-in are required.",
+    vision_model_changed:"Restore the explicitly pinned local vision model/engine before retrying. No other model or cloud service is used.",
+    local_vision_unavailable:"The local vision model is busy or unavailable. Free local resources or finish setup, then retry from project processing controls.",
+    invalid_visual_description:"The image-model output or saved description failed validation. Old evidence is unchanged; correct setup and retry or start a new generation.",
   };
   if (sourceErrors[error.code]) return sourceErrors[error.code];
 

@@ -151,14 +151,16 @@ Exit:
 
 **Duration:** 2 weeks
 
-**Current implementation status (2026-10-27):** Ordered playlists, constrained
+**Current implementation status (2026-10-28):** Ordered playlists, constrained
 optional local WAV/MP4 jobs, retained frame/OCR evidence/citations, opt-in change
-selection and user-asserted frame/transcript temporal inspection exist. The
+selection, user-asserted frame/transcript temporal inspection and opt-in local
+image-model descriptions with mixed versioned evidence exist. The
 consolidated finite closure checklist is `sprint4/implementation-plan.md`:
-image-model descriptions and independent audiovisual/quality verification remain.
+independent real-example audiovisual/quality verification remains.
 Do not add optional sampling/evaluator experiments as new exit prerequisites.
 This is not full multimodal/Alpha 2 approval or a reduced learning-platform scope.
-See `sprint4/timeline-alignment.md` and `09-delivery-status.md` for current evidence.
+See `sprint4/timeline-alignment.md`, `sprint4/frame-descriptions.md` and
+`09-delivery-status.md` for current evidence.
 
 Deliver:
 

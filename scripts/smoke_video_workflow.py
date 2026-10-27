@@ -219,6 +219,46 @@ def main():
         old_html = request(chooser + '?' + urlencode(parameters), frontend=True)[0].decode()
         assert 'older published generation' in old_html
         print('PASS: actual subtitle worker -> user-asserted temporal alignment API/production SSR, pinned generations, escaped text, gaps/offsets and stable evidence after reprocessing.')
+        if os.getenv('FRAME_DESCRIPTION_SMOKE')=='1':
+            assert settings.frame_descriptions_enabled and settings.vision_model_digest
+            describe_path=f'{path}/sources/{original.source.id}/descriptions'
+            key='describe-smoke-'+uuid4().hex
+            described=json.loads(request(describe_path,{'idempotency_key':key},'POST',202)[0])
+            assert described['job']['job_type']=='visual_describe' and described['job']['generation']==4
+            def description_ready():
+                state=json.loads(request(describe_path)[0])
+                if state['latest_job']['status'] in {'failed','cancelled'}:
+                    code=state['latest_job']['failure_code']
+                    if isinstance(code,str) and code.replace('_','').isalnum() and len(code)<=64:
+                        print('Owned description smoke failure code: '+code,flush=True)
+                assert state['latest_job']['status'] not in {'failed','cancelled'},'Owned image-model job failed'
+                if state['index_job']:
+                    assert state['index_job']['status'] not in {'failed','cancelled'},'Owned mixed-index job failed'
+                return state if state['origin'] and state['index_job']['status']=='succeeded' else None
+            state=wait(description_ready,300)
+            assert state['gallery_generation']==2 and state['index_generation']==5
+            assert state['origin']['model_digest']==settings.vision_model_digest and state['origin']['model']=='qwen3.5:4b'
+            assert [item['frame_id'] for item in state['items']]==[frame['id'] for frame in gallery['items']]
+            replay=json.loads(request(describe_path,{'idempotency_key':key},'POST',202)[0])
+            assert replay['deduplicated'] and replay['job']['id']==described['job']['id']
+            page=request(f'/projects/{project}/sources/{original.source.id}/frames/descriptions',frontend=True)[0].decode()
+            assert 'Local image-model descriptions' in page and 'Pinned model digest' in page and 'Separate literal OCR' in page
+            assert 'unreviewed model interpretations' in page and settings.vision_model_digest in page
+            mixed=json.loads(request(path+'/questions',{'question':question,'source_ids':[str(original.source.id)]},'POST')[0])
+            assert not mixed['abstained'] and mixed['citations'][0]['processing_version']=='visual-evidence-chunks-v2:g5'
+            mixed_citation=mixed['citations'][0]
+            assert mixed_citation['visual_origin']['description']==state['origin']
+            evidence=json.loads(request(f'{path}/evidence/{mixed_citation["segment_id"]}')[0])
+            assert evidence['text'].startswith(('Unreviewed OCR text:\n','Unreviewed image-model description:\n'))
+            mixed_html=request(f'/projects/{project}/evidence/{mixed_citation["segment_id"]}',frontend=True)[0].decode()
+            assert 'Descriptions may hallucinate' in mixed_html and settings.vision_model_digest in mixed_html
+            assert json.loads(request(f'{path}/evidence/{citation["segment_id"]}')[0])['visual_origin']==gallery['origin']
+            with store._connect() as connection:
+                usage=connection.execute('SELECT * FROM usage_events WHERE tenant_id=%s AND project_id=%s AND job_id=%s',
+                    (tenant,project,described['job']['id'])).fetchall()
+                assert len(usage)==1 and usage[0]['input_image_count']==len(expected_pts) and usage[0]['billed_usd']==0
+                assert usage[0]['model_digest']==settings.vision_model_digest
+            print('PASS: actual isolated native image model -> per-frame jobs -> complete structured snapshot/production SSR -> mixed OCR/description index/citations; old evidence preserved, no model download or quality approval.')
         if public_upload and os.getenv('VIDEO_UPLOAD_LARGE_SMOKE')=='1':
             padding=100_000_000-len(fixture)
             assert padding>=8
@@ -238,7 +278,7 @@ def main():
         wait(lambda: json.loads(request(f'{path}/cleanup/{receipt["X-Cleanup-ID"]}')[0])['status'] == 'completed', 60)
         assert not repo.artifacts.client.list_objects_v2(Bucket=repo.artifacts.bucket, Prefix=f'{tenant}/{project}/').get('Contents')
         with store._connect() as connection:
-            for table in ('video_workflows', 'visual_runs', 'visual_checkpoint_frames', 'retained_visual_frames', 'content_segments'):
+            for table in ('video_workflows', 'visual_runs', 'visual_checkpoint_frames', 'retained_visual_frames', 'visual_description_runs','visual_descriptions','content_segments'):
                 assert not connection.execute(f'SELECT 1 FROM {table} WHERE tenant_id=%s AND project_id=%s', (tenant, project)).fetchone()
         request(f'{path}/evidence/{citation["segment_id"]}', expected=404)
         request(alignment_path + '?' + urlencode(parameters), expected=404)

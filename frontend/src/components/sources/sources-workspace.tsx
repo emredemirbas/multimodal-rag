@@ -297,7 +297,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
           {source.active_generation !== null && (source.kind === undefined || source.kind === "transcript") ?
             <Link className="button button--secondary" prefetch={false} href={transcriptHref(projectId, source.id, source.active_generation)}>Read transcript</Link> : null}
           {isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="cancel" label="Cancel processing" onCompleted={refresh} /> : null}
-          {source.job && source.kind !== "audio" && (source.kind !== "video" || ["visual_publish", "visual_index"].includes(source.job.job_type ?? "")) && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
+          {source.job && source.kind !== "audio" && (source.kind !== "video" || ["visual_publish", "visual_index", "visual_describe"].includes(source.job.job_type ?? "")) && ["failed", "cancelled"].includes(source.job.status) ? <ProcessingControl projectId={projectId} source={source} command="retry" label="Retry processing" onCompleted={refresh} /> : null}
           {source.job && source.kind !== "audio" && source.kind !== "video" && !isProcessing(source) ? <ProcessingControl projectId={projectId} source={source} command="reprocess" label={source.asr_origin ? "Reindex retained transcript" : "Reprocess source"} onCompleted={refresh} /> : null}
           <DeleteSource projectId={projectId} source={source} onDeleted={deleted} />
         </div>

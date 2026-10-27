@@ -23,5 +23,8 @@ CMD ["celery", "-A", "app.jobs.media_worker:celery_app", "worker", "--hostname=m
 FROM runtime AS visual-worker
 CMD ["celery", "-A", "app.jobs.visual_worker:celery_app", "worker", "--hostname=visual@%h", "--queues=visual", "--concurrency=1", "--loglevel=INFO"]
 
+FROM runtime AS description-worker
+CMD ["celery", "-A", "app.jobs.description_worker:celery_app", "worker", "--hostname=descriptions@%h", "--queues=descriptions", "--concurrency=1", "--loglevel=INFO"]
+
 FROM runtime AS api
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -23,12 +23,45 @@ x-api-environment: &api-environment
   LOCAL_MODEL_TIMEOUT: "24"
   AUDIO_UPLOAD_ENABLED: ${AUDIO_UPLOAD_ENABLED:-false}
   VIDEO_UPLOAD_ENABLED: ${VIDEO_UPLOAD_ENABLED:-false}
+  FRAME_DESCRIPTIONS_ENABLED: ${FRAME_DESCRIPTIONS_ENABLED:-false}
+  VISION_MODEL_DIGEST: ${VISION_MODEL_DIGEST:-}
 
 x-api-image: &api-image
   build:
     context: ./backend
 
 services:
+  description-worker:
+    profiles: [local-vision]
+    build:
+      context: ./backend
+      target: description-worker
+    environment:
+      <<: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "celery -A app.jobs.description_worker:celery_app inspect ping --timeout=3 -d descriptions@$$HOSTNAME | grep -q pong"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
   visual-worker:
     profiles: [local-visual]
     build:

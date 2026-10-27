@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-27. Hosted baseline: `322a520`. These are planning estimates, not a
+Date: 2026-10-28. Hosted baseline: `d3c2f2b`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -9,11 +9,14 @@ The project is in **Sprint 4**, not finished Alpha 2. Project/auth/isolation,
 authorized subtitle jobs, scoped retrieval/chat/citations, optional free local
 answers/embeddings, ordered playlist relationships, constrained WAV transcription
 and constrained MP4 -> retained frames/OCR -> indexed frame citations exist.
+Optional explicitly pinned local image-model descriptions now feed separately
+labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-That baseline passes all four hosted CI jobs:
-[run 40577619469](https://github.com/emredemirbas/multimodal-rag/actions/runs/40577619469).
+The previous `d3c2f2b` baseline passes all four hosted CI jobs; the new description
+changes require their own subsequent run:
+[run 40581184918](https://github.com/emredemirbas/multimodal-rag/actions/runs/40581184918).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -21,7 +24,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 |---|---|
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
-| Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection and user-asserted frame/transcript timeline exist; image descriptions and independent audiovisual/quality verification remain open |
+| Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
 | Sprint 5: learning objectives and assignments | Not implemented; product decisions must be resolved first |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
@@ -54,9 +57,9 @@ are judgement-based planning bands, not measured remaining labor or calendar
 automation. Sporadic sessions, CPU limits and human evaluation change elapsed time.
 Re-estimate after the owner selects a finish line and after the first runner spike.
 
-## Sprint 4 closure — two remaining gates
+## Sprint 4 closure — one remaining gate
 
-The current continuation adds the user-visible read-only frame/transcript timeline:
+The previous continuation added the user-visible read-only frame/transcript timeline:
 explicit same-recording assertion, signed offset, actual-PTS/span matching, honest
 gaps, stable evidence links and both published generations pinned in the URL.
 It does not automatically verify the recording, persist a pairing or alter search.
@@ -65,18 +68,22 @@ See `sprint4/timeline-alignment.md` for API/UI behavior and validation.
 Keep the remaining list finite; no more sampling/evaluator experiments are assumed
 prerequisites simply because they are possible:
 
-1. Structured image-model descriptions with a free local provider, provenance and
-   the same frame evidence/safety/recovery guarantees. No paid fallback or silently
-   assumed model download/hardware.
-2. Independent review of owned/licensed real examples for visual retrieval/code
+The image-description software gate is now implemented (ADR 0029): a default-off,
+digest-pinned local vision provider, one-frame checkpointed jobs, strict structured
+descriptions, separate OCR labels and complete mixed index publication/citations.
+Actual native workflow success and known image-model omissions are recorded in
+`sprint4/frame-descriptions.md`. The owner's stack/defaults were not changed;
+configured availability is not readiness or model-quality approval.
+
+1. Independent review of owned/licensed real examples for visual retrieval/code
    quality and audiovisual source/timing correctness. User assertions and tiny
    synthetic probes are not representative quality or verified alignment.
 
 The consolidated checklist is `sprint4/implementation-plan.md`. Existing measured
 one-digit/sub-second misses, cursor noise and mixed-language OCR errors remain
 visible in `sprint4/code-policy-evaluation-validation.md`; uniform stays default.
-The paired diagnostics are included in that green hosted baseline. It does not
-certify this subsequent timeline commit until its exact hosted run is verified.
+The paired diagnostics and timeline are included in that green hosted baseline.
+It does not certify subsequent changes until their exact hosted run is verified.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

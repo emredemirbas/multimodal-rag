@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, model_serializer
 
 
 class AsrOrigin(BaseModel):
@@ -20,6 +20,17 @@ class AsrOrigin(BaseModel):
     completed_at: datetime
 
 
+class DescriptionOrigin(BaseModel):
+    job_id: UUID
+    generation: int = Field(ge=1)
+    provider: Literal['ollama-local']
+    model: Literal['qwen3.5:4b']
+    model_digest: str = Field(pattern=r'^[a-f0-9]{64}$')
+    engine: str = Field(min_length=1, max_length=64, pattern=r'^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$')
+    prompt_version: Literal['retained-frame-description-v1']
+    completed_at: datetime
+
+
 class VisualOrigin(BaseModel):
     machine_generated: Literal[True] = True
     human_reviewed: Literal[False] = False
@@ -30,6 +41,13 @@ class VisualOrigin(BaseModel):
     engines: dict[str, str]
     checkpoint_version: str
     prepared_at: datetime
+    description: DescriptionOrigin | None = None
+
+    @model_serializer(mode='wrap')
+    def legacy_projection(self, handler):
+        value = handler(self)
+        if self.description is None: value.pop('description', None)
+        return value
 
     @model_validator(mode='after')
     def consistent_version(self):
@@ -49,7 +67,9 @@ def checked_visual_origin(row):
         parsed = VisualOrigin.model_validate(origin)
         if (not managed or row['modality'] != 'frame' or row['frame_id'] is None
                 or row['start_ms'] != row['end_ms'] or parsed.generation >= row['generation']
-                or row['processing_version'] != f"visual-ocr-chunks-v1:g{row['generation']}"):
+                or (row['processing_version'] != f"visual-ocr-chunks-v1:g{row['generation']}" if parsed.description is None
+                    else row['processing_version'] != f"visual-evidence-chunks-v2:g{row['generation']}"
+                    or not parsed.generation < parsed.description.generation < row['generation'])):
             raise ValueError()
         return parsed
     except (ValueError, KeyError):

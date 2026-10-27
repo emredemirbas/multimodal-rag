@@ -13,11 +13,30 @@ from ..store import ProjectNotFoundError
 from .gallery import VisualGalleryRepository
 
 VERSION = 'visual-ocr-chunks-v1'
+MIXED_VERSION = 'visual-evidence-chunks-v2'
 LOGGER = logging.getLogger('tutorial_workspace.jobs')
 
 
-def chunks(tenant, project, source, generation, frames):
+def chunks(tenant, project, source, generation, frames, *, descriptions=None):
     result = []
+    if descriptions is not None:
+        from .descriptions_client import description_text
+        for frame in frames:
+            parts = []
+            prefix = 'Unreviewed OCR text:\n'
+            size = 1200-len(prefix)
+            parts.extend(('ocr', offset, prefix+frame['ocr_text'][offset:offset+size])
+                         for offset in range(0,len(frame['ocr_text']),size) if frame['ocr_text'][offset:offset+size].strip())
+            caption = description_text(descriptions[frame['id']])
+            if caption: parts.append(('description',0,caption))
+            for kind,offset,text in parts:
+                digest = hashlib.sha256(text.encode()).hexdigest()
+                identity = f"{tenant}:{project}:{source}:{generation}:{MIXED_VERSION}:{frame['id']}:{kind}:{offset}:{digest}"
+                result.append(dict(segment_id=uuid5(NAMESPACE_URL,identity),frame_id=frame['id'],
+                    start_ms=frame['timestamp_ms'],text_offset=offset,text=text))
+        if len(result)>300 or any(len(item['text'])>1200 for item in result):
+            raise SourceError('invalid_visual_index','The mixed visual evidence exceeds its bounded index.',503)
+        return result
     for frame in frames:
         for offset in range(0, len(frame['ocr_text']), 1200):
             text = frame['ocr_text'][offset:offset+1200]
@@ -64,7 +83,7 @@ class VisualIndexRepository:
         return row, frames
 
     def enqueue(self, tenant, project, source, publication, actor, idempotency_key, *, connection=None,
-                target_embedding_space=None, continuation=False):
+                target_embedding_space=None, continuation=False, description_job=None):
         """Internal command. A new key explicitly requests a new index generation."""
         if continuation and connection is None:
             raise ValueError('Automatic continuations require their parent transaction')
@@ -74,19 +93,22 @@ class VisualIndexRepository:
             state = repo._project(connection, tenant, project, actor)
             current = repo._source(connection, tenant, project, source)
             receipt = connection.execute(
-                '''SELECT c.command,j.*,i.publication_job_id FROM source_commands c
+                '''SELECT c.command,j.*,i.publication_job_id,i.description_job_id FROM source_commands c
                    JOIN processing_jobs j ON j.tenant_id=c.tenant_id AND j.project_id=c.project_id AND j.id=c.job_id
                    LEFT JOIN visual_index_runs i ON i.tenant_id=j.tenant_id AND i.project_id=j.project_id AND i.job_id=j.id
                    WHERE c.tenant_id=%s AND c.project_id=%s AND c.source_id=%s AND c.idempotency_key=%s''',
                 (tenant, project, source, idempotency_key),
             ).fetchone()
             if receipt:
-                if receipt['command'] != 'index_visual' or receipt['publication_job_id'] != publication:
+                if receipt['command'] != 'index_visual' or receipt['publication_job_id'] != publication or receipt['description_job_id'] != description_job:
                     raise SourceError('idempotency_conflict', 'This command key was used for different input.', 409)
                 return Registration(source=current, job=Job.model_validate(receipt), deduplicated=True)
             if state['status'] != 'active' and not continuation:
                 raise SourceError('project_archived', 'Restore the project before indexing frames.', 409)
             origin, _ = self._publication(connection, tenant, project, source, publication, actor)
+            if description_job is not None:
+                from .descriptions import DescriptionRepository
+                DescriptionRepository(repo).complete_snapshot(connection,tenant,project,source,description_job,publication)
             if connection.execute('SELECT 1 FROM memberships WHERE tenant_id=%s AND user_id=%s FOR KEY SHARE',
                                   (tenant, actor)).fetchone() is None:
                 raise ProjectNotFoundError('project not found')
@@ -98,8 +120,8 @@ class VisualIndexRepository:
                                 target_embedding_space=target_embedding_space)
             connection.execute(
                 '''INSERT INTO visual_index_runs (tenant_id,project_id,source_id,job_id,generation,
-                   publication_job_id,publication_generation,processing_version) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',
-                (tenant, project, source, job.id, generation, publication, origin['generation'], VERSION),
+                   publication_job_id,publication_generation,processing_version,description_job_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+                (tenant, project, source, job.id, generation, publication, origin['generation'], MIXED_VERSION if description_job else VERSION,description_job),
             )
             connection.execute("UPDATE sources SET generation=%s,status='indexing',failure_code=NULL,failure_detail=NULL,updated_at=now() WHERE tenant_id=%s AND project_id=%s AND id=%s",
                                (generation, tenant, project, source))
@@ -114,7 +136,7 @@ class VisualIndexRepository:
         if connection.execute('SELECT 1 FROM memberships WHERE tenant_id=%s AND user_id=%s FOR KEY SHARE',
                               (claim['tenant_id'], claim['actor_user_id'])).fetchone() is None: return None
         row = connection.execute(
-            '''SELECT j.*,i.publication_job_id,i.publication_generation,i.processing_version AS parser_version
+            '''SELECT j.*,i.publication_job_id,i.publication_generation,i.description_job_id,i.processing_version AS parser_version
                FROM processing_jobs j JOIN visual_index_runs i ON i.tenant_id=j.tenant_id AND i.project_id=j.project_id
                  AND i.source_id=j.source_id AND i.job_id=j.id AND i.generation=j.generation
                WHERE j.tenant_id=%s AND j.project_id=%s AND j.source_id=%s AND j.id=%s AND j.generation=%s
@@ -124,12 +146,17 @@ class VisualIndexRepository:
         if row is None: return None
         if row['target_embedding_space'] != claim['target_embedding_space']:
             raise SourceError('processing_configuration_changed', 'The pinned embedding space changed.', 409)
-        if row['parser_version'] != VERSION:
+        if row['parser_version'] != (MIXED_VERSION if row['description_job_id'] else VERSION):
             raise SourceError('checkpoint_input_changed', 'The OCR parser changed; start a new index generation.', 409)
         publication, frames = self._publication(connection, claim['tenant_id'], claim['project_id'], claim['source_id'], row['publication_job_id'], claim['actor_user_id'])
         if publication['generation'] != row['publication_generation']:
             raise SourceError('artifact_integrity', 'The retained gallery identity changed.')
-        expected = chunks(claim['tenant_id'], claim['project_id'], claim['source_id'], claim['generation'], frames)
+        descriptions = None
+        if row['description_job_id']:
+            from .descriptions import DescriptionRepository
+            _,descriptions = DescriptionRepository(repo).complete_snapshot(connection,claim['tenant_id'],claim['project_id'],
+                claim['source_id'],row['description_job_id'],row['publication_job_id'])
+        expected = chunks(claim['tenant_id'], claim['project_id'], claim['source_id'], claim['generation'], frames,descriptions=descriptions)
         manifest = hashlib.sha256(''.join(str(item['segment_id']) for item in expected).encode()).hexdigest()
         if row['chunk_manifest_sha256'] is not None and (row['chunk_manifest_sha256'] != manifest or row['total_segments'] != len(expected)):
             raise SourceError('checkpoint_input_changed', 'The retained OCR changed; start a new index generation.', 409)
@@ -229,13 +256,13 @@ class VisualIndexRepository:
             job, expected, _ = state
             if job['target_embedding_space'] != provider.space_id or not expected or job['processed_segments'] != len(expected) or not job['chunk_manifest_sha256']:
                 raise SourceError('checkpoint_incomplete', 'The OCR index is not complete.', 503)
-            version = f"{VERSION}:g{claim['generation']}"
+            version = f"{job['parser_version']}:g{claim['generation']}"
             connection.execute(
                 '''INSERT INTO processing_versions (tenant_id,project_id,source_id,generation,processing_version,
-                   embedding_provider,embedding_model,embedding_dimensions,embedding_space,embedding_model_digest,visual_publication_job_id)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+                   embedding_provider,embedding_model,embedding_dimensions,embedding_space,embedding_model_digest,visual_publication_job_id,visual_description_job_id)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
                 (claim['tenant_id'], claim['project_id'], claim['source_id'], claim['generation'], version,
-                 provider.name, provider.model, provider.dimensions, provider.space_id, provider.model_digest, job['publication_job_id']),
+                 provider.name, provider.model, provider.dimensions, provider.space_id, provider.model_digest, job['publication_job_id'],job['description_job_id']),
             )
             connection.execute(
                 '''INSERT INTO content_segments (tenant_id,project_id,source_id,id,generation,modality,start_ms,end_ms,

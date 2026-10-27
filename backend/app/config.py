@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import re
 
 
 def _environment_flag(name: str, default: bool) -> bool:
@@ -49,6 +50,8 @@ class Settings:
     visual_selection: str = 'uniform'
     audio_upload_enabled: bool = False
     video_upload_enabled: bool = False
+    frame_descriptions_enabled: bool = False
+    vision_model_digest: str = ''
 
     def __post_init__(self) -> None:
         if not isinstance(self.visual_selection, str) or self.visual_selection not in {'uniform', 'change'}:
@@ -57,6 +60,10 @@ class Settings:
             raise ValueError('AUDIO_UPLOAD_ENABLED must be a boolean value')
         if type(self.video_upload_enabled) is not bool:
             raise ValueError('VIDEO_UPLOAD_ENABLED must be a boolean value')
+        if type(self.frame_descriptions_enabled) is not bool or not isinstance(self.vision_model_digest,str) or (self.vision_model_digest and re.fullmatch(r'[a-f0-9]{64}', self.vision_model_digest) is None):
+            raise ValueError('Use an explicit full VISION_MODEL_DIGEST and boolean description flag')
+        if self.frame_descriptions_enabled and not self.vision_model_digest:
+            raise ValueError('FRAME_DESCRIPTIONS_ENABLED requires an explicit VISION_MODEL_DIGEST')
         from .local_model import checked_local_url
         from .asr.client import checked_asr_url
         from .vision.client import checked_visual_url
@@ -137,4 +144,6 @@ class Settings:
             visual_selection=os.getenv('VISUAL_SELECTION', 'uniform'),
             audio_upload_enabled=_environment_flag('AUDIO_UPLOAD_ENABLED', False),
             video_upload_enabled=_environment_flag('VIDEO_UPLOAD_ENABLED', False),
+            frame_descriptions_enabled=_environment_flag('FRAME_DESCRIPTIONS_ENABLED', False),
+            vision_model_digest=os.getenv('VISION_MODEL_DIGEST', ''),
         )

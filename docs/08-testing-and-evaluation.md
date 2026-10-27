@@ -379,6 +379,25 @@ For beta users, measure with consent:
 
 ## Release gates
 
+The optional local frame-description slice adds real HTTP transport tests and
+scoped PG job/checkpoint/publication tests: model/engine/input hash pins, strict
+abstention, corruption, wrong/revoked/expired/cancelled/deleted scopes, private
+partial output, no DB lock during inference, complete mixed index activation,
+history/old citations, usage once and full deletion. An owned Celery SIGKILL after
+the final saved result must recover with no repeated provider call or duplicate
+index handoff. Default CI uses fixture descriptions and builds the separate worker
+without weights. Frontend checks cover safe contracts/actions, opt-in and
+loading/empty/error/success states, escaping and mixed-versus-OCR provenance.
+
+Native evidence is separate: pre-existing public weights may be reused read-only
+in a new credential-free internal-only model container, never downloaded as an
+incidental test step. The actual `FRAME_DESCRIPTION_SMOKE` path additionally checks
+public upload/native extraction, two per-frame calls, production SSR, mixed
+citations, stable old evidence and complete owned-data deletion on a fresh test
+stack. Preserve invalid native outputs and semantic misses in the validation
+record; passing schema tests do not certify truth or representative quality.
+See `sprint4/frame-descriptions.md` for identities, results and remaining review.
+
 Before Alpha 1:
 
 - project-isolation tests pass;

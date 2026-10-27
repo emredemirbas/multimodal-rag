@@ -36,9 +36,13 @@ Subsequent slices add isolated MP4 frame/OCR processing, retained galleries,
 frame-backed citations and standalone uploads behind `VIDEO_UPLOAD_ENABLED=false`.
 Experimental change-aware selection is an explicit local worker opt-in; uniform
 sampling remains default. The retained gallery also offers a version-pinned
-frame/transcript timeline with explicit user-asserted source pairing. Image-model
-descriptions and independent audiovisual/quality verification remain open; the
-finite Sprint 4 closure checklist is in the linked delivery status.
+frame/transcript timeline with explicit user-asserted source pairing. Optional
+local Qwen3.5 vision descriptions now interpret retained images, stay separately
+labelled from OCR and feed versioned frame evidence/citations. They require an
+explicit full model digest and `FRAME_DESCRIPTIONS_ENABLED=false` opt-in; nothing
+downloads automatically. See [setup, validation and known model errors](docs/sprint4/frame-descriptions.md).
+Independent real-example audiovisual/quality verification remains the final
+Sprint 4 closure gate; software/native probes do not establish quality approval.
 
 Optional isolated Whisper-base now connects authorized restricted WAV upload to
 a dedicated media queue, resumable transcription, retained VTT/indexing, versioned
@@ -66,8 +70,8 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted baseline is `322a520`, with all four jobs
-successful in [CI run 40577619469](https://github.com/emredemirbas/multimodal-rag/actions/runs/40577619469).
+The latest separately verified hosted baseline is `d3c2f2b`, with all four jobs
+successful in [CI run 40581184918](https://github.com/emredemirbas/multimodal-rag/actions/runs/40581184918).
 That previous run does not certify subsequent commits. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their

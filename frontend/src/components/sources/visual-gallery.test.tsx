@@ -15,9 +15,9 @@ describe("selected-frame gallery", () => {
   });
   it("shows indexed OCR without implying image understanding or original playback", () => {
     render(<VisualGallery projectId={projectId} gallery={{ ...visualFixture(), searchable: true, active_index_generation: 3, active_embedding_space: "signed-hash-v1:64" }} />);
-    expect(screen.getByText(/OCR is indexed at generation 3/)).toHaveTextContent("matching embedding space");
+    expect(screen.getByText(/Visual evidence is indexed at generation 3/)).toHaveTextContent("matching embedding space");
     expect(screen.queryByText(/not indexed for questions/)).toBeNull();
-    expect(screen.getByText(/Active OCR embedding space/)).toHaveTextContent("signed-hash-v1:64");
+    expect(screen.getByText(/Active visual evidence embedding space/)).toHaveTextContent("signed-hash-v1:64");
   });
   it("renders exact times, unreviewed processing origin and hostile OCR literally", () => {
     const gallery = visualFixture();

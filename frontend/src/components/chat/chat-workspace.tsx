@@ -147,7 +147,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
               {citation.source_filename} · {timestamp(citation.start_ms)}{citation.start_ms !== citation.end_ms ? `–${timestamp(citation.end_ms)}` : " (frame)"} · generation {citation.generation}
             </Link>
             {citation.asr_origin ? <p className="field-hint">Automatically transcribed · not human-reviewed. Speech, code identifiers and timestamps may be wrong; inspect this evidence.</p> : null}
-            {citation.visual_origin && citation.frame_id ? <p className="field-hint">Automatic frame OCR · not human-reviewed. <Link prefetch={false} href={retainedFrameHref(projectId, citation.source_id, citation.frame_id)}>Inspect supporting frame</Link></p> : null}
+            {citation.visual_origin && citation.frame_id ? <p className="field-hint">{citation.visual_origin.description ? "Automatic visual evidence · OCR / image-model descriptions, not verified facts." : "Automatic frame OCR · not human-reviewed."} <Link prefetch={false} href={retainedFrameHref(projectId, citation.source_id, citation.frame_id)}>Inspect supporting frame</Link></p> : null}
           </li>)}
         </ol> : null}
       </li>)}</ol>}

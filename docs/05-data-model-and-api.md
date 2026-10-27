@@ -372,6 +372,8 @@ and protected original cleanup retry retain their initiator fences.
 - `GET /projects/{project_id}/sources`
 - `GET /projects/{project_id}/sources/{source_id}`
 - `GET /projects/{project_id}/sources/{source_id}/alignment` (published frame/transcript temporal inspection)
+- `GET /projects/{project_id}/sources/{source_id}/descriptions` (configured opt-in, jobs and last complete image-model snapshot)
+- `POST /projects/{project_id}/sources/{source_id}/descriptions` (explicit retained-gallery description command, 202)
 - `POST /projects/{project_id}/sources/{source_id}/retry`
 - `POST /projects/{project_id}/sources/{source_id}/cancel`
 - `POST /projects/{project_id}/sources/{source_id}/reprocess`
@@ -493,6 +495,28 @@ service URLs or credentials. The model port itself is not published.
 - `DELETE /me`
 
 ## API rules
+
+### Local description schema addition (0019)
+
+`visual_description_runs` pins scoped source/job/generation, original gallery and
+actor, expected vision digest/prompt, target embedding space, immutable engine
+identity hash, completion and child index. `visual_descriptions` stores each
+bounded frame's exact image hash, structured description/hash, reported usage and
+latency. All cross-record FKs include tenant/project/source and relevant job/
+generation/frame identity; complete source/project deletion cascades these rows.
+Private checkpoints are never public evidence. No new object copy is created.
+
+Only full snapshots atomically enqueue existing indexing. `visual_index_runs` and
+`processing_versions` optionally pin the description job. The existing origin view
+adds nested description identity only for mixed v2 indexes. v1 origin projection
+and IDs/text/digests remain unchanged; managed mixed citations require
+`extraction_generation < description_generation < index_generation`. Segments use
+fixed separate OCR/description prefixes at exact retained-frame PTS, at most 300
+1200-character chunks, never a fabricated interval or verified speech claim.
+Usage gains prompt/output-token/image-count/image-byte attribution; existing
+metrics stay content-free. See `sprint4/frame-descriptions.md` and ADR 0029.
+
+### Boundary rules
 
 - Never derive authorization only from an opaque resource ID; always verify tenant/project membership.
 - Prefer command endpoints for meaningful state transitions over unrestricted status patches.

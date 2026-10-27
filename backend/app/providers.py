@@ -126,5 +126,5 @@ class EvidenceExtractiveAnswerProvider:
 
         cited = grounded[:2]
         # Evidence is data, never an instruction or a tool request.
-        evidence = "\n\n".join(f'[{index}] {"Unreviewed frame OCR: " if hit.visual_origin else ""}“{hit.segment.text}”' for index, hit in enumerate(cited, 1))
+        evidence = "\n\n".join(f'[{index}] {"Unreviewed visual evidence: " if hit.visual_origin and hit.visual_origin.description else "Unreviewed frame OCR: " if hit.visual_origin else ""}“{hit.segment.text}”' for index, hit in enumerate(cited, 1))
         return f"Quoted tutorial evidence (extractive baseline):\n\n{evidence}", False, cited

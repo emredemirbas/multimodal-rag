@@ -63,6 +63,7 @@ from .chat.repository import ChatRepository
 from .chat.delivery import deliver
 from .vision.gallery import VisualGalleryRepository
 from .vision.gallery_contracts import VisualGallery
+from .vision.descriptions import DescriptionRepository, DescriptionView
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
@@ -174,7 +175,7 @@ def create_app(
             raise
         route = request.scope.get("route")
         route_path = getattr(route, "path", "unmatched")
-        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image', '/api/v1/projects/{project_id}/evidence/{segment_id}', '/api/v1/projects/{project_id}/sources/{source_id}/alignment'}:
+        if route_path in {'/api/v1/projects/{project_id}/sources/{source_id}/frames', '/api/v1/projects/{project_id}/frames/{frame_id}/image', '/api/v1/projects/{project_id}/evidence/{segment_id}', '/api/v1/projects/{project_id}/sources/{source_id}/alignment', '/api/v1/projects/{project_id}/sources/{source_id}/descriptions'}:
             response.headers['Cache-Control'] = 'private, no-store'
             response.headers['X-Content-Type-Options'] = 'nosniff'
             response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
@@ -465,6 +466,11 @@ def create_app(
         actor(request, principal)
         return sources(request).get_job(principal.tenant_id, project_id, job_id)
 
+    # Specific derived-input commands must precede the generic command route.
+    @app.post('/api/v1/projects/{project_id}/sources/{source_id}/descriptions',response_model=Registration,status_code=202)
+    def describe_selected_frames(project_id:UUID,source_id:UUID,body:SourceCommand,request:Request,principal:CurrentPrincipal):
+        return DescriptionRepository(sources(request)).enqueue(principal.tenant_id,project_id,source_id,actor(request,principal),body.idempotency_key)
+
     @app.post("/api/v1/projects/{project_id}/sources/{source_id}/{command}", response_model=Registration, status_code=202)
     def source_command(project_id: UUID, source_id: UUID, command: str, body: SourceCommand, request: Request, principal: CurrentPrincipal) -> Registration:
         if command not in {"retry", "cancel", "reprocess"}:
@@ -577,6 +583,10 @@ def create_app(
         data = VisualGalleryRepository(sources(request)).image(principal.tenant_id, project_id, frame_id, actor(request, principal))
         return Response(content=data, media_type='image/png', headers={'Cache-Control': 'private, no-store',
             'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'same-origin'})
+
+    @app.get('/api/v1/projects/{project_id}/sources/{source_id}/descriptions',response_model=DescriptionView)
+    def frame_descriptions(project_id:UUID,source_id:UUID,request:Request,principal:CurrentPrincipal):
+        return DescriptionRepository(sources(request)).read(principal.tenant_id,project_id,source_id,actor(request,principal))
 
     @app.get('/api/v1/projects/{project_id}/sources/{source_id}/alignment', response_model=TimelineAlignment)
     def align_evidence(project_id: UUID, source_id: UUID, transcript_source_id: UUID,

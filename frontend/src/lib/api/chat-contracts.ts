@@ -65,7 +65,9 @@ function citation(value: unknown): Citation {
   if (end < start || end === start && row.modality !== "frame" || integer(row.generation) < 1
       || (origin !== null && origin.generation > integer(row.generation))
       || visual && (row.modality !== "frame" || !frame || origin || visual.generation >= integer(row.generation) || end !== start || start > 599999
-        || row.processing_version !== `visual-ocr-chunks-v1:g${row.generation}`)) throw new Error("Invalid evidence provenance");
+        || (visual.description ? row.processing_version !== `visual-evidence-chunks-v2:g${row.generation}`
+            || visual.description.generation <= visual.generation || visual.description.generation >= integer(row.generation)
+          : row.processing_version !== `visual-ocr-chunks-v1:g${row.generation}`))) throw new Error("Invalid evidence provenance");
   return { segment_id: id(row.segment_id), source_id: id(row.source_id), source_filename: text(row.source_filename, 255),
     start_ms: start, end_ms: end, modality: text(row.modality, 30), processing_version: text(row.processing_version, 120), generation: integer(row.generation), asr_origin: origin,
     frame_id: frame, visual_origin: visual };

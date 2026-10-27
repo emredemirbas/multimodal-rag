@@ -236,7 +236,7 @@ class SourceRepository:
             job = current.job
             if (command in {'retry', 'reprocess'} and current.kind in {'audio', 'video'}
                     and job.status in {'failed', 'cancelled', 'succeeded'}
-                    and not (current.kind == 'video' and job.job_type in {'visual_publish', 'visual_index'} and command == 'retry')):
+                    and not (current.kind == 'video' and job.job_type in {'visual_publish', 'visual_index', 'visual_describe'} and command == 'retry')):
                 if current.kind == 'audio':
                     raise SourceError('audio_reupload_required', 'The original audio is retired after cancellation or permanent failure; upload it again to transcribe.', 409)
                 raise SourceError('video_reupload_required', 'The original video is retired on terminal paths; upload it again to process.', 409)
@@ -260,6 +260,11 @@ class SourceRepository:
                 ).fetchone() if current.kind == 'video' else None
                 if workflow and workflow['actor_user_id'] != actor:
                     raise SourceError('visual_initiator_required', 'The original video initiator must retry this workflow.', 409)
+                if job.job_type == 'visual_describe':
+                    owner = connection.execute('SELECT actor_user_id FROM visual_description_runs WHERE tenant_id=%s AND project_id=%s AND source_id=%s AND job_id=%s',
+                        (tenant,project,source,job.id)).fetchone()
+                    if owner is None or owner['actor_user_id'] != actor:
+                        raise SourceError('visual_initiator_required','The original description initiator must retry this job.',409)
                 if job.max_attempts >= 12:
                     raise SourceError('retry_limit', 'Retry limit reached; upload a new source after correcting the problem.', 429)
                 connection.execute(
@@ -361,7 +366,7 @@ class SourceRepository:
                    started_at=now(),updated_at=now(),failure_code=NULL,failure_detail=NULL
                    WHERE tenant_id=%s AND project_id=%s AND id=%s RETURNING *''',
                 (configured_space(self.settings.embedding_provider), token,
-                 VISUAL_LEASE_SECONDS if row['job_type'] in {'visual', 'visual_publish'} else self.settings.job_lease_seconds, tenant, project, job),
+                 VISUAL_LEASE_SECONDS if row['job_type'] in {'visual', 'visual_publish', 'visual_describe'} else self.settings.job_lease_seconds, tenant, project, job),
             ).fetchone()
             connection.execute(
                 "INSERT INTO processing_attempts (tenant_id,project_id,id,job_id,attempt_number,status) VALUES (%s,%s,%s,%s,%s,'running')",

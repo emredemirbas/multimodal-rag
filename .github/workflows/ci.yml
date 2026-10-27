@@ -118,6 +118,17 @@ jobs:
           -c "from app.asr.isolation import block_outbound_sockets; block_outbound_sockets(); print('PASS: ASR outbound sockets blocked')"
       - name: Build optional local visual tool
         run: docker compose build visual-inspect visual-worker
+      - name: Build optional local description worker without model downloads
+        run: docker compose --profile local-ai --profile local-vision build description-worker
+      - name: Verify local descriptions remain opt-in with a separate bounded worker
+        run: >-
+          docker compose --profile local-ai --profile local-vision config --format json |
+          python3 -c 'import json,sys; c=json.load(sys.stdin); s=c["services"]["description-worker"];
+          assert s["profiles"] == ["local-vision"] and s["read_only"] and not s.get("ports") and not s.get("volumes");
+          assert str(s["environment"]["FRAME_DESCRIPTIONS_ENABLED"]).lower() == "false";
+          assert not s["environment"]["VISION_MODEL_DIGEST"] and int(s["pids_limit"]) == 64;
+          assert c["services"]["ollama"]["environment"]["OLLAMA_NO_CLOUD"] == "1";
+          print("PASS: optional local description worker, no image weights bundled or pulled")'
       - name: Verify visual tool has no application mounts, credentials or network
         run: >-
           docker compose --profile visual-tools config --format json |
