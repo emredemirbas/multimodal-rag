@@ -69,6 +69,11 @@ is removed on activation and owned project deletion cleans all fixture artifacts
 This proves queue/checkpoint recovery, not native embedding quality or prefork
 signal enforcement. Lost in-flight inference can still repeat.
 
+CI supplies `REDIS_PORT` without requiring `TEST_REDIS_URL`. The new worker test
+uses the same optional URL/port fallback as existing probes. Separate repeat with
+the explicit URL absent in fresh disposable services: **1 passed, 2.97 seconds**.
+No new CI credential, relaxed assertion or application configuration is required.
+
 ## Actual native production workflow
 
 A separately tagged production stack runs in a new UUID-named Compose project

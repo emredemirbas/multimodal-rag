@@ -53,7 +53,8 @@ def test_killed_ocr_worker_resumes_committed_batch_without_object_or_native_acce
     text=''.join((f'part{i}: user_id '+'x'*1200)[:1200] for i in range(13))+'TAILuser_id'
     _,publication=long_gallery(ingestion,text=text,count=1)
     item=queue_index(ingestion,publication)
-    broker=os.environ['TEST_REDIS_URL']; prefix='ocr-probe-'+uuid4().hex+':'; queue='ocr-'+uuid4().hex
+    broker=os.getenv('TEST_REDIS_URL',f"redis://127.0.0.1:{os.getenv('REDIS_PORT','6380')}/0")
+    prefix='ocr-probe-'+uuid4().hex+':'; queue='ocr-'+uuid4().hex
     redis=Redis.from_url(broker); redis.ping()
     client=Celery('ocr_probe',broker=broker)
     client.conf.broker_transport_options={'global_keyprefix':prefix,'socket_connect_timeout':3,'socket_timeout':5}
