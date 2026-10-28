@@ -134,3 +134,31 @@ pass locally. The corrected [hosted run](https://github.com/emredemirbas/multimo
 subsequently completed successfully for commit `d0ba720` on 2026-10-02, including
 all prerequisite jobs, image builds, application smoke checks and real-worker
 recovery. This verifies Sprint 2, not later unpushed Sprint 3 changes.
+
+## Project-name correction recovery (2026-10-28)
+
+The original forms' uncontrolled inputs reset after a fulfilled React form action,
+even when that action returned a validation or API error. Actual React 19 probes
+and four initially failing component regressions showed create clearing the
+attempted name and rename reverting to the old name while its error remained.
+
+Controlled drafts now preserve that correction context. `useActionState` and the
+existing framework redirect remain intact; pending state locks the input and
+announces busy status. Successful rename returns the parsed API result's canonical
+title only after checking its exact project ID. Same-project pristine refreshes
+update the value, dirty/failed drafts survive refresh, and a project-ID key clears
+draft/error state when moving to another project. No title-key remounts.
+
+- **12 component regressions** cover validation/service errors, corrected retry,
+  pending/accessible state, canonical success, clean/dirty refreshes and keyed
+  project switching. **7 action tests** cover validation, safe error references,
+  canonical accepted titles, foreign receipt rejection and unchanged create
+  redirect behavior. An uncertain creation warns to refresh the project list;
+  this does not add an idempotent project-create API or promise duplicate-free retry.
+- Final frontend regression: **264 tests in 41 files passed, 8.36s**. Lint,
+  typecheck and optimized production build pass with test-only API build settings.
+  Initial action fixtures lacked required tenant/archive fields; those fixtures
+  were corrected before the final typecheck, without weakening the contract.
+- No backend/schema/migration, authentication policy, source evidence, model call
+  or application data changed. No running owner service was restarted. These are
+  software regressions, not independent real-example multimodal quality approval.

@@ -160,6 +160,11 @@ registry image is unavailable; the first build can take a few minutes. A one-sho
 initializer assigns only its data volume to the non-root MinIO user. This archived
 CE build is for local tests, not a production storage recommendation (ADR 0012).
 
+Project name forms retain your attempted name after returned validation/service
+errors. Pending fields are locked; successful rename displays the name actually
+saved by the server. If creation delivery is uncertain, refresh the project list
+before trying again: project creation does not have the source-upload replay key.
+
 In a project, choose an SRT/VTT file (UTF-8, at most 2 MB), select your rights
 statement and click **Process transcript**. Work continues if you leave the page.
 If upload/import delivery fails, the unchanged draft and request key stay available

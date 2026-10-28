@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { createProjectAction } from "@/app/actions/projects";
 import { ActionStatus } from "@/components/ui/action-status";
@@ -8,14 +8,15 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { INITIAL_PROJECT_ACTION_STATE } from "@/lib/action-state";
 
 export function ProjectCreateForm() {
-  const [state, action] = useActionState(
+  const [title, setTitle] = useState("");
+  const [state, action, pending] = useActionState(
     createProjectAction,
     INITIAL_PROJECT_ACTION_STATE,
   );
   const errorId = state.fieldErrors.title ? "new-project-title-error" : undefined;
 
   return (
-    <form action={action} className="stack" noValidate>
+    <form action={action} className="stack" noValidate aria-busy={pending}>
       <div className="field">
         <label htmlFor="new-project-title">Project name</label>
         <p className="field-hint" id="new-project-title-hint">
@@ -25,6 +26,9 @@ export function ProjectCreateForm() {
           id="new-project-title"
           name="title"
           type="text"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          disabled={pending}
           minLength={1}
           maxLength={120}
           required

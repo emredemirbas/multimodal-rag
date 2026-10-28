@@ -6,6 +6,7 @@ export interface ProjectActionState {
   };
   reference: string | null;
   version: number;
+  acceptedTitle?: string;
 }
 
 export const INITIAL_PROJECT_ACTION_STATE: ProjectActionState = {

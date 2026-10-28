@@ -10,7 +10,7 @@ import {
   renameProject as renameProjectRequest,
   restoreProject as restoreProjectRequest,
 } from "@/lib/api/client";
-import { errorReference, publicErrorMessage } from "@/lib/api/errors";
+import { ApiError, errorReference, publicErrorMessage } from "@/lib/api/errors";
 import type { ProjectActionState } from "@/lib/action-state";
 import { projectIdFromForm, validateProjectTitle } from "@/lib/validation/projects";
 
@@ -54,7 +54,8 @@ export async function createProjectAction(
     const project = await createProjectRequest(result.title);
     projectId = project.id;
   } catch (error) {
-    return failure(previous, error);
+    const state = failure(previous, error);
+    return { ...state, message: `${state.message} If delivery was interrupted, refresh the projects list before trying again; creation may already have completed.` };
   }
 
   revalidatePath("/projects");
@@ -81,8 +82,11 @@ export async function renameProjectAction(
     };
   }
 
+  let acceptedTitle: string;
   try {
-    await renameProjectRequest(projectId, result.title);
+    const project = await renameProjectRequest(projectId, result.title);
+    if (project.id !== projectId) throw new ApiError({ status: 502, code: "invalid_api_response" });
+    acceptedTitle = project.title;
   } catch (error) {
     return failure(previous, error);
   }
@@ -95,6 +99,7 @@ export async function renameProjectAction(
     fieldErrors: {},
     reference: null,
     version: previous.version + 1,
+    acceptedTitle,
   };
 }
 

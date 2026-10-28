@@ -138,7 +138,7 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
         <section className="panel" aria-labelledby="settings-heading">
           <p className="eyebrow">Project settings</p>
           <h2 id="settings-heading">Name</h2>
-          <ProjectRenameForm projectId={project.id} title={project.title} />
+          <ProjectRenameForm key={project.id} projectId={project.id} title={project.title} />
         </section>
 
         <section className="panel panel--wide" aria-labelledby="lifecycle-heading">

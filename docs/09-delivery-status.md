@@ -110,6 +110,11 @@ after failed acceptance delivery, and keeps chat replay keys if a conversation
 switch fails. Only accepted source requests reset their form; source-list refresh
 failure remains distinct. No new provider, persistence class or quality claim.
 
+Project create/rename forms also preserve attempted names after returned errors,
+lock pending edits and show the server's canonical accepted rename. Draft state is
+keyed by project, with existing server authorization unchanged. This is correction
+UX, not idempotent project creation or a new release/quality gate.
+
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those
 questions while declaring that sprint implemented.
