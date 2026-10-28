@@ -192,17 +192,17 @@ function ProcessingControl({ projectId, source, command, label, onCompleted }: {
   </form>;
 }
 
-function DeleteSource({ projectId, source, onDeleted }: { projectId: string; source: SourceItem; onDeleted: (ticket: CleanupTicket) => Promise<void> }) {
+function DeleteSource({ projectId, source, onDeleted }: { projectId: string; source: SourceItem; onDeleted: (ticket: CleanupTicket, sourceId: string) => Promise<void> }) {
   const [state, action] = useActionState(sourceCommandAction, INITIAL_SOURCE_ACTION);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
   useEffect(() => {
-    if (state.status === "success" && state.cleanup) {
+    if (state.status === "success" && state.cleanup?.project_id === projectId) {
       dialog.current?.close();
-      void onDeleted(state.cleanup);
+      void onDeleted(state.cleanup, source.id);
     }
-  }, [state, onDeleted]);
+  }, [state, onDeleted, projectId, source.id]);
   return <>
     <button ref={trigger} type="button" className="button button--danger" onClick={() => dialog.current?.showModal()}>Delete source</button>
     <dialog ref={dialog} className="confirmation-dialog" aria-labelledby={`${id}-title`} onClose={() => trigger.current?.focus()}>
@@ -215,6 +215,7 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
           <input type="hidden" name="sourceId" value={source.id} />
           <input type="hidden" name="command" value="delete" />
           {state.status === "error" ? <p role="alert">{state.message}</p> : null}
+          {state.status === "success" && state.cleanup?.project_id !== projectId ? <p role="alert">Source deletion could not be confirmed for this project. Refresh sources before trying again.</p> : null}
           <div className="form-actions">
             <button type="button" className="button button--secondary" onClick={() => dialog.current?.close()}>Keep source</button>
             <SubmitButton className="button button--danger" pendingLabel="Deleting…">Yes, delete source</SubmitButton>
@@ -225,15 +226,19 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
   </>;
 }
 
-export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false }, videoCapability = { enabled: false }, onSourcesChanged }: {
+export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], initialKnownSourceIds = [], archived, initialError = "", audioCapability = { enabled: false }, videoCapability = { enabled: false }, onSourcesChanged, onSourceDeleted }: {
   projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string; audioCapability?: AudioCapability | null; videoCapability?: VideoCapability | null;
   onSourcesChanged?: (sources: SourceItem[]) => void;
+  onSourceDeleted?: (sourceId: string) => void;
+  initialKnownSourceIds?: readonly string[];
 }) {
   const [sources, setSources] = useState(initialSources);
   const [playlistItems, setPlaylistItems] = useState(initialPlaylistItems);
   const [error, setError] = useState(initialError);
   const [cleanups, setCleanups] = useState<CleanupTicket[]>([]);
   const inflight = useRef(false);
+  const deletedSourceIds = useRef(new Set<string>());
+  const knownSourceIds = useRef(new Set([...initialSources.map((source) => source.id), ...initialKnownSourceIds]));
   const heading = useRef<HTMLHeadingElement>(null);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -245,19 +250,31 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
       const response = await fetch(`/api/projects/${projectId}/sources`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
       if (!response.ok) throw new Error("Sources could not refresh. Try again shortly.");
       const payload = await response.json();
-      const next = parseSourceList(payload);
+      const parsed = parseSourceList(payload);
       const nextItems = parsePlaylistItems(payload);
-      if (mounted.current) { setSources(next); setPlaylistItems(nextItems); setError(""); onSourcesChanged?.(next); }
+      if (mounted.current) {
+        const present = new Set(parsed.map((source) => source.id));
+        for (const id of knownSourceIds.current) {
+          if (!present.has(id)) deletedSourceIds.current.add(id);
+        }
+        const next = parsed.filter((source) => !deletedSourceIds.current.has(source.id));
+        for (const source of next) knownSourceIds.current.add(source.id);
+        setSources(next); setPlaylistItems(nextItems); setError(""); onSourcesChanged?.(next);
+      }
     } catch {
       if (mounted.current) setError("Sources could not refresh. Try again shortly.");
     } finally { inflight.current = false; }
   }, [projectId, onSourcesChanged]);
 
-  const deleted = useCallback(async (ticket: CleanupTicket) => {
+  const deleted = useCallback(async (ticket: CleanupTicket, sourceId: string) => {
+    if (!mounted.current || ticket.project_id !== projectId) return;
+    deletedSourceIds.current.add(sourceId);
+    setSources((previous) => previous.filter((source) => source.id !== sourceId));
+    onSourceDeleted?.(sourceId);
     setCleanups((previous) => [...previous.filter((item) => item.id !== ticket.id), ticket]);
     await refresh();
     heading.current?.focus();
-  }, [refresh]);
+  }, [refresh, projectId, onSourceDeleted]);
   const working = sources.some(isProcessing);
   const cleaningAudio = sources.some((source) => source.audio_retention && ["temporary", "expired", "cleanup_pending"].includes(source.audio_retention.status));
   const cleaningVideo = sources.some((source) => source.video_retention && ["temporary", "expired", "cleanup_pending"].includes(source.video_retention.status));

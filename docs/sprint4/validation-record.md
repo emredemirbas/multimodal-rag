@@ -290,3 +290,52 @@ src/components/projects/project-evidence-workspace.test.tsx
 src/components/chat/chat-workspace.test.tsx`. Independent review found no blocking
 scope/replay/accessibility issue. The real-example quality gate and unselected
 release finish line remain unchanged.
+
+## Source-removal consistency in open chat (2026-10-29)
+
+The existing PostgreSQL source-delete trigger removes each complete chat turn
+citing the deleted source, including quoted answer text. The mounted browser had
+kept displaying its old copy until history reload. This was stale client output,
+not a cross-tenant disclosure or a failure of the server-side deletion cascade.
+
+A project-keyed, monotonic removed-source fence now hides those complete turns by
+their citation dependencies, including all-source questions and mixed-source
+answers. Confirmed same-project deletion updates the source card/chat immediately,
+even if the follow-up inventory fails. Successful complete inventory snapshots also
+detect missing known sources. Initial source-load errors are not empty-inventory
+proof; reindexing, generation changes and unrelated/unsupported turns are retained.
+Stale source snapshots cannot resurrect removed cards or chat selections.
+
+Chat masks partial delivery on removal, aborts the browser request and checks a
+request epoch after asynchronous history/SSE completion. Late responses cannot
+re-display removed evidence. The question/filter and uncertain replay identity
+remain intact; browser abort does not claim to cancel already committed work.
+This is a browser-view fence, not secure erasure of already received/copied data or
+confirmation of independently tracked physical object cleanup.
+
+- **13 new component cases** cover whole/mixed/all-source turn removal; preservation
+  of unrelated history, limitations and draft; confirmed delete with failed refresh;
+  failed/foreign-project receipts; a pre-delete GET arriving late; authoritative
+  missing-source snapshots and subsequent stale snapshots; initial source errors;
+  late history/partial/SSE completion; exact unchanged replay and project-scope reset.
+- The three new direct-chat regressions failed before the fix. A separate
+  initial-error -> valid-empty -> stale-source test exposed card resurrection before
+  adding known initial citation IDs to the source-list fence. Both then passed.
+- Full frontend regression: **291 tests in 43 files passed, 16.38s**; lint,
+  typecheck and actual production Docker build pass. No rule was disabled. Existing
+  backend contracts/auth, database migrations, queue, provider and retention policy
+  were unchanged; no new backend/integration/model-quality result is implied.
+- A browser probe against the production frontend and a separate GET-only synthetic
+  API first displayed an authored answer/citation, then a successful full missing-
+  source snapshot removed both without losing the typed draft. Reload history
+  deliberately returned the old answer again; the view fence kept it hidden. The
+  fixture used no actual delete request, real application data/credentials, database,
+  models or owner services. Its API stayed on its own internal network; only its
+  separate frontend had a temporary loopback host port. Both test containers,
+  networks and the temporary tab were removed after the check.
+
+Independent code review found no blocking scope, retry, race or accessible-state
+issue. The previously pushed `ba4710a` baseline is separately green in all four
+jobs of [CI run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988);
+that run does not certify this subsequent patch. The independent real-example
+quality gate and the owner's release finish-line choice remain unresolved.

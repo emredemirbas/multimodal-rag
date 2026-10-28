@@ -13,9 +13,12 @@ interface Props {
   initialHistory: History | null; archived: boolean; initialError?: string;
   answerMode?: AnswerMode;
   retrievalMode?: RetrievalMode;
+  removedSourceIds?: readonly string[];
 }
 
-export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "", answerMode = "extractive", retrievalMode = 'deterministic-hash-and-lexical' }: Props) {
+const NO_REMOVED_SOURCES: readonly string[] = [];
+
+export function ChatWorkspace({ projectId, sources, initialConversations, initialHistory, archived, initialError = "", answerMode = "extractive", retrievalMode = 'deterministic-hash-and-lexical', removedSourceIds = NO_REMOVED_SOURCES }: Props) {
   const [conversations, setConversations] = useState(initialConversations);
   const [conversation, setConversation] = useState<Conversation | null>(initialHistory?.conversation ?? null);
   const [turns, setTurns] = useState<ChatTurn[]>(initialHistory?.turns ?? []);
@@ -26,18 +29,31 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   const [error, setError] = useState(initialError);
   const [status, setStatus] = useState("");
   const [retryAvailable, setRetryAvailable] = useState(false);
+  const [deliveryRevision, setDeliveryRevision] = useState("");
   const requestKey = useRef("");
   const conversationKey = useRef("");
   const controller = useRef<AbortController | null>(null);
   const busy = useRef(false);
   const questionInput = useRef<HTMLTextAreaElement>(null);
   const wasPending = useRef(false);
+  const requestEpoch = useRef(0);
   const path = `/api/projects/${projectId}/conversations`;
-  const searchableSources = sources.filter((source) => source.active_generation !== null && !source.reindex_required);
+  const removalRevision = removedSourceIds.join(",");
+  const removedSources = new Set(removedSourceIds);
+  function availableTurn(turn: ChatTurn) {
+    return !turn.response.citations.some((citation) => removedSources.has(citation.source_id));
+  }
+  const visibleTurns = turns.filter(availableTurn);
+  const searchableSources = sources.filter((source) => source.active_generation !== null && !source.reindex_required && !removedSources.has(source.id));
   const sourceUnavailable = Boolean(sourceId && !searchableSources.some((source) => source.id === sourceId));
   // Do not widen a vanished filter or discard an uncertain delivery's replay identity.
   const requiresSourceChoice = sourceUnavailable && !retryAvailable;
   useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => {
+    // Evidence may have disappeared after an answer/history response was sent.
+    requestEpoch.current += 1;
+    controller.current?.abort();
+  }, [removalRevision]);
   useEffect(() => {
     if (!pending && wasPending.current) questionInput.current?.focus();
     wasPending.current = pending;
@@ -48,19 +64,25 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     setRetryAvailable(false);
   }
 
+  function ensureCurrent(active: AbortController, epoch: number) {
+    if (active.signal.aborted || epoch !== requestEpoch.current) throw new Error("Delivery no longer current");
+  }
+
   async function history(id: string) {
     if (busy.current) return;
     busy.current = true;
     setPending(true); setError(""); setStatus("Loading saved conversation…");
     const active = new AbortController(); controller.current = active;
+    const epoch = requestEpoch.current;
     try {
       const response = await fetch(`${path}/${id}`, { cache: "no-store", signal: AbortSignal.any([active.signal, AbortSignal.timeout(10_000)]) });
       if (!response.ok) throw new Error("History unavailable");
       const saved = parseHistory(await response.json());
+      ensureCurrent(active, epoch);
       if (saved.conversation.project_id !== projectId || saved.conversation.id !== id) throw new Error("Invalid conversation scope");
       // A failed switch must not discard an uncertain message's replay key.
       if (saved.conversation.id !== conversation?.id) clearReplay();
-      setConversation(saved.conversation); setTurns(saved.turns); setPartial("");
+      setConversation(saved.conversation); setTurns(saved.turns.filter(availableTurn)); setPartial("");
       setStatus("Saved conversation loaded.");
     } catch { setError("History could not be loaded. Try again or reload the workspace."); }
     finally { busy.current = false; setPending(false); controller.current = null; }
@@ -78,8 +100,10 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     if (busy.current || archived || question.trim().length < 2 || (sourceUnavailable && !requestKey.current)) return;
     busy.current = true;
     const active = new AbortController(); controller.current = active;
+    const epoch = requestEpoch.current;
     const signal = AbortSignal.any([active.signal, AbortSignal.timeout(30_000)]);
     setPending(true); setPartial(""); setError(""); setStatus("Finding evidence and delivering the saved answer…");
+    setDeliveryRevision(removalRevision);
     requestKey.current ||= crypto.randomUUID();
     try {
       let current = conversation;
@@ -89,6 +113,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
           body: JSON.stringify({ title: "Tutorial questions", idempotency_key: conversationKey.current }), signal });
         if (!response.ok) throw new Error("Conversation unavailable");
         current = parseConversation(await response.json());
+        ensureCurrent(active, epoch);
         if (current.project_id !== projectId) throw new Error("Invalid conversation scope");
         setConversation(current);
         setConversations((previous) => [current!, ...previous.filter((item) => item.id !== current!.id)]);
@@ -98,9 +123,14 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
         body: JSON.stringify({ question: question.trim(), source_ids: sourceId ? [sourceId] : [], idempotency_key: requestKey.current }),
       });
       if (!response.ok) throw await apiErrorFromResponse(response);
+      ensureCurrent(active, epoch);
       if (!response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) throw new Error("Answer unavailable");
-      const turn = await consumeChatStream(response.body, (chunk) => setPartial((previous) => previous + chunk));
-      setTurns((previous) => [...previous.filter((item) => item.id !== turn.id), turn].sort((left, right) => left.sequence - right.sequence));
+      const turn = await consumeChatStream(response.body, (chunk) => {
+        if (!active.signal.aborted && epoch === requestEpoch.current) setPartial((previous) => previous + chunk);
+      });
+      ensureCurrent(active, epoch);
+      if (!availableTurn(turn)) throw new Error("Removed source evidence");
+      setTurns((previous) => [...previous.filter((item) => item.id !== turn.id && availableTurn(item)), turn].sort((left, right) => left.sequence - right.sequence));
       setQuestion(""); setPartial(""); clearReplay();
       setStatus(turn.response.abstained ? "No supporting evidence was found. The limitation was saved." : "Answer saved with inspectable source citations.");
     } catch (failure) {
@@ -118,7 +148,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
         local_model_busy: "The local model is answering another question. Retry this unchanged question shortly.",
         invalid_model_answer: "The local model answer could not be validated. Retry this unchanged question; no unvalidated answer is displayed.",
       };
-      setError(failure instanceof ApiError && modelErrors[failure.code] ? modelErrors[failure.code] : active.signal.aborted ? "Delivery stopped. The answer may already be saved. Reload history or resend this unchanged question to replay it." :
+      setError(epoch !== requestEpoch.current ? "Source removal changed the available evidence during delivery. Reload history or retry the unchanged question; it may already be saved." : failure instanceof ApiError && modelErrors[failure.code] ? modelErrors[failure.code] : active.signal.aborted ? "Delivery stopped. The answer may already be saved. Reload history or resend this unchanged question to replay it." :
         "Delivery could not finish. The answer may already be saved. Reload history or resend this unchanged question; it will not create a duplicate turn.");
       setStatus("");
     } finally {
@@ -146,9 +176,10 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       <button type="button" className="button button--secondary" onClick={() => conversation && void history(conversation.id)} disabled={pending || !conversation}>Reload history</button>
     </div>
     {error ? <p role="alert">{error}</p> : null}
+    {removedSourceIds.length > 0 ? <p role="status">Answers citing removed sources are hidden. Reload history to check the saved conversation. Retained file cleanup is tracked separately.</p> : null}
     <p role="status" aria-live="polite">{status}</p>
-    {turns.length === 0 ? <p>No saved messages yet. Ask about indexed evidence to see timestamped citations.</p> :
-      <ol className="chat-turns" aria-label="Conversation history">{turns.map((turn) => <li key={turn.id} className="chat-turn">
+    {visibleTurns.length === 0 ? <p>{removedSourceIds.length ? "No remaining messages to display." : "No saved messages yet."} Ask about indexed evidence to see timestamped citations.</p> :
+      <ol className="chat-turns" aria-label="Conversation history">{visibleTurns.map((turn) => <li key={turn.id} className="chat-turn">
         <h3>You</h3><p className="evidence-text">{turn.question}</p>
         <h3>{turn.response.abstained ? "Evidence limitation" : "Tutorial evidence"}</h3>
         <p className="evidence-text">{turn.response.answer}</p>
@@ -163,7 +194,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
           </li>)}
         </ol> : null}
       </li>)}</ol>}
-    {pending && partial ? <div aria-label="Answer delivery in progress"><p className="evidence-text">{partial}</p><p>Delivery in progress; citations appear after validation completes.</p></div> : null}
+    {pending && partial && deliveryRevision === removalRevision ? <div aria-label="Answer delivery in progress"><p className="evidence-text">{partial}</p><p>Delivery in progress; citations appear after validation completes.</p></div> : null}
     {archived ? <p>Restore this project to ask new questions. Saved evidence remains available.</p> : <form onSubmit={(event) => void send(event)} className="stack">
       <div className="form-field"><label htmlFor="chat-source">Source filter</label>
         <select id="chat-source" disabled={pending} value={sourceId} aria-describedby={sourceUnavailable ? "chat-source-help" : undefined} onChange={(event) => { setSourceId(event.target.value); clearReplay(); }}>

@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-28. Hosted code baseline: `571480b`. These are planning estimates, not a
+Date: 2026-10-29. Hosted code baseline: `ba4710a`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -14,10 +14,10 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The `571480b` code baseline passes all four hosted CI jobs, including the description
+The `ba4710a` code baseline passes all four hosted CI jobs, including the description
 workflow, real worker/checkpoint recovery, local setup diagnostics and existing-flow
-error recovery:
-[run 40700471893](https://github.com/emredemirbas/multimodal-rag/actions/runs/40700471893).
+error recovery, keyless demo guide and live source filters:
+[run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -127,6 +127,13 @@ sources become selectable without a page reload. Failed refreshes preserve the l
 usable list; missing/incompatible selections cannot silently widen to all sources.
 Chat drafts, uncertain-delivery replay keys and version-pinned history survive these
 updates, while navigation to another project resets the client scope.
+
+Confirmed source removal now also hides each complete chat turn citing that source,
+matching the existing server-side deletion cascade. Monotonic scoped removal fences
+reject late history/SSE and stale source refreshes without confusing reindexing with
+deletion or treating an initial source-list error as proof of removal. This changes
+the open browser view, not the independently tracked physical-file cleanup or the
+fact that data already received/copied by a user cannot be recalled.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

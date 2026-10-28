@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
-import { metadataSourceAction, uploadSourceAction } from "@/app/actions/sources";
+import { metadataSourceAction, sourceCommandAction, uploadSourceAction } from "@/app/actions/sources";
 import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 import { asrOrigin, audioRetention } from "../../../test-support/media-fixture";
 
@@ -15,6 +15,60 @@ const source: SourceItem = {
 };
 
 describe("source management", () => {
+  it("removes a confirmed deleted source and emits its ID even if the follow-up inventory fails", async () => {
+    const onSourceDeleted = vi.fn();
+    vi.mocked(sourceCommandAction).mockResolvedValueOnce({ status: "success", message: "Source removed.", version: 1,
+      cleanup: { id: "32345678-1234-1234-1234-123456789abc", project_id: projectId, status: "pending" } });
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("refresh unavailable"));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[source]} archived={false} onSourceDeleted={onSourceDeleted} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Yes, delete source" })); });
+
+    expect(onSourceDeleted).toHaveBeenCalledExactlyOnceWith(source.id);
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Sources could not refresh");
+    expect(screen.getByText("Records removed; retained file cleanup is in progress.")).toBeVisible();
+  });
+
+  it.each(["error", "foreign-project"])("keeps the source and emits no deletion for a %s receipt", async (failure) => {
+    const onSourceDeleted = vi.fn();
+    vi.mocked(sourceCommandAction).mockResolvedValueOnce(failure === "error"
+      ? { status: "error", message: "Deletion failed.", version: 1 }
+      : { status: "success", message: "Source removed.", version: 1,
+        cleanup: { id: "32345678-1234-1234-1234-123456789abc", project_id: "22345678-1234-1234-1234-123456789abc", status: "pending" } });
+    render(<SourcesWorkspace projectId={projectId} initialSources={[source]} archived={false} onSourceDeleted={onSourceDeleted} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Yes, delete source" })); });
+
+    expect(onSourceDeleted).not.toHaveBeenCalled();
+    expect(screen.getByRole("listitem", { name: source.filename })).toBeVisible();
+    expect(screen.getByRole("alert")).toBeVisible();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("does not resurrect a deleted source when a pre-deletion inventory response arrives late", async () => {
+    let resolveInventory!: (response: Response) => void;
+    const onSourcesChanged = vi.fn(), onSourceDeleted = vi.fn();
+    vi.mocked(fetch).mockReturnValueOnce(new Promise<Response>((resolve) => { resolveInventory = resolve; }));
+    vi.mocked(sourceCommandAction).mockResolvedValueOnce({ status: "success", message: "Source removed.", version: 1,
+      cleanup: { id: "32345678-1234-1234-1234-123456789abc", project_id: projectId, status: "pending" } });
+    render(<SourcesWorkspace projectId={projectId} initialSources={[source]} archived={false}
+      onSourcesChanged={onSourcesChanged} onSourceDeleted={onSourceDeleted} />);
+    act(() => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Yes, delete source" })); });
+
+    expect(onSourceDeleted).toHaveBeenCalledExactlyOnceWith(source.id);
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    await act(async () => { resolveInventory(new Response(JSON.stringify({ items: [source], playlist_items: [] }))); });
+
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    expect(onSourcesChanged).toHaveBeenCalledExactlyOnceWith([]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("retains the subtitle draft and request key after a returned error, then resends unchanged", async () => {
     vi.mocked(uploadSourceAction).mockResolvedValue({ status: "error", message: "Delivery could not be confirmed.", version: 1 });
     render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);

@@ -70,9 +70,9 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted code baseline is `571480b`, with all four jobs
-successful in [CI run 40700471893](https://github.com/emredemirbas/multimodal-rag/actions/runs/40700471893),
-including worker recovery, local setup checks and project/source/chat error recovery. That run
+The latest separately verified hosted code baseline is `ba4710a`, with all four jobs
+successful in [CI run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988),
+including worker recovery, the keyless walkthrough and live chat source filters. That run
 does not certify subsequent code changes. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
@@ -219,6 +219,13 @@ question to replay it without another logical turn. Default answers are quoted
 transcript excerpts; the optional local model explains conservatively matched
 evidence. Neither mode is a general-purpose conversational tutor.
 Deleting a source also removes saved turns quoting that source.
+The open chat hides those whole turns as soon as deletion is confirmed or a
+successful full inventory refresh shows the source is gone. Late history/delivery
+responses cannot restore them. Failed inventory reads are not deletion evidence;
+reprocessing still preserves old citations. Active browser delivery stops on
+observed removal without claiming to cancel an already saved answer. Physical
+file cleanup remains separately tracked; already received/copied data cannot be
+recalled from a user's device.
 
 In **Source management**, choose **Read transcript** on an indexed subtitle.
 Browse 50 timestamped segments per page and use **Inspect evidence** for the

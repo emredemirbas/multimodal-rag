@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProjectEvidenceWorkspace } from "@/components/projects/project-evidence-workspace";
+import { sourceCommandAction } from "@/app/actions/sources";
 import type { ChatTurn, Conversation } from "@/lib/api/chat-contracts";
 import type { SourceItem } from "@/lib/api/source-contracts";
 
@@ -55,11 +56,107 @@ function stream() {
 
 describe("project-scoped live evidence inventory", () => {
   beforeEach(() => {
+    vi.resetAllMocks();
     vi.useFakeTimers();
     Object.defineProperty(document, "hidden", { configurable: true, value: false });
     vi.stubGlobal("fetch", vi.fn());
+    HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+    HTMLDialogElement.prototype.close = function () { this.open = false; };
   });
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it("drops the whole cited cached turn immediately after confirmed deletion despite a failed refresh", async () => {
+    vi.mocked(sourceCommandAction).mockResolvedValueOnce({ status: "success", message: "Source removed.", version: 1,
+      cleanup: { id: "32345678-1234-1234-1234-123456789abc", project_id: projectA, status: "pending" } });
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("refresh unavailable"));
+    const allSourcesTurn = { ...turn, source_ids: [] };
+    render(<ProjectEvidenceWorkspace {...props()} initialConversations={[conversation]}
+      initialHistory={{ conversation, turns: [allSourcesTurn] }} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "Unsent question" } });
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Yes, delete source" })); });
+
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.queryByText(turn.question)).toBeNull();
+    expect(screen.queryByRole("link", { name: /tutorial.vtt.*generation 1/ })).toBeNull();
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue("Unsent question");
+    expect(screen.getByLabelText("Source filter")).toHaveValue(source.id);
+    expect(screen.getByRole("alert")).toHaveTextContent("Sources could not refresh");
+  });
+
+  it.each(["error", "foreign-project"])("does not hide chat evidence after an unconfirmed %s deletion", async (failure) => {
+    vi.mocked(sourceCommandAction).mockResolvedValueOnce(failure === "error"
+      ? { status: "error", message: "Deletion failed.", version: 1 }
+      : { status: "success", message: "Source removed.", version: 1,
+        cleanup: { id: "32345678-1234-1234-1234-123456789abc", project_id: projectB, status: "pending" } });
+    render(<ProjectEvidenceWorkspace {...props()} initialConversations={[conversation]}
+      initialHistory={{ conversation, turns: [turn] }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete source" }));
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Yes, delete source" })); });
+
+    expect(screen.getByText(turn.response.answer)).toBeVisible();
+    expect(screen.getByRole("listitem", { name: source.filename })).toBeVisible();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("hides only citation-dependent history on a complete missing-source snapshot and fences stale resurrection", async () => {
+    const other: SourceItem = { ...source, id: "22345678-1234-1234-1234-123456789abd", filename: "other.vtt" };
+    const otherTurn: ChatTurn = { ...turn, id: "22345678-1234-1234-1234-123456789ac0", sequence: 2,
+      question: "What does the other source say?", source_ids: [], response: { ...turn.response, answer: "Other retained evidence",
+        citations: [{ ...turn.response.citations[0], source_id: other.id, source_filename: other.filename }] } };
+    const limitation: ChatTurn = { ...turn, id: "32345678-1234-1234-1234-123456789ac0", sequence: 3,
+      question: "What is unsupported?", source_ids: [],
+      response: { ...turn.response, answer: "No supporting evidence", abstained: true, citations: [] } };
+    vi.mocked(fetch).mockResolvedValueOnce(inventory([other])).mockResolvedValueOnce(inventory([source, other]));
+    render(<ProjectEvidenceWorkspace {...props([source, other])} initialConversations={[conversation]}
+      initialHistory={{ conversation, turns: [{ ...turn, source_ids: [] }, otherTurn, limitation] }} />);
+
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.getByText(otherTurn.response.answer)).toBeVisible();
+    expect(screen.getByText(limitation.response.answer)).toBeVisible();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    expect(within(screen.getByLabelText("Source filter")).queryByRole("option", { name: source.filename })).toBeNull();
+  });
+
+  it("uses known citations only after a complete snapshot and never resurrects them from a later stale response", async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("source inventory unavailable"))
+      .mockResolvedValueOnce(inventory([])).mockResolvedValueOnce(inventory([source]));
+    render(<ProjectEvidenceWorkspace {...props([])} sourceError="Source inventory unavailable."
+      initialConversations={[conversation]} initialHistory={{ conversation, turns: [turn] }} />);
+
+    expect(screen.getByText(turn.response.answer)).toBeVisible();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.getByText(turn.response.answer)).toBeVisible();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.queryByRole("listitem", { name: source.filename })).toBeNull();
+    expect(within(screen.getByLabelText("Source filter")).queryByRole("option", { name: source.filename })).toBeNull();
+  });
+
+  it("resets the removed-source fence with the project scope rather than carrying deleted IDs into another project", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(inventory([]));
+    const { rerender } = render(<ProjectEvidenceWorkspace {...props()} initialConversations={[conversation]}
+      initialHistory={{ conversation, turns: [turn] }} />);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+
+    const otherConversation = { ...conversation, project_id: projectB };
+    rerender(<ProjectEvidenceWorkspace {...props([source], projectB)} initialConversations={[otherConversation]}
+      initialHistory={{ conversation: otherConversation, turns: [turn] }} />);
+
+    expect(screen.getByText(turn.response.answer)).toBeVisible();
+    expect(within(screen.getByLabelText("Source filter")).getByRole("option", { name: source.filename })).toBeVisible();
+  });
 
   it("adds a newly published source to chat through the existing source poll without reloading", async () => {
     const pending: SourceItem = { ...source, status: "processing", active_generation: null,

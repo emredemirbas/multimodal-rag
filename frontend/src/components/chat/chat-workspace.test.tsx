@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import type { ChatTurn, Conversation } from "@/lib/api/chat-contracts";
@@ -20,6 +20,80 @@ function response() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
+  it("hides the whole answer citing a confirmed removed source, not unrelated history or the draft", () => {
+    const otherSource = { ...source, id: "22345678-1234-1234-1234-123456789ac0", filename: "other.vtt" };
+    const otherTurn = { ...turn, id: "22345678-1234-1234-1234-123456789abe", sequence: 2, question: "Other question",
+      response: { ...turn.response, answer: "Other answer", citations: [{ ...turn.response.citations[0], segment_id: "22345678-1234-1234-1234-123456789abf", source_id: otherSource.id, source_filename: otherSource.filename }] } };
+    const mixed = { ...turn, id: "42345678-1234-1234-1234-123456789abe", sequence: 4, question: "Mixed-source question",
+      response: { ...turn.response, answer: "Mixed-source derived answer", citations: [...turn.response.citations, ...otherTurn.response.citations] } };
+    const limitation = { ...turn, id: "32345678-1234-1234-1234-123456789abe", sequence: 3, question: "Unsupported question",
+      response: { ...turn.response, answer: "No supporting evidence", abstained: true, citations: [] } };
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [turn, otherTurn, limitation, mixed] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source, otherSource]} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "Keep this draft" } });
+    rerender(<ChatWorkspace {...props} sources={[source, otherSource]} removedSourceIds={[source.id]} />);
+    expect(turn.source_ids).toEqual([]); // All-source answers must also follow citation dependencies.
+    expect(screen.queryByText(turn.question)).toBeNull();
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.queryByRole("link", { name: /tutorial.vtt/ })).toBeNull();
+    expect(screen.queryByText(mixed.question)).toBeNull();
+    expect(screen.queryByText(mixed.response.answer)).toBeNull();
+    expect(screen.getByText(otherTurn.response.answer)).toBeVisible();
+    expect(screen.getByText(limitation.response.answer)).toBeVisible();
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue("Keep this draft");
+    expect(screen.getByLabelText("Source filter")).toHaveValue(source.id);
+    expect(screen.queryByRole("option", { name: source.filename })).toBeNull();
+    expect(screen.getByText(/Answers citing removed sources are hidden/)).toBeVisible();
+  });
+  it("cannot redisplay removed evidence from late or subsequently stale history responses", async () => {
+    let deliver!: (response: Response) => void;
+    const fetcher = vi.fn().mockImplementationOnce(() => new Promise<Response>((resolve) => { deliver = resolve; }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ conversation, turns: [turn] })));
+    vi.stubGlobal("fetch", fetcher);
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [turn] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reload history" }));
+    rerender(<ChatWorkspace {...props} sources={[]} removedSourceIds={[source.id]} />);
+    await act(async () => { deliver(new Response(JSON.stringify({ conversation, turns: [turn] }))); });
+    expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Reload history" }));
+    await screen.findByText("Saved conversation loaded.");
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.queryByRole("link", { name: /tutorial.vtt/ })).toBeNull();
+  });
+  it("hides partial delivery immediately and rejects late completion after source removal", async () => {
+    let streamController!: ReadableStreamDefaultController<Uint8Array>;
+    const body = new ReadableStream<Uint8Array>({ start(controller) { streamController = controller; } });
+    const fetcher = vi.fn().mockResolvedValue(new Response(body, { headers: { "Content-Type": "text/event-stream" } }));
+    vi.stubGlobal("fetch", fetcher);
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source]} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "Keep this question" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    const original = JSON.parse(fetcher.mock.calls[0][1].body);
+    await act(async () => { streamController.enqueue(new TextEncoder().encode('event: start\ndata: {}\n\nevent: delta\ndata: {"text":"PRIVATE PARTIAL"}\n\n')); });
+    expect(await screen.findByText("PRIVATE PARTIAL")).toBeVisible();
+    rerender(<ChatWorkspace {...props} sources={[]} removedSourceIds={[source.id]} />);
+    expect(screen.queryByText("PRIVATE PARTIAL")).toBeNull();
+    await act(async () => {
+      streamController.enqueue(new TextEncoder().encode(`event: complete\ndata: ${JSON.stringify(turn)}\n\n`));
+      streamController.close();
+    });
+    expect(fetcher.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(screen.queryByText(turn.response.answer)).toBeNull();
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue("Keep this question");
+    expect(screen.getByRole("alert")).toHaveTextContent("Source removal changed");
+    fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ code: "not_found" }), { status: 404 }));
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual(original);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Ask with evidence" })).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "New question" } });
+    expect(screen.getByRole("button", { name: "Ask with evidence" })).toBeDisabled();
+  });
   it.each(["removed", "incompatible"])("keeps a %s selected filter explicit and blocks silent broadening for new questions", async (change) => {
     const fetcher = vi.fn().mockResolvedValue(response());
     vi.stubGlobal("fetch", fetcher);
