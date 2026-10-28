@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-28. Hosted baseline: `d3c2f2b`. These are planning estimates, not a
+Date: 2026-10-28. Hosted code baseline: `f99b86a`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -14,9 +14,9 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The previous `d3c2f2b` baseline passes all four hosted CI jobs; the new description
-changes require their own subsequent run:
-[run 40581184918](https://github.com/emredemirbas/multimodal-rag/actions/runs/40581184918).
+The `f99b86a` code baseline passes all four hosted CI jobs, including the new
+description workflow and real worker/checkpoint recovery:
+[run 40593035299](https://github.com/emredemirbas/multimodal-rag/actions/runs/40593035299).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -78,6 +78,20 @@ configured availability is not readiness or model-quality approval.
 1. Independent review of owned/licensed real examples for visual retrieval/code
    quality and audiovisual source/timing correctness. User assertions and tiny
    synthetic probes are not representative quality or verified alignment.
+
+The repository currently has authored subtitle/frame JSON examples and synthetic
+evaluation fixtures, but no corresponding real recording or human acceptance
+record. The 10-video partial-failure/resume software check is already recorded in
+`sprint4/validation-record.md`; it does not need another implementation.
+
+To begin the remaining review, supply an owned/authorized short screen recording
+and its matching SRT/VTT privately, with expected answers and relevant times noted
+before inspecting model output. Include code/terminal and visual-only information;
+a single clip starts the review, not a representative quality claim. Use existing
+gallery/timeline/citation views and evaluation tools, then record observed errors
+and the human acceptance decision in the existing validation records. Do not
+publish private media, labels, excerpts or content fingerprints without explicit
+permission. No new evaluator, model download or owner-stack change is required.
 
 The consolidated checklist is `sprint4/implementation-plan.md`. Existing measured
 one-digit/sub-second misses, cursor noise and mixed-language OCR errors remain

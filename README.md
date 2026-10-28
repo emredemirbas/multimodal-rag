@@ -70,9 +70,10 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted baseline is `d3c2f2b`, with all four jobs
-successful in [CI run 40581184918](https://github.com/emredemirbas/multimodal-rag/actions/runs/40581184918).
-That previous run does not certify subsequent commits. Current gates and the
+The latest separately verified hosted code baseline is `f99b86a`, with all four jobs
+successful in [CI run 40593035299](https://github.com/emredemirbas/multimodal-rag/actions/runs/40593035299),
+including the local-description worker recovery check. That run does not certify
+subsequent code changes. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
 original component-level results.

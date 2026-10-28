@@ -211,9 +211,14 @@ the corrected worker test file passed (3.15s), including actual owned-process
 SIGKILL/recovery, no repeated model call, usage once, one index handoff and cleanup.
 No existing application service was used. No test skipped, deadline increased,
 assertion weakened, dependency changed or model downloaded. Application code,
-schema, owner `.env` and upload/model opt-ins are unchanged. The corrective push
-must be verified in its own hosted run; earlier local results are not a green CI
-claim for `b594890`.
+schema, owner `.env` and upload/model opt-ins are unchanged.
+
+The corrective commit `f99b86a8042138a4fd507cfda9fef6086c56c911` was subsequently
+verified in [run 40593035299](https://github.com/emredemirbas/multimodal-rag/actions/runs/40593035299):
+backend-tests, backend-integration, frontend and images all completed successfully,
+including the actual worker/checkpoint recovery step that previously failed.
+This is the green code baseline, not a claim that the earlier `b594890` run passed
+or that model quality has been accepted.
 
 Independent review on owned/licensed real audiovisual examples and a recorded
 human acceptance decision remain the last full Sprint 4 gate. Synthetic cards,
