@@ -25,6 +25,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   const [partial, setPartial] = useState("");
   const [error, setError] = useState(initialError);
   const [status, setStatus] = useState("");
+  const [retryAvailable, setRetryAvailable] = useState(false);
   const requestKey = useRef("");
   const conversationKey = useRef("");
   const controller = useRef<AbortController | null>(null);
@@ -32,11 +33,20 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   const questionInput = useRef<HTMLTextAreaElement>(null);
   const wasPending = useRef(false);
   const path = `/api/projects/${projectId}/conversations`;
+  const searchableSources = sources.filter((source) => source.active_generation !== null && !source.reindex_required);
+  const sourceUnavailable = Boolean(sourceId && !searchableSources.some((source) => source.id === sourceId));
+  // Do not widen a vanished filter or discard an uncertain delivery's replay identity.
+  const requiresSourceChoice = sourceUnavailable && !retryAvailable;
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
     if (!pending && wasPending.current) questionInput.current?.focus();
     wasPending.current = pending;
   }, [pending]);
+
+  function clearReplay() {
+    requestKey.current = "";
+    setRetryAvailable(false);
+  }
 
   async function history(id: string) {
     if (busy.current) return;
@@ -49,7 +59,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       const saved = parseHistory(await response.json());
       if (saved.conversation.project_id !== projectId || saved.conversation.id !== id) throw new Error("Invalid conversation scope");
       // A failed switch must not discard an uncertain message's replay key.
-      if (saved.conversation.id !== conversation?.id) requestKey.current = "";
+      if (saved.conversation.id !== conversation?.id) clearReplay();
       setConversation(saved.conversation); setTurns(saved.turns); setPartial("");
       setStatus("Saved conversation loaded.");
     } catch { setError("History could not be loaded. Try again or reload the workspace."); }
@@ -59,13 +69,13 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
   function newConversation() {
     if (busy.current) return;
     setConversation(null); setTurns([]); setPartial(""); setError(""); setStatus("New conversation. Each question should be self-contained.");
-    requestKey.current = ""; conversationKey.current = "";
+    clearReplay(); conversationKey.current = "";
     questionInput.current?.focus();
   }
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy.current || archived || question.trim().length < 2) return;
+    if (busy.current || archived || question.trim().length < 2 || (sourceUnavailable && !requestKey.current)) return;
     busy.current = true;
     const active = new AbortController(); controller.current = active;
     const signal = AbortSignal.any([active.signal, AbortSignal.timeout(30_000)]);
@@ -91,10 +101,11 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       if (!response.body || !response.headers.get("content-type")?.startsWith("text/event-stream")) throw new Error("Answer unavailable");
       const turn = await consumeChatStream(response.body, (chunk) => setPartial((previous) => previous + chunk));
       setTurns((previous) => [...previous.filter((item) => item.id !== turn.id), turn].sort((left, right) => left.sequence - right.sequence));
-      setQuestion(""); setPartial(""); requestKey.current = "";
+      setQuestion(""); setPartial(""); clearReplay();
       setStatus(turn.response.abstained ? "No supporting evidence was found. The limitation was saved." : "Answer saved with inspectable source citations.");
     } catch (failure) {
       setPartial("");
+      setRetryAvailable(true);
       const modelErrors: Record<string, string> = {
         local_embeddings_unavailable: "Local semantic search is unavailable or timed out. Start local-ai, free resources and retry this unchanged question.",
         local_embeddings_not_installed: "Explicitly download qwen3-embedding:0.6b in local-ai, then retry this unchanged question.",
@@ -122,7 +133,7 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       "Answer configuration could not be verified. Reload the workspace before relying on the configured model."} Each question is self-contained; saved history is not model context.</p>
     <p className="muted">{retrievalMode === 'local-semantic-and-lexical' ? 'Local semantic search: Qwen3 Embedding 0.6B + exact project-filtered vectors and full-text search. The experimental relevance guard can miss valid questions; inspect citations.' :
       retrievalMode === 'deterministic-hash-and-lexical' ? 'Retrieval still uses the deterministic hash/lexical baseline, not a learned semantic model.' : 'Retrieval configuration could not be verified. Reload the workspace.'}</p>
-    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use transcript reindex/reprocess controls below (or reupload validation-only transcripts). Retained-video OCR currently requires an operator-created index job. Then reload this workspace; saved citations remain inspectable.</p> : null}
+    {sources.some((source) => source.reindex_required) ? <p role="status">Some sources require reindexing for the current search mode and are excluded. Use transcript reindex/reprocess controls below (or reupload validation-only transcripts). Retained-video OCR currently requires an operator-created index job. The source list updates after processing; saved citations remain inspectable.</p> : null}
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {
@@ -155,17 +166,19 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     {pending && partial ? <div aria-label="Answer delivery in progress"><p className="evidence-text">{partial}</p><p>Delivery in progress; citations appear after validation completes.</p></div> : null}
     {archived ? <p>Restore this project to ask new questions. Saved evidence remains available.</p> : <form onSubmit={(event) => void send(event)} className="stack">
       <div className="form-field"><label htmlFor="chat-source">Source filter</label>
-        <select id="chat-source" disabled={pending} value={sourceId} onChange={(event) => { setSourceId(event.target.value); requestKey.current = ""; }}>
+        <select id="chat-source" disabled={pending} value={sourceId} aria-describedby={sourceUnavailable ? "chat-source-help" : undefined} onChange={(event) => { setSourceId(event.target.value); clearReplay(); }}>
           <option value="">All indexed sources in this project</option>
-          {sources.filter((source) => source.active_generation !== null && !source.reindex_required).map((source) => <option value={source.id} key={source.id}>{source.filename}</option>)}
+          {sourceUnavailable ? <option value={sourceId} disabled>Selected source unavailable for current search</option> : null}
+          {searchableSources.map((source) => <option value={source.id} key={source.id}>{source.filename}</option>)}
         </select>
+        {sourceUnavailable ? <p id="chat-source-help" role="status">The selected source is no longer in the current searchable list. Choose another filter before sending a new question. An unchanged delivery retry keeps its original source; it never silently searches all sources.</p> : null}
       </div>
       <div className="form-field"><label htmlFor="chat-question">Question about the tutorial</label>
         <textarea ref={questionInput} id="chat-question" required minLength={2} maxLength={2000} rows={3} value={question} disabled={pending}
-          aria-describedby="chat-question-help" onChange={(event) => { setQuestion(event.target.value); requestKey.current = ""; }} />
+          aria-describedby="chat-question-help" onChange={(event) => { setQuestion(event.target.value); clearReplay(); }} />
         <p id="chat-question-help" className="muted">Up to 2,000 characters. Unsupported questions receive a limitation, not invented tutorial content.</p>
       </div>
-      <div className="chat-controls"><button type="submit" className="button" disabled={pending || question.trim().length < 2}>Ask with evidence</button>
+      <div className="chat-controls"><button type="submit" className="button" disabled={pending || question.trim().length < 2 || requiresSourceChoice}>Ask with evidence</button>
         {pending ? <button type="button" className="button button--secondary" onClick={() => controller.current?.abort()}>Stop delivery</button> : null}
       </div>
     </form>}

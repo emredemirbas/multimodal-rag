@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import type { ChatTurn, Conversation } from "@/lib/api/chat-contracts";
+import type { SourceItem } from "@/lib/api/source-contracts";
 import { asrOrigin } from "../../../test-support/media-fixture";
 import { visualFixture } from "../../../test-support/visual-fixture";
 
@@ -10,6 +11,8 @@ const conversation: Conversation = { id: "12345678-1234-1234-1234-123456789abd",
 const turn: ChatTurn = { id: "12345678-1234-1234-1234-123456789abe", sequence: 1, question: "What is health?", source_ids: [], created_at: conversation.created_at,
   response: { answer: "Quoted health evidence <script>alert(1)</script>", abstained: false, provider: "local-deterministic", model: "extractive",
     citations: [{ segment_id: "12345678-1234-1234-1234-123456789abf", source_id: "12345678-1234-1234-1234-123456789ac0", source_filename: "tutorial.vtt", start_ms: 1000, end_ms: 5000, generation: 1, processing_version: "parser-v1", modality: "transcript" }] } };
+const source: SourceItem = { id: turn.response.citations[0].source_id, filename: "tutorial.vtt", status: "ready",
+  generation: 1, active_generation: 1, segment_count: 1, provider: "upload", failure_code: null, job: null };
 function response() {
   return new Response(new ReadableStream({ start(controller) {
     controller.enqueue(new TextEncoder().encode(`event: start\ndata: {}\n\nevent: delta\ndata: {"text":"Quoted evidence"}\n\nevent: complete\ndata: ${JSON.stringify(turn)}\n\n`)); controller.close();
@@ -17,6 +20,58 @@ function response() {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("project chat", () => {
+  it.each(["removed", "incompatible"])("keeps a %s selected filter explicit and blocks silent broadening for new questions", async (change) => {
+    const fetcher = vi.fn().mockResolvedValue(response());
+    vi.stubGlobal("fetch", fetcher);
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [turn] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source]} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "What is health?" } });
+    rerender(<ChatWorkspace {...props} sources={change === "removed" ? [] : [{ ...source, reindex_required: true }]} />);
+    expect(screen.getByLabelText("Source filter")).toHaveValue(source.id);
+    expect(screen.getByRole("option", { name: "Selected source unavailable for current search" })).toBeDisabled();
+    expect(screen.getByLabelText("Source filter")).toHaveAccessibleDescription(/Choose another filter/);
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue("What is health?");
+    expect(screen.getByRole("button", { name: "Ask with evidence" })).toBeDisabled();
+    fireEvent.submit(screen.getByRole("button", { name: "Ask with evidence" }).closest("form")!);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: /tutorial.vtt.*generation 1/ })).toHaveAttribute("href", `/projects/${project}/evidence/${turn.response.citations[0].segment_id}`);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await waitFor(() => expect(screen.getByLabelText("Question about the tutorial")).toHaveValue(""));
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).source_ids).toEqual([]);
+  });
+  it("replays uncertain delivery with its exact source and key after that source disappears", async () => {
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("uncertain")).mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetcher);
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source]} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "What is health?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByRole("alert");
+    const original = JSON.parse(fetcher.mock.calls[0][1].body);
+    rerender(<ChatWorkspace {...props} sources={[]} />);
+    expect(screen.getByLabelText("Source filter")).toHaveValue(source.id);
+    expect(screen.getByRole("button", { name: "Ask with evidence" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await waitFor(() => expect(screen.getByLabelText("Question about the tutorial")).toHaveValue(""));
+    expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual(original);
+    expect(original.source_ids).toEqual([source.id]);
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: "A new question" } });
+    expect(screen.getByRole("button", { name: "Ask with evidence" })).toBeDisabled();
+  });
+  it("keeps the old active source searchable during replacement without rewriting saved citations", () => {
+    const props = { projectId: project, initialConversations: [conversation], initialHistory: { conversation, turns: [turn] }, archived: false };
+    const { rerender } = render(<ChatWorkspace {...props} sources={[source]} />);
+    fireEvent.change(screen.getByLabelText("Source filter"), { target: { value: source.id } });
+    rerender(<ChatWorkspace {...props} sources={[{ ...source, status: "processing", generation: 2 }]} />);
+    expect(screen.getByLabelText("Source filter")).toHaveValue(source.id);
+    expect(screen.getByRole("option", { name: source.filename })).toBeEnabled();
+    expect(screen.queryByText(/The selected source is no longer/)).toBeNull();
+    rerender(<ChatWorkspace {...props} sources={[{ ...source, generation: 2, active_generation: 2 }]} />);
+    expect(screen.getByRole("link", { name: /generation 1/ })).toHaveAttribute("href", `/projects/${project}/evidence/${turn.response.citations[0].segment_id}`);
+  });
   it("retains stable visual evidence and supporting-frame links in saved history", () => {
     const gallery = visualFixture(), citation = turn.response.citations[0];
     const visual = { ...turn, response: { ...turn.response, citations: [{ ...citation, modality: "frame", start_ms: 0, end_ms: 0,

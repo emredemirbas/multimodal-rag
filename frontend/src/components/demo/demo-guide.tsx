@@ -29,8 +29,9 @@ export function DemoGuide() {
       <p>For Ownership / permission, explicitly choose “Its license permits this processing”,
         then Process transcript. The sample is distributed under the included MIT license;
         this does not assert ownership or grant rights to unrelated tutorials.</p>
-      <p>Wait for ready, then reload that project page so the chat source selector includes
-        the published source. Choose fastapi-intro.vtt as the Source filter.</p>
+      <p>Wait for ready: the chat source selector updates with the source list, without
+        reloading the page. If processing completed but the list is stale, use Refresh sources.
+        Choose fastapi-intro.vtt as the Source filter.</p>
     </section>
     <section aria-labelledby="demo-questions-heading" className="stack">
       <h2 id="demo-questions-heading">3. Ask a supported and an unsupported question</h2>

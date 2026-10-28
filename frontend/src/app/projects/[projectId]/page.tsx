@@ -7,8 +7,7 @@ import { ProjectRenameForm } from "@/components/projects/project-rename-form";
 import { ApiErrorState, Notice } from "@/components/ui/api-state";
 import { getProject } from "@/lib/api/client";
 import { listSourceInventory } from "@/lib/api/sources";
-import { SourcesWorkspace } from "@/components/sources/sources-workspace";
-import { ChatWorkspace } from "@/components/chat/chat-workspace";
+import { ProjectEvidenceWorkspace } from "@/components/projects/project-evidence-workspace";
 import { getRuntimeConfiguration, getHistory, listConversations } from "@/lib/api/chat";
 import type { AnswerMode, RetrievalMode, Conversation, History } from "@/lib/api/chat-contracts";
 import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
@@ -123,17 +122,10 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       </header>
 
       <div className="detail-grid">
-        <section className="panel panel--wide" aria-labelledby="chat-heading">
-          <p className="eyebrow">Ask and inspect</p>
-          <h2 id="chat-heading">Chat with tutorial evidence</h2>
-          <ChatWorkspace projectId={project.id} sources={sources} initialConversations={conversations} initialHistory={history}
-            archived={project.status === "archived"} initialError={chatError} answerMode={answerMode} retrievalMode={retrievalMode} />
-        </section>
-        <section className="panel panel--wide" aria-labelledby="workspace-heading">
-          <p className="eyebrow">Learning material</p>
-          <h2 id="workspace-heading">Source management</h2>
-          <SourcesWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems} archived={project.status === "archived"} initialError={sourceError} audioCapability={audioCapability} videoCapability={videoCapability} />
-        </section>
+        <ProjectEvidenceWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems}
+          initialConversations={conversations} initialHistory={history} archived={project.status === "archived"}
+          chatError={chatError} sourceError={sourceError} answerMode={answerMode} retrievalMode={retrievalMode}
+          audioCapability={audioCapability} videoCapability={videoCapability} />
 
         <section className="panel" aria-labelledby="settings-heading">
           <p className="eyebrow">Project settings</p>

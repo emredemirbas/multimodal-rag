@@ -225,8 +225,9 @@ function DeleteSource({ projectId, source, onDeleted }: { projectId: string; sou
   </>;
 }
 
-export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false }, videoCapability = { enabled: false } }: {
+export function SourcesWorkspace({ projectId, initialSources, initialPlaylistItems = [], archived, initialError = "", audioCapability = { enabled: false }, videoCapability = { enabled: false }, onSourcesChanged }: {
   projectId: string; initialSources: SourceItem[]; initialPlaylistItems?: PlaylistItem[]; archived: boolean; initialError?: string; audioCapability?: AudioCapability | null; videoCapability?: VideoCapability | null;
+  onSourcesChanged?: (sources: SourceItem[]) => void;
 }) {
   const [sources, setSources] = useState(initialSources);
   const [playlistItems, setPlaylistItems] = useState(initialPlaylistItems);
@@ -246,11 +247,11 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
       const payload = await response.json();
       const next = parseSourceList(payload);
       const nextItems = parsePlaylistItems(payload);
-      if (mounted.current) { setSources(next); setPlaylistItems(nextItems); setError(""); }
+      if (mounted.current) { setSources(next); setPlaylistItems(nextItems); setError(""); onSourcesChanged?.(next); }
     } catch {
       if (mounted.current) setError("Sources could not refresh. Try again shortly.");
     } finally { inflight.current = false; }
-  }, [projectId]);
+  }, [projectId, onSourcesChanged]);
 
   const deleted = useCallback(async (ticket: CleanupTicket) => {
     setCleanups((previous) => [...previous.filter((item) => item.id !== ticket.id), ticket]);
@@ -321,7 +322,7 @@ export function SourcesWorkspace({ projectId, initialSources, initialPlaylistIte
         <AsrProvenance origin={source.asr_origin} />
         {source.audio_retention ? <AudioRetentionStatus projectId={projectId} retention={source.audio_retention} onRefresh={refresh} /> : null}
         {source.video_retention ? <VideoRetentionStatus projectId={projectId} retention={source.video_retention} onRefresh={refresh} /> : null}
-        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.kind === "video" ? 'The operator must create a new retained-OCR index job; public video reprocessing is not enabled' : source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}, then reload the workspace. Old citations remain inspectable.</p> :
+        {source.reindex_required ? <p role="status">Reindex required: this source uses a different embedding space and is excluded from current search. {source.kind === "video" ? 'The operator must create a new retained-OCR index job; public video reprocessing is not enabled' : source.job ? (source.asr_origin ? 'Reindex retained transcript' : 'Reprocess source') : 'Upload this validation-only transcript again'}. The source list updates after processing. Old citations remain inspectable.</p> :
           source.active_embedding_space ? <p className="field-hint">Search index: {source.active_embedding_space.startsWith('qwen3-0.6b:') ? 'Qwen3 Embedding 0.6B · 1024 dimensions' : 'Deterministic hash · 64 dimensions'}</p> : null}
         {source.job ? <>
           <label htmlFor={`progress-${source.id}`}>Processing: {source.job.stage.replaceAll("_", " ")} ({source.job.progress_percent}%)</label>

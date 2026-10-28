@@ -122,6 +122,12 @@ and unsupported questions, actual chunk-level citations, saved history and confi
 demo-only cleanup. It creates no records, changes no settings and includes no real
 recording. It neither selects a finish line nor replaces independent quality review.
 
+The project page now shares successful source-list updates with chat: newly published
+sources become selectable without a page reload. Failed refreshes preserve the last
+usable list; missing/incompatible selections cannot silently widen to all sources.
+Chat drafts, uncertain-delivery replay keys and version-pinned history survive these
+updates, while navigation to another project resets the client scope.
+
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those
 questions while declaring that sprint implemented.

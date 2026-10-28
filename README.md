@@ -162,6 +162,13 @@ default keyless extractive/hash retrieval and changes no settings. The actual qu
 uploader combines this sample into one **00:01–00:22** chunk; the guide is not a real
 recording, multimedia-quality validation or a release-scope decision.
 
+The chat source filter updates from successful source-list refreshes and processing
+polls without reloading or discarding your chat draft. A removed or incompatible
+selected source stays explicitly unavailable rather than silently switching to all
+sources. Choose another filter for a new question; an unchanged uncertain-delivery
+retry retains its original source and request key. Saved citations keep their
+original generation even after a replacement index is published.
+
 `ingestion-worker` processes uploads; `scheduler` dispatches the transactional
 outbox, recovers abandoned jobs and cleans artifacts. Existing passwords and
 volumes are reused. MinIO is built from pinned official source because its old

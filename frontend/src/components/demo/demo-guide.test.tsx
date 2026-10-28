@@ -36,6 +36,7 @@ describe("static keyless demo walkthrough", () => {
     expect(screen.getByText(/default offline extractive/)).toHaveTextContent("this guide changes no settings");
     expect(screen.getByText(/Four authored subtitle cues/)).toHaveTextContent("no underlying recording");
     expect(screen.getByText(/For Ownership/)).toHaveTextContent("Its license permits this processing");
+    expect(screen.getByText(/Wait for ready:/)).toHaveTextContent("without reloading the page");
     expect(screen.getByText(/Default answers quote/)).toHaveTextContent("00:01–00:22");
     expect(screen.getByText("How does Kubernetes ingress handle TLS?").parentElement).toHaveTextContent("no citations");
     expect(screen.getByText(/Records become inaccessible/)).toHaveTextContent("Retained file cleanup completed.");

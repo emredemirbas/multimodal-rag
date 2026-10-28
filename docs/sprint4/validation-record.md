@@ -250,3 +250,43 @@ The previous `571480b` baseline has four successful jobs in
 It does not certify this subsequent change before its own hosted run. This guide
 does not select the release finish line, start Sprint 5 or close the independent
 owned/licensed real-example quality gate.
+
+## Live source filters without losing chat state (2026-10-28)
+
+Project details previously passed independent initial source snapshots to chat and
+source management. Processing could finish in the visible source list while chat
+still required a full page reload. A small project-keyed client wrapper now shares
+only successfully parsed source/playlist refreshes with chat, using the existing
+poll and Refresh sources request. No second poll, router refresh, provider call or
+API/schema/authentication change was added.
+
+Missing or incompatible selected sources stay explicitly selected as unavailable,
+with an accessible explanation. New questions require an explicit filter choice;
+an unchanged uncertain-delivery retry keeps its original source and key. Inventory
+updates do not remount chat or rewrite saved citations/generations. Project changes
+remount the scoped wrapper; a late old-project refresh cannot publish into it.
+The demo guide no longer requires a reload after processing becomes ready.
+
+- **10 new frontend cases** cover ready publication through the existing poll,
+  network/invalid-source/invalid-playlist refresh failures, a pending chat across
+  generation replacement with unchanged replay identity, late old-project delivery,
+  removed/incompatible selected filters, explicit all-source selection, unchanged
+  retry after source disappearance and stable old evidence during reprocessing.
+- Full frontend regression: **278 tests in 43 files passed, 8.19s**; lint and
+  typecheck pass. An initial render-time ref read was rejected by the existing
+  React lint rule; retry availability now uses state while the event handler checks
+  the authoritative replay ref. No rule was disabled.
+- The actual production Docker frontend build passes. A browser probe against
+  that image and a separate GET-only synthetic API fixture shows processing ->
+  ready, the newly selectable source and the unchanged question draft without a
+  page reload. It does not test a real queue, database, model or media input. The
+  fixture API stayed on a dedicated internal network; only the separate frontend
+  had a temporary loopback host port. No real credentials, application mounts,
+  volumes or owner services/data were used. Both temporary containers, both test
+  networks and the browser tab were removed after the check.
+
+Reproduce the component checks with `cd frontend && npx vitest run
+src/components/projects/project-evidence-workspace.test.tsx
+src/components/chat/chat-workspace.test.tsx`. Independent review found no blocking
+scope/replay/accessibility issue. The real-example quality gate and unselected
+release finish line remain unchanged.
