@@ -70,10 +70,10 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted code baseline is `f99b86a`, with all four jobs
-successful in [CI run 40593035299](https://github.com/emredemirbas/multimodal-rag/actions/runs/40593035299),
-including the local-description worker recovery check. That run does not certify
-subsequent code changes. Current gates and the
+The latest separately verified hosted code baseline is `7ea37cf`, with all four jobs
+successful in [CI run 40685623358](https://github.com/emredemirbas/multimodal-rag/actions/runs/40685623358),
+including the local-description worker recovery and local setup checks. That run
+does not certify subsequent code changes. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
 original component-level results.
@@ -162,6 +162,10 @@ CE build is for local tests, not a production storage recommendation (ADR 0012).
 
 In a project, choose an SRT/VTT file (UTF-8, at most 2 MB), select your rights
 statement and click **Process transcript**. Work continues if you leave the page.
+If upload/import delivery fails, the unchanged draft and request key stay available
+for retry; the request may already have been accepted. Only confirmed acceptance
+clears the form. Changing the draft starts a new request. A page reload cannot
+restore a browser-selected file, so inspect sources before selecting it again.
 Retry uses the retained input; correcting malformed content requires a new upload.
 Reprocessing preserves the last usable generation until replacement succeeds.
 Semantic processing saves each completed batch privately, continuing in bounded

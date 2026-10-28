@@ -179,3 +179,39 @@ Reproduce without Docker or application data: `backend/.venv/bin/python -m pytes
 backend/tests/test_local_setup.py`. Operator usage and non-destructive startup
 troubleshooting are in the README. The real-example human quality review remains
 open; these software checks do not satisfy it.
+
+## Existing-flow delivery recovery (2026-10-28)
+
+Two frontend defects could discard an idempotent retry's identity after uncertain
+acceptance. A failed chat conversation switch cleared the message key even though
+the old conversation/draft remained. Subtitle and metadata forms used fulfilled
+React form actions: returning an error state still reset uncontrolled fields,
+forcing a newly keyed draft instead of replaying an already accepted request.
+
+Chat now clears the key only after a validated successful switch to a different
+conversation; failed or foreign-scope history preserves it. Reloading the same
+conversation retains replay identity and deduplicates a returned saved turn.
+Source forms submit explicitly, disable their own fields while pending, guard
+duplicate dispatch and reset only after accepted success. Returned/rejected errors
+keep the file/URL, rights, selected lesson and key. Playlist refresh cannot silently
+change a retry's original association; accepted uploads stay accepted if source
+refresh fails. These drafts are browser-local, not new persisted personal data.
+
+- The new chat network/scope regressions and source returned-error regressions
+  failed before their fixes, specifically exposing changed keys/reset controls.
+- **12 new frontend cases** cover unchanged retry, successful and rejected scope
+  switches, same-history replay, returned/rejected source actions, file/URL/rights/
+  association retention, busy/removed playlist snapshots, pending/duplicate-submit
+  controls, successful reset/new drafts and accepted-versus-refresh failure.
+- Final frontend regression: **245 tests in 39 files passed, 5.05s**. Lint,
+  typecheck and the optimized production build pass; the build uses test-only
+  API settings without starting a service or calling a real model.
+- No API/backend/schema, migration, provider, upload limit, rights policy or
+  deletion behavior changed. Existing server authorization/idempotency remains
+  authoritative. No owner settings, running services or application data changed.
+
+The previous `7ea37cf` baseline has four successful jobs in
+[run 40685623358](https://github.com/emredemirbas/multimodal-rag/actions/runs/40685623358).
+That earlier run does not certify this recovery patch before its own hosted run.
+No new quality/evaluator prerequisite is introduced; real-example review remains
+open.

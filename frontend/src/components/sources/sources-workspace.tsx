@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 import { metadataSourceAction, sourceCommandAction, uploadSourceAction } from "@/app/actions/sources";
@@ -71,21 +71,56 @@ function RightsSelect({ id, onChange }: { id: string; onChange?: () => void }) {
 }
 
 function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnabled, videoEnabled }: { projectId: string; sources: SourceItem[]; playlistItems: PlaylistItem[]; onCompleted: () => Promise<void>; audioEnabled: boolean; videoEnabled: boolean }) {
-  const [state, action] = useActionState(uploadSourceAction, INITIAL_SOURCE_ACTION);
-  const [metadataState, metadataAction] = useActionState(metadataSourceAction, INITIAL_SOURCE_ACTION);
+  const [state, setState] = useState(INITIAL_SOURCE_ACTION);
+  const [metadataState, setMetadataState] = useState(INITIAL_SOURCE_ACTION);
   const [uploadKey, setUploadKey] = useState("");
   const [metadataKey, setMetadataKey] = useState("");
   const [fileError, setFileError] = useState("");
   const [fileSelected, setFileSelected] = useState(false);
+  const [playlistItemId, setPlaylistItemId] = useState("");
+  const [pending, setPending] = useState({ upload: false, metadata: false });
+  const busy = useRef({ upload: false, metadata: false });
   const id = useId();
-  useEffect(() => {
-    if (state.status === "success" || metadataState.status === "success") void onCompleted();
-  }, [state, metadataState, onCompleted]);
+
+  async function submit(event: FormEvent<HTMLFormElement>, kind: "upload" | "metadata") {
+    event.preventDefault();
+    if (busy.current[kind] || (kind === "upload" ? !uploadKey || !fileSelected || Boolean(fileError) : !metadataKey)) return;
+    const form = event.currentTarget;
+    const body = new FormData(form);
+    if (kind === "upload") {
+      if (playlistItemId) body.set("playlist_item_id", playlistItemId);
+      else body.delete("playlist_item_id");
+    }
+    const previous = kind === "upload" ? state : metadataState;
+    const update = kind === "upload" ? setState : setMetadataState;
+    busy.current[kind] = true;
+    setPending((current) => ({ ...current, [kind]: true }));
+    update({ ...previous, status: "idle", message: "" });
+    try {
+      const next = await (kind === "upload" ? uploadSourceAction : metadataSourceAction)(previous, body);
+      update(next);
+      if (next.status === "success") {
+        // A returned error is still a fulfilled React action: reset only accepted drafts.
+        form.reset();
+        if (kind === "upload") { setUploadKey(""); setFileSelected(false); setFileError(""); setPlaylistItemId(""); }
+        else setMetadataKey("");
+        await onCompleted().catch(() => update({ ...next, message: `${next.message} The source list could not refresh; use Refresh sources.` }));
+      }
+    } catch {
+      update({ status: "error", version: previous.version + 1,
+        message: "Delivery could not be confirmed. It may already be queued; refresh sources or resend the unchanged draft with the same request key." });
+    } finally {
+      busy.current[kind] = false;
+      setPending((current) => ({ ...current, [kind]: false }));
+    }
+  }
 
   return <div className="stack stack--large">
-    <form action={action} className="stack" aria-label="Upload transcript">
+    <form onSubmit={(event) => void submit(event, "upload")} className="stack" aria-label="Upload transcript" aria-busy={pending.upload}>
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="idempotency_key" value={uploadKey} />
+      <fieldset disabled={pending.upload} className="stack">
+      <legend>Authorized transcript</legend>
       <div className="field">
         <label htmlFor={`${id}-file`}>SRT / VTT transcript</label>
         <input id={`${id}-file`} type="file" name="file" accept=".srt,.vtt" required aria-describedby={`${id}-file-help`} aria-invalid={Boolean(fileError)}
@@ -99,31 +134,42 @@ function AddSource({ projectId, sources, playlistItems, onCompleted, audioEnable
       </div>
       <div className="field">
         <label htmlFor={`${id}-playlist-item`}>Transcript belongs to</label>
-        <select id={`${id}-playlist-item`} name="playlist_item_id" defaultValue="" onChange={() => setUploadKey(crypto.randomUUID())}>
+        <select id={`${id}-playlist-item`} name="playlist_item_id" value={playlistItemId}
+          onChange={(event) => { setPlaylistItemId(event.target.value); setUploadKey(crypto.randomUUID()); }}>
           <option value="">Standalone source (not a playlist video)</option>
-          {playlistItems.map((item) => <option key={item.id} value={item.id} disabled={sources.some((source) => source.id === item.transcript_source_id && isProcessing(source))}>
+          {playlistItemId && !playlistItems.some((item) => item.id === playlistItemId)
+            ? <option value={playlistItemId}>Previously selected lesson (snapshot changed)</option> : null}
+          {playlistItems.map((item) => <option key={item.id} value={item.id} disabled={item.id !== playlistItemId && sources.some((source) => source.id === item.transcript_source_id && isProcessing(source))}>
             {sources.find((source) => source.id === item.playlist_source_id)?.filename} · {item.position + 1}. {item.title}
           </option>)}
         </select>
-        <p className="field-hint">For a playlist video, confirm that this subtitle describes that video. Replacing an upload preserves its previous independent source.</p>
+        <p className="field-hint" aria-live="polite">For a playlist video, confirm that this subtitle describes that video. Replacing an upload preserves its previous independent source.
+          {playlistItemId && (!playlistItems.some((item) => item.id === playlistItemId) || playlistItems.some((item) => item.id === playlistItemId && sources.some((source) => source.id === item.transcript_source_id && isProcessing(source))))
+            ? " The selected lesson changed or is processing. An unchanged retry can recover an accepted upload; for a new upload select a current available lesson or standalone source." : null}
+        </p>
       </div>
       <RightsSelect id={`${id}-rights`} onChange={() => setUploadKey(crypto.randomUUID())} />
       {fileError ? <p role="alert">{fileError}</p> : null}
-      <SubmitButton className="button button--primary" pendingLabel="Uploading…" disabled={Boolean(fileError) || !uploadKey || !fileSelected}>Process transcript</SubmitButton>
+      <button type="submit" className="button button--primary" disabled={pending.upload || Boolean(fileError) || !uploadKey || !fileSelected}>{pending.upload ? "Uploading…" : "Process transcript"}</button>
+      </fieldset>
       <p role={state.status === "error" ? "alert" : "status"}>{state.message}</p>
+      <p className="field-hint">If delivery is uncertain, keep this draft unchanged and resend with its existing request key to recover an accepted upload without creating another source.</p>
     </form>
     <details>
       <summary>Import YouTube video / playlist metadata</summary>
       <p>No video, audio or captions are downloaded. Upload an authorized transcript{audioEnabled ? ' or supported WAV' : ''} separately to create indexed evidence. This optional import requires a server-side YouTube Data API key.</p>
-      <form action={metadataAction} className="stack" aria-label="Import YouTube metadata">
+      <form onSubmit={(event) => void submit(event, "metadata")} className="stack" aria-label="Import YouTube metadata" aria-busy={pending.metadata}>
         <input type="hidden" name="projectId" value={projectId} />
         <input type="hidden" name="idempotency_key" value={metadataKey} />
+        <fieldset disabled={pending.metadata} className="stack">
+        <legend>Authorized metadata import</legend>
         <div className="field">
           <label htmlFor={`${id}-url`}>YouTube HTTPS URL</label>
           <input id={`${id}-url`} name="url" type="url" maxLength={2048} required onChange={() => setMetadataKey(crypto.randomUUID())} />
         </div>
         <RightsSelect id={`${id}-metadata-rights`} onChange={() => setMetadataKey(crypto.randomUUID())} />
-        <SubmitButton className="button button--secondary" pendingLabel="Registering…" disabled={!metadataKey}>Import metadata only</SubmitButton>
+        <button type="submit" className="button button--secondary" disabled={pending.metadata || !metadataKey}>{pending.metadata ? "Registering…" : "Import metadata only"}</button>
+        </fieldset>
         <p role={metadataState.status === "error" ? "alert" : "status"}>{metadataState.message}</p>
       </form>
     </details>

@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-28. Hosted code baseline: `f99b86a`. These are planning estimates, not a
+Date: 2026-10-28. Hosted code baseline: `7ea37cf`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -14,9 +14,9 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The `f99b86a` code baseline passes all four hosted CI jobs, including the new
-description workflow and real worker/checkpoint recovery:
-[run 40593035299](https://github.com/emredemirbas/multimodal-rag/actions/runs/40593035299).
+The `7ea37cf` code baseline passes all four hosted CI jobs, including the description
+workflow, real worker/checkpoint recovery and local setup diagnostics:
+[run 40685623358](https://github.com/emredemirbas/multimodal-rag/actions/runs/40685623358).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -104,6 +104,11 @@ The local onboarding follow-up adds a standard-library-only, read-only
 It diagnoses prerequisites without changing credentials, permissions, services
 or data; optional profile/model readiness and real-example quality remain separate.
 This usability improvement adds no new Sprint 4 closure requirement.
+
+The delivery-recovery follow-up preserves subtitle/metadata drafts and replay keys
+after failed acceptance delivery, and keeps chat replay keys if a conversation
+switch fails. Only accepted source requests reset their form; source-list refresh
+failure remains distinct. No new provider, persistence class or quality claim.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

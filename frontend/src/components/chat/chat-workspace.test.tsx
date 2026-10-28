@@ -91,6 +91,62 @@ describe("project chat", () => {
     await screen.findByText(turn.response.answer);
     expect(JSON.parse(fetcher.mock.calls[1][1].body).idempotency_key).toBe(firstKey);
   });
+  it.each(["network", "scope"])("keeps an uncertain message key when switching history fails (%s)", async (failure) => {
+    const other = { ...conversation, id: "22345678-1234-1234-1234-123456789abd", title: "Other conversation" };
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("delivery uncertain"));
+    if (failure === "network") fetcher.mockRejectedValueOnce(new Error("history unavailable"));
+    else fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ conversation: { ...other, project_id: other.id }, turns: [] })));
+    fetcher.mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetcher);
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation, other]} initialHistory={{ conversation, turns: [] }} archived={false} />);
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: turn.question } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("may already be saved");
+    const original = JSON.parse(fetcher.mock.calls[0][1].body);
+    fireEvent.change(screen.getByLabelText("Saved conversation"), { target: { value: other.id } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("History could not be loaded");
+    expect(screen.getByLabelText("Saved conversation")).toHaveValue(conversation.id);
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue(turn.question);
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByText(turn.response.answer);
+    expect(fetcher.mock.calls[2][0]).toBe(`/api/projects/${project}/conversations/${conversation.id}/messages`);
+    expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual(original);
+  });
+  it("uses a fresh message key only after another conversation is successfully loaded", async () => {
+    const other = { ...conversation, id: "22345678-1234-1234-1234-123456789abd", title: "Other conversation" };
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("delivery uncertain"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ conversation: other, turns: [] }))).mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetcher);
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation, other]} initialHistory={{ conversation, turns: [] }} archived={false} />);
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: turn.question } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByRole("alert");
+    const originalKey = JSON.parse(fetcher.mock.calls[0][1].body).idempotency_key;
+    fireEvent.change(screen.getByLabelText("Saved conversation"), { target: { value: other.id } });
+    await screen.findByText("Saved conversation loaded.");
+    expect(screen.getByLabelText("Saved conversation")).toHaveValue(other.id);
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByText(turn.response.answer);
+    expect(fetcher.mock.calls[2][0]).toBe(`/api/projects/${project}/conversations/${other.id}/messages`);
+    expect(JSON.parse(fetcher.mock.calls[2][1].body).idempotency_key).not.toBe(originalKey);
+  });
+  it("retains an uncertain message's key after reloading its own saved history", async () => {
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("delivery uncertain"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ conversation, turns: [turn] }))).mockResolvedValueOnce(response());
+    vi.stubGlobal("fetch", fetcher);
+    render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{ conversation, turns: [] }} archived={false} />);
+    fireEvent.change(screen.getByLabelText("Question about the tutorial"), { target: { value: turn.question } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await screen.findByRole("alert");
+    const original = JSON.parse(fetcher.mock.calls[0][1].body);
+    fireEvent.click(screen.getByRole("button", { name: "Reload history" }));
+    await screen.findByText("Saved conversation loaded.");
+    expect(screen.getByLabelText("Question about the tutorial")).toHaveValue(turn.question);
+    fireEvent.click(screen.getByRole("button", { name: "Ask with evidence" }));
+    await waitFor(() => expect(screen.getByLabelText("Question about the tutorial")).toHaveValue(""));
+    expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual(original);
+    expect(screen.getAllByText(turn.response.answer)).toHaveLength(1);
+  });
   it("stops delivery, preserves the draft and offers history recovery", async () => {
     vi.stubGlobal("fetch", vi.fn((_url, init) => new Promise((_resolve, reject) => init.signal.addEventListener("abort", () => reject(new Error("aborted"))))));
     render(<ChatWorkspace projectId={project} sources={[]} initialConversations={[conversation]} initialHistory={{ conversation, turns: [] }} archived={false} />);

@@ -48,6 +48,8 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
       if (!response.ok) throw new Error("History unavailable");
       const saved = parseHistory(await response.json());
       if (saved.conversation.project_id !== projectId || saved.conversation.id !== id) throw new Error("Invalid conversation scope");
+      // A failed switch must not discard an uncertain message's replay key.
+      if (saved.conversation.id !== conversation?.id) requestKey.current = "";
       setConversation(saved.conversation); setTurns(saved.turns); setPartial("");
       setStatus("Saved conversation loaded.");
     } catch { setError("History could not be loaded. Try again or reload the workspace."); }
@@ -124,7 +126,6 @@ export function ChatWorkspace({ projectId, sources, initialConversations, initia
     <div className="chat-controls">
       <label htmlFor="conversation-choice">Saved conversation</label>
       <select id="conversation-choice" value={conversation?.id ?? ""} disabled={pending} onChange={(event) => {
-        requestKey.current = "";
         if (event.target.value) void history(event.target.value); else newConversation();
       }}>
         <option value="">New conversation</option>

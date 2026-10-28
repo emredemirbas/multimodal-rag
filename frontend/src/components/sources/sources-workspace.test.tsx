@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SourcesWorkspace } from "@/components/sources/sources-workspace";
+import { metadataSourceAction, uploadSourceAction } from "@/app/actions/sources";
 import type { PlaylistItem, SourceItem } from "@/lib/api/source-contracts";
 import { asrOrigin, audioRetention } from "../../../test-support/media-fixture";
 
@@ -14,6 +15,137 @@ const source: SourceItem = {
 };
 
 describe("source management", () => {
+  it("retains the subtitle draft and request key after a returned error, then resends unchanged", async () => {
+    vi.mocked(uploadSourceAction).mockResolvedValue({ status: "error", message: "Delivery could not be confirmed.", version: 1 });
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);
+    const file = new File(["WEBVTT"], "owned.vtt");
+    fireEvent.change(screen.getByLabelText("SRT / VTT transcript"), { target: { files: [file] } });
+    fireEvent.change(screen.getAllByLabelText("Ownership / permission")[0], { target: { value: "owner_upload" } });
+    const form = screen.getByRole("form", { name: "Upload transcript" });
+    const key = () => (form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value;
+    const original = key();
+    await act(async () => { fireEvent.submit(form); });
+    expect(screen.getByRole("alert")).toHaveTextContent("Delivery could not be confirmed");
+    expect(screen.getAllByLabelText("Ownership / permission")[0]).toHaveValue("owner_upload");
+    expect((screen.getByLabelText("SRT / VTT transcript") as HTMLInputElement).files?.[0]).toBe(file);
+    expect(key()).toBe(original);
+    await act(async () => { fireEvent.submit(form); });
+    const retried = vi.mocked(uploadSourceAction).mock.calls.at(-1)![1];
+    expect(retried.get("idempotency_key")).toBe(original);
+    expect(retried.get("authorization_mode")).toBe("owner_upload");
+  });
+
+  it("retains metadata URL, rights and request key after a returned error", async () => {
+    vi.mocked(metadataSourceAction).mockResolvedValue({ status: "error", message: "Delivery could not be confirmed.", version: 1 });
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);
+    fireEvent.click(screen.getByText("Import YouTube video / playlist metadata"));
+    fireEvent.change(screen.getByLabelText("YouTube HTTPS URL"), { target: { value: "https://www.youtube.com/watch?v=abcdefghijk" } });
+    fireEvent.change(screen.getAllByLabelText("Ownership / permission")[1], { target: { value: "authorized_upload" } });
+    const form = screen.getByRole("form", { name: "Import YouTube metadata" });
+    const original = (form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value;
+    await act(async () => { fireEvent.submit(form); });
+    expect(screen.getByLabelText("YouTube HTTPS URL")).toHaveValue("https://www.youtube.com/watch?v=abcdefghijk");
+    expect(screen.getAllByLabelText("Ownership / permission")[1]).toHaveValue("authorized_upload");
+    await act(async () => { fireEvent.submit(form); });
+    const retried = vi.mocked(metadataSourceAction).mock.calls.at(-1)![1];
+    expect(retried.get("idempotency_key")).toBe(original);
+    expect(retried.get("authorization_mode")).toBe("authorized_upload");
+    expect(retried.get("url")).toBe("https://www.youtube.com/watch?v=abcdefghijk");
+  });
+
+  it.each(["upload", "metadata"] as const)("locks the %s draft while pending and resets only after acceptance", async (kind) => {
+    const action = kind === "upload" ? vi.mocked(uploadSourceAction) : vi.mocked(metadataSourceAction);
+    let accept!: () => void;
+    action.mockImplementationOnce(() => new Promise((resolve) => { accept = () => resolve({ status: "success", message: "Source accepted.", version: 1 }); }));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);
+    fireEvent.click(screen.getByText("Import YouTube video / playlist metadata"));
+    const form = screen.getByRole("form", { name: kind === "upload" ? "Upload transcript" : "Import YouTube metadata" });
+    const key = () => (form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value;
+    const input = screen.getByLabelText(kind === "upload" ? "SRT / VTT transcript" : "YouTube HTTPS URL");
+    const rights = screen.getAllByLabelText("Ownership / permission")[kind === "upload" ? 0 : 1];
+    const edit = (again = false) => fireEvent.change(input, { target: kind === "upload" ? { files: [new File(["WEBVTT"], "owned.vtt")] } : { value: `https://www.youtube.com/watch?v=${again ? "ABCDEFGHIJK" : "abcdefghijk"}` } });
+    edit(); fireEvent.change(rights, { target: { value: "owner_upload" } });
+    const original = key();
+    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(form).toHaveAttribute("aria-busy", "true");
+    expect(input).toBeDisabled(); expect(rights).toBeDisabled();
+    expect(screen.getByRole("button", { name: kind === "upload" ? "Uploading…" : "Registering…" })).toBeDisabled();
+    await act(async () => { accept(); });
+    expect(form).toHaveAttribute("aria-busy", "false");
+    expect(rights).toHaveValue(""); expect(key()).toBe("");
+    expect(screen.getByRole("button", { name: kind === "upload" ? "Process transcript" : "Import metadata only" })).toBeDisabled();
+    if (kind === "metadata") expect(input).toHaveValue("");
+    expect(fetch).toHaveBeenCalledTimes(1);
+    edit(true);
+    expect(key()).not.toBe(original); expect(key()).not.toBe("");
+  });
+
+  it("preserves the subtitle association and key through busy and removed playlist snapshots", async () => {
+    const lesson: PlaylistItem = { id: "22345678-1234-1234-1234-123456789abc", playlist_source_id: projectId,
+      generation: 1, position: 0, video_id: "abcdefghijk", title: "First lesson", transcript_source_id: null };
+    vi.mocked(uploadSourceAction).mockResolvedValue({ status: "error", message: "Delivery could not be confirmed.", version: 1 });
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} initialPlaylistItems={[lesson]} archived={false} />);
+    fireEvent.change(screen.getByLabelText("SRT / VTT transcript"), { target: { files: [new File(["WEBVTT"], "owned.vtt")] } });
+    fireEvent.change(screen.getAllByLabelText("Ownership / permission")[0], { target: { value: "owner_upload" } });
+    fireEvent.change(screen.getByLabelText("Transcript belongs to"), { target: { value: lesson.id } });
+    const form = screen.getByRole("form", { name: "Upload transcript" });
+    const key = () => (form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value;
+    const original = key();
+    await act(async () => { fireEvent.submit(form); });
+    const pending = { ...source, status: "processing", job: { ...source.job!, status: "running", stage: "embedding" } };
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ items: [pending], playlist_items: [{ ...lesson, transcript_source_id: source.id }] }), { status: 200 }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.getByLabelText("Transcript belongs to")).toHaveValue(lesson.id);
+    expect(screen.getByRole("option", { name: /First lesson/ })).not.toBeDisabled();
+    expect(key()).toBe(original);
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ items: [], playlist_items: [] }), { status: 200 }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Refresh sources" })); });
+    expect(screen.getByLabelText("Transcript belongs to")).toHaveValue(lesson.id);
+    expect(screen.getByRole("option", { name: /Previously selected lesson/ })).toBeVisible();
+    await act(async () => { fireEvent.submit(form); });
+    const retried = vi.mocked(uploadSourceAction).mock.calls.at(-1)![1];
+    expect(retried.get("idempotency_key")).toBe(original);
+    expect(retried.get("playlist_item_id")).toBe(lesson.id);
+    fireEvent.change(screen.getByLabelText("Transcript belongs to"), { target: { value: "" } });
+    expect(key()).not.toBe(original);
+  });
+
+  it("keeps accepted uploads distinct from a failed source-list refresh", async () => {
+    vi.mocked(uploadSourceAction).mockResolvedValueOnce({ status: "success", message: "Transcript accepted.", version: 1 });
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("private refresh failure"));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);
+    fireEvent.change(screen.getByLabelText("SRT / VTT transcript"), { target: { files: [new File(["WEBVTT"], "owned.vtt")] } });
+    fireEvent.change(screen.getAllByLabelText("Ownership / permission")[0], { target: { value: "owner_upload" } });
+    const form = screen.getByRole("form", { name: "Upload transcript" });
+    await act(async () => { fireEvent.submit(form); });
+    expect(screen.getByText("Transcript accepted.")).toHaveAttribute("role", "status");
+    expect(screen.getByRole("alert")).toHaveTextContent("Sources could not refresh");
+    expect(screen.queryByText(/private refresh/)).not.toBeInTheDocument();
+    expect((form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("button", { name: "Process transcript" })).toBeDisabled();
+  });
+
+  it.each(["upload", "metadata"] as const)("retains the %s draft and key when the action rejects unexpectedly", async (kind) => {
+    const action = kind === "upload" ? vi.mocked(uploadSourceAction) : vi.mocked(metadataSourceAction);
+    action.mockRejectedValueOnce(new Error("private upstream failure"));
+    render(<SourcesWorkspace projectId={projectId} initialSources={[]} archived={false} />);
+    fireEvent.click(screen.getByText("Import YouTube video / playlist metadata"));
+    const form = screen.getByRole("form", { name: kind === "upload" ? "Upload transcript" : "Import YouTube metadata" });
+    const rights = screen.getAllByLabelText("Ownership / permission")[kind === "upload" ? 0 : 1];
+    fireEvent.change(screen.getByLabelText(kind === "upload" ? "SRT / VTT transcript" : "YouTube HTTPS URL"),
+      { target: kind === "upload" ? { files: [new File(["WEBVTT"], "owned.vtt")] } : { value: "https://www.youtube.com/watch?v=abcdefghijk" } });
+    fireEvent.change(rights, { target: { value: "owner_upload" } });
+    const original = (form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value;
+    await act(async () => { fireEvent.submit(form); });
+    expect(screen.getByRole("alert")).toHaveTextContent("may already be queued");
+    expect(screen.queryByText(/private upstream/)).not.toBeInTheDocument();
+    expect(rights).toHaveValue("owner_upload");
+    expect((form.querySelector('[name="idempotency_key"]') as HTMLInputElement).value).toBe(original);
+    expect(form).toHaveAttribute("aria-busy", "false");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("links only complete retained galleries and avoids raw-video reprocessing", () => {
     const video = { ...source, kind: "video", filename: "owned.mp4", status: "metadata_ready", frame_count: 2,
       active_generation: null, segment_count: 0, job: { ...source.job!, job_type: "visual_publish", stage: "frames_retained" } };
@@ -25,6 +157,7 @@ describe("source management", () => {
     expect(screen.queryByRole("link", { name: "View selected frames" })).toBeNull();
   });
   beforeEach(() => {
+    vi.resetAllMocks();
     vi.useFakeTimers();
     Object.defineProperty(document, "hidden", { configurable: true, value: false });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [source] }) }));
