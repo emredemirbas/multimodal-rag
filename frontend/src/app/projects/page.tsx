@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { ProjectCreateForm } from "@/components/projects/project-create-form";
 import { ProjectList } from "@/components/projects/project-list";
@@ -88,6 +89,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
         <h2 id="create-heading">Create a project</h2>
         <p>Projects are private and keep their sources and learning activity isolated.</p>
         <ProjectCreateForm />
+        <p>New here? <Link href="/demo">Try the keyless demo with a synthetic sample.</Link></p>
       </aside>
     </div>
   );

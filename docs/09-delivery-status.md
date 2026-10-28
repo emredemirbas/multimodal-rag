@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-10-28. Hosted code baseline: `7ea37cf`. These are planning estimates, not a
+Date: 2026-10-28. Hosted code baseline: `571480b`. These are planning estimates, not a
 completion percentage, delivery promise or background-work schedule.
 
 ## Where we are
@@ -14,9 +14,10 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The `7ea37cf` code baseline passes all four hosted CI jobs, including the description
-workflow, real worker/checkpoint recovery and local setup diagnostics:
-[run 40685623358](https://github.com/emredemirbas/multimodal-rag/actions/runs/40685623358).
+The `571480b` code baseline passes all four hosted CI jobs, including the description
+workflow, real worker/checkpoint recovery, local setup diagnostics and existing-flow
+error recovery:
+[run 40700471893](https://github.com/emredemirbas/multimodal-rag/actions/runs/40700471893).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -114,6 +115,12 @@ Project create/rename forms also preserve attempted names after returned errors,
 lock pending edits and show the server's canonical accepted rename. Draft state is
 keyed by project, with existing server authorization unchanged. This is correction
 UX, not idempotent project creation or a new release/quality gate.
+
+The static `/demo` walkthrough makes the existing default keyless path easier to
+try: MIT-licensed authored subtitle download, manual permission/upload, supported
+and unsupported questions, actual chunk-level citations, saved history and confirmed
+demo-only cleanup. It creates no records, changes no settings and includes no real
+recording. It neither selects a finish line nor replaces independent quality review.
 
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those

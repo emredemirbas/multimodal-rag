@@ -215,3 +215,38 @@ The previous `7ea37cf` baseline has four successful jobs in
 That earlier run does not certify this recovery patch before its own hosted run.
 No new quality/evaluator prerequisite is introduced; real-example review remains
 open.
+
+## Static keyless browser walkthrough (2026-10-28)
+
+The new `/demo` page documents the existing workflow. Its guide component performs
+no API calls, automatic project creation/upload/deletion or configuration changes.
+It serves byte-identical
+copies of `examples/fastapi-intro.vtt` and the root MIT notice, labels the synthetic
+sample as having no recording, requires explicit licensed-content permission and
+distinguishes record removal from confirmed retained-file cleanup. The standalone
+Docker runner now includes `public/` so the downloads are actually available.
+
+- **4 frontend cases** cover accessible guide/downloads, unchanged canonical sample
+  and license, no render-time fetch/mutation, truthful limitations and Docker asset
+  packaging. Full regression: **268 tests in 42 files passed, 4.82s**; lint and
+  typecheck pass.
+- **3 backend cases** use the real transcript chunker and default in-memory scoped
+  retrieval/extractive service. Both supported questions quote the single published
+  **00:01–00:22** chunk with stable generation-1 provenance; the unrelated Kubernetes
+  question abstains without citations. This is not queue or database integration.
+  Backend non-integration regression: **635 passed, 398 deselected, 11.00s**; the
+  existing Starlette/httpx deprecation warning remains.
+- An actual production frontend Docker build succeeds and prerenders `/demo`.
+  A separate read-only, loopback-only disposable frontend container serves the guide
+  in the browser and both sample downloads with HTTP 200 and exact canonical bytes
+  (418-byte VTT, 1,071-byte license). Browser accessibility output and the rendered
+  page were inspected. Its API points only to an unused loopback port, not the
+  owner's backend; this checks static serving, not full application readiness.
+  The temporary tab/container were removed; owner services, settings and data were
+  untouched. No model or native-media call was made.
+
+The previous `571480b` baseline has four successful jobs in
+[run 40700471893](https://github.com/emredemirbas/multimodal-rag/actions/runs/40700471893).
+It does not certify this subsequent change before its own hosted run. This guide
+does not select the release finish line, start Sprint 5 or close the independent
+owned/licensed real-example quality gate.

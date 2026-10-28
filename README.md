@@ -70,9 +70,9 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted code baseline is `7ea37cf`, with all four jobs
-successful in [CI run 40685623358](https://github.com/emredemirbas/multimodal-rag/actions/runs/40685623358),
-including the local-description worker recovery and local setup checks. That run
+The latest separately verified hosted code baseline is `571480b`, with all four jobs
+successful in [CI run 40700471893](https://github.com/emredemirbas/multimodal-rag/actions/runs/40700471893),
+including worker recovery, local setup checks and project/source/chat error recovery. That run
 does not certify subsequent code changes. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
@@ -145,6 +145,7 @@ docker compose ps
 ### Local services
 
 - project workspace: <http://localhost:3000/projects>
+- keyless browser walkthrough: <http://localhost:3000/demo>
 - API documentation: <http://localhost:8000/docs>
 - API readiness: <http://localhost:8000/health/ready>
 - MinIO console: <http://localhost:9001>
@@ -152,6 +153,14 @@ docker compose ps
 
 The `migrate` service runs pending SQL migrations before the API starts. Service
 ports bind to `127.0.0.1` by default.
+
+For a first try, open **Demo guide** in the app. It includes the repository-authored
+[sample VTT](examples/fastapi-intro.vtt), its [MIT license](LICENSE), explicit upload
+permission instructions, supported/unsupported questions, citation inspection and
+confirmed cleanup. Nothing is created, uploaded or deleted automatically. It assumes
+default keyless extractive/hash retrieval and changes no settings. The actual queued
+uploader combines this sample into one **00:01–00:22** chunk; the guide is not a real
+recording, multimedia-quality validation or a release-scope decision.
 
 `ingestion-worker` processes uploads; `scheduler` dispatches the transactional
 outbox, recovers abandoned jobs and cleans artifacts. Existing passwords and
