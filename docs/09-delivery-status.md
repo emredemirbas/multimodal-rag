@@ -99,6 +99,12 @@ visible in `sprint4/code-policy-evaluation-validation.md`; uniform stays default
 The paired diagnostics and timeline are included in that green hosted baseline.
 It does not certify subsequent changes until their exact hosted run is verified.
 
+The local onboarding follow-up adds a standard-library-only, read-only
+`scripts/check_local_setup.py` command and startup troubleshooting in the README.
+It diagnoses prerequisites without changing credentials, permissions, services
+or data; optional profile/model readiness and real-example quality remain separate.
+This usability improvement adds no new Sprint 4 closure requirement.
+
 Before Sprint 5, resolve source selection, difficulty/extension policy and official
 documentation behavior in `07-open-decisions.md`; do not silently choose those
 questions while declaring that sprint implemented.

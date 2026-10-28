@@ -90,8 +90,28 @@ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 
 Replace the placeholder `DEVELOPMENT_AUTH_TOKEN` value in `.env` with the
 generated value. Also replace the example PostgreSQL and MinIO passwords.
+Generate separate URL-safe values for those passwords too. Do not repeat the
+copy step over an existing `.env`, rotate existing database credentials casually,
+or delete data volumes to work around a startup error.
 The API intentionally refuses to start when the development token is missing
 or shorter than 16 characters.
+
+Before building, run the read-only prerequisite check (Python standard library
+only; no backend dependency installation needed):
+
+```bash
+python3 scripts/check_local_setup.py
+```
+
+It checks Docker/Compose availability, current-context daemon access, configured
+credential-helper executables, and privately resolved base `compose.yaml` settings
+for placeholders and optional-feature setup. No raw config, secrets or command
+errors are printed. Exit 1 means a blocker; warnings require review but exit 0.
+It never runs `sudo`, repairs permissions/configuration, starts containers, pulls
+images/weights, changes `.env` or inspects application data. It is not an app-health,
+registry-login, installed-model or quality check. Custom Compose override files
+are not included. Shell environment variables still take precedence normally;
+use `--env-file /absolute/path/to/local.env` for a deliberately different env file.
 
 Build and start the stack:
 
@@ -100,7 +120,29 @@ docker compose up --build -d
 docker compose ps
 ```
 
-Local services:
+### Common local startup issues
+
+- **`unknown flag: --build` / missing Compose:** check `docker compose version`
+  in the same user/terminal. A plugin installed only for your user may be absent
+  under `sudo`; do not mix configurations as a workaround.
+- **Docker socket permission denied:** CLI installation alone does not grant
+  daemon access. Review [Docker's Linux access instructions](https://docs.docker.com/engine/install/linux-postinstall/)
+  or rootless mode. Docker-group access grants root-level privileges; never make
+  the socket world-writable. Login/session changes must reach the terminal/app
+  you use; a terminal opened in an existing desktop session may retain old groups.
+- **`docker-credential-pass` missing:** restore the configured helper or deliberately
+  review your own Docker credential settings. [Helpers must be on PATH](https://docs.docker.com/reference/cli/docker/login/#credential-stores).
+  The setup checker warns without executing helpers or changing credential storage;
+  a missing helper for an unrelated registry may not block this project's pulls.
+  Do not paste the config or credentials into an issue.
+- **The command keeps running / repeated `/health` `200 OK`:** plain
+  `docker compose up --build` stays attached to long-running service logs. Healthy
+  checks continue periodically; there is no final completion message to wait for.
+  Use `-d` to detach, `docker compose logs --tail=50 api` to inspect, and
+  `docker compose stop` to stop services without deleting volumes. Do not use
+  `down -v` unless you intentionally want to erase stored project data.
+
+### Local services
 
 - project workspace: <http://localhost:3000/projects>
 - API documentation: <http://localhost:8000/docs>

@@ -146,3 +146,36 @@ operator opt-in. The new slice passes 268 backend and 98 frontend tests plus a
 separate native authored-speech BFF/queue/index/SSR/cleanup probe in a disposable
 stack. These are not broad speech-quality, vision/OCR, assignment/grading or full
 multimodal exit-criterion approval. Retain the previous failed vocabulary probe.
+
+## Read-only local setup polish (2026-10-28)
+
+`scripts/check_local_setup.py` diagnoses the base Compose prerequisites without
+starting/stopping services, pulling images/models, changing files/permissions or
+inspecting application data. It uses only the Python standard library; effective
+configuration and raw command errors stay private. Helper presence is a warning,
+not proof of registry login. Optional profiles/weights/readiness and custom Compose
+overrides are outside its checks. This adds no multimodal quality/release gate.
+
+- **58 new tests** use temporary files, fake command responses and an actual CLI
+  subprocess with a fake Docker executable: missing plugin/daemon/env/helper,
+  placeholders/permissions, actual application boolean forms, digest validation,
+  timeouts, safe failures/exit codes, no secret echo and unchanged inputs.
+- Backend non-integration regression: **632 passed, 398 deselected, 7.39s**. No
+  database integration, native model or frontend change is implied by this count.
+  The existing Starlette/httpx deprecation warning remains. The first restricted
+  run stalled before a result and was interrupted; the rerun with local test
+  permissions passed. No application service was restarted or deadline changed.
+- Actual `docker compose config --format json`, with an allowlisted test-only
+  environment, `/dev/null` env file and fresh disposable Docker config directory,
+  matches the checker's default keyless validation. No daemon request or owner
+  `.env`/Docker configuration was used for that probe; its empty directory was
+  removed. Standard-library CLI help and whitespace checks also pass.
+- Initial no-echo tests used `short`, which collided with the fixed word
+  `shortcut`; unique synthetic sentinels corrected the tests. Independent review
+  caught boolean/digest-validation differences from application settings; those
+  were corrected and covered before the final regression.
+
+Reproduce without Docker or application data: `backend/.venv/bin/python -m pytest
+backend/tests/test_local_setup.py`. Operator usage and non-destructive startup
+troubleshooting are in the README. The real-example human quality review remains
+open; these software checks do not satisfy it.
