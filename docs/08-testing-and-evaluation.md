@@ -31,6 +31,16 @@ These use isolated PostgreSQL/Redis namespaces, without MinIO/models, and run in
 the backend integration CI job. Fixture processors exist only in test code; they
 do not establish native model generation, semantic quality or solvability.
 
+Local curriculum-provider tests use an authored local HTTP server for pinned
+identity, pre/post drift, JSON ambiguity/truncation, UTF-8/size/time bounds,
+no proxy/redirect/cloud/tool behavior and nullable versus zero usage. Scoped
+PostgreSQL + HTTP tests prove that a receipt commits before the physical request,
+no lock spans inference, failed commits prevent calls and in-flight cancellation/
+deletion/expiry cannot deliver output. Migration tests preserve old metadata-only
+receipts and exact replay, while new request hashes/versions conflict on reuse.
+No real model is invoked by these tests; schema binding and native draft-quality
+review remain later workflow gates.
+
 ## Software test pyramid
 
 ### Unit tests

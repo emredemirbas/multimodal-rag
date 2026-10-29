@@ -239,8 +239,20 @@ The scheduler dispatches a separate `curriculum` Celery queue and recovers expir
 leases; an optional `curriculum-internal` worker profile executes one bounded
 application stage per delivery outside DB locks. The processor registry is empty
 until the local workflow is implemented; unknown versions fail explicitly.
-There is no run HTTP producer, model invocation or user generation capability.
+There is no run HTTP producer or user generation capability.
 See steps 3a/3b in the Sprint 5 plan for bounds, replay and delivery details.
+
+Migration `0024_curriculum_request_identity.sql` adds nullable `input_sha256`,
+`schema_version` and `request_version` to physical-call attribution. All three
+must be present or absent together. Historical metadata-only rows retain nulls,
+and their original start fingerprints still replay. New local curriculum calls
+always record the exact serialized outbound JSON body hash, prompt/schema/request
+versions and pinned model digest/engine before inference. Raw prompts, responses
+and schemas are not copied into usage rows. Unknown usage stays null; observed
+zero remains zero. Accepted responses need a successful scoped finish receipt;
+lease expiry during either receipt write rolls the write back. Cancellation,
+revocation/archive and dependency deletion discard late output. This internal
+provider connection does not register a processor or create generation endpoints.
 
 - `learning_objectives`
 - `objective_evidence`

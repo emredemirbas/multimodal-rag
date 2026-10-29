@@ -72,6 +72,16 @@ Controls:
 - test known injection patterns;
 - prevent one source from altering project/system policy.
 
+The internal curriculum provider exposes only a local JSON completion interface,
+with fixed model/options and explicit digest/engine pins. It disables proxies,
+redirects, tools, thinking and cloud fallback; only local tags/show/version/chat
+endpoints are used. Schema `$ref` links must point inside the supplied schema. Bound request/body/
+response bytes, reject duplicate/non-finite JSON and reject incomplete or late
+output. A completed JSON object is not evidence support or assignment-schema
+approval: the later workflow must parse its application contract and bind it
+against the authorized context before publication. Its processor remains
+unregistered until that workflow exists. See the Sprint 5 plan for resource caps.
+
 ### Malicious uploaded files
 
 Risk: parser exploits, decompression bombs, oversized files, or embedded active content.

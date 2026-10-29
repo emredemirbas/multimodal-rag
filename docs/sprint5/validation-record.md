@@ -1,7 +1,8 @@
 # Sprint 5 — validation record
 
 Date: 2026-10-29. Status: internal contracts, saved contexts, versioned draft APIs
-and durable queued delivery/atomic draft publication implemented. Model
+durable queued delivery/atomic draft publication and the pinned local JSON/call
+provider foundation implemented. Model
 extraction/generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
 The ordered plan is `implementation-plan.md`.
 
@@ -463,12 +464,115 @@ acceptance or the independent real-video Alpha 2 review. Check the exact pushed
 commit's hosted workflow separately; the verified starting CI alone does not
 certify this implementation.
 
+## Step 4a — pinned local provider and call attribution (2026-10-29)
+
+Started from a clean `22fa629`. Its exact
+[CI run 40894724175](https://github.com/emredemirbas/multimodal-rag/actions/runs/40894724175)
+was rechecked: all four jobs completed successfully. Step 4 was split into the
+provider/receipt foundation here and prompts/batching/LangGraph in 4b to keep the
+boundary reviewable. The two product-policy questions were surfaced again; no
+answer was inferred from `devam` or from elapsed time.
+
+Read-only local inventory (no inference/install):
+
+- Pre-existing `qwen3:4b`, digest
+  `359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7`.
+- Ollama 0.40.3; family `qwen3`, completion capability and no remote-model/host
+  fields. The existing embedding model was also present but is not used here.
+- Inventory used only list/version and tags/show/version requests. This observed
+  identity is not a compiled default, new approved-model list or native-quality
+  result. Constructor callers must provide an explicit full digest and engine pin.
+
+Delivered:
+
+- `LocalCurriculumProvider`, an application-owned JSON provider separate from
+  chat's short answer schema. Prepare a detached bounded request, hash its exact
+  serialized JSON body, verify local model/engine identity before and after the
+  request and reject drift. Fixed text-only roles/options, no proxies/redirects,
+  tools, thinking, arbitrary endpoint, external schema `$ref`, cloud fallback or
+  install/pull request. Errors and representations exclude private text.
+- Fixed resource bounds in the implementation plan: combined UTF-8 text, schema,
+  request, response and output bytes; context/output-token/thread configuration;
+  metadata/inference socket timeouts and a shared acceptance deadline. Deadline
+  checks reject late output, while the existing Celery process limits remain the
+  ultimate bound for blocked I/O. No byte count is called a tokenizer estimate.
+- Strict JSON decoding rejects duplicate keys at all depths, non-finite numbers,
+  invalid UTF-8/surrogates/NUL, arrays instead of objects, truncation and ambiguous/
+  oversized HTTP envelopes. Require complete assistant output with stop reason,
+  the pinned model and valid nullable usage. Schema formatting does not establish
+  application-schema compliance, source support, feasibility or quality; the
+  later graph must run deterministic contract/evidence binding before publishing.
+- `LeasedCurriculumCalls`: commit the scoped start receipt before physical
+  inference, perform no HTTP call if admission/commit fails, invoke outside DB
+  locks and finish actual usage under the fresh lease before returning output.
+  Unknown usage remains null; actual zero remains zero; billed spend stays zero.
+  Started failures retain validated available usage, safe codes and actual request
+  duration. Interrupted/revoked/deleted work cannot deliver a late response.
+- Additive migration `0024_curriculum_request_identity.sql` and strict call
+  metadata: exact body `input_sha256`, `schema_version` and `request_version`,
+  all present or absent together. Historical metadata-only rows stay null and
+  keep their original replay fingerprint. Reusing a call key for changed body or
+  versions conflicts. No raw prompt/schema/response is put into usage rows.
+- Start/finish receipt writes check wall time again after writing. Expiry during
+  an actual delayed INSERT/UPDATE rolls back the receipt, preventing inference or
+  output return; lost work can still be retired by existing recovery.
+- No HTTP generation endpoint, processor registration, LangGraph dependency,
+  application prompts, coverage extraction, activation or UI is enabled. No
+  source generation/evidence ID is changed. External-doc policy remains pending
+  and no document fetch is introduced. README and existing runtime settings remain
+  unchanged.
+
+Actual checks:
+
+- **50 local HTTP cases** are included in the final unit suite: exact request/
+  identity pinning, pre/post drift, no proxy/redirect/download/tool behavior,
+  strict JSON, byte/time caps, huge Content-Length, private errors/representations,
+  capacity/admission and null versus zero counts. All responses are authored;
+  no installed model receives a generation request.
+- **100 focused PostgreSQL/HTTP/migration cases passed, 43.13s**, including 24 new
+  leased-call cases and the existing progress/migration suite. Covers receipt
+  commit before HTTP, atomic commit failure, no DB lock during inference, original
+  authority/scopes, concurrent cancellation/deletion/revocation/archive/expiry,
+  final-write expiry rollback, actual failed-call usage and immutable replay.
+- Populated pre-0024 upgrades preserve existing RAG citations, contexts, draft
+  history, running state/checkpoints and old metadata-only start receipt replay.
+  Fresh/repeated/checksum and earlier upgrades remain covered. Both historical
+  migration enumerations include 0024.
+- Final backend non-integration regression: **786 passed, 665 deselected, 9.49s**.
+  The existing Starlette/httpx deprecation warning remains.
+- Final full PostgreSQL/Redis regression: **655 passed, 10 skipped, 786
+  deselected, 281.47s**. Both real curriculum worker/process-loss probes passed;
+  the ten existing skips require separately enabled media-worker/MinIO fixtures.
+  The same existing deprecation warning remains.
+- A direct worker import verified that `PROCESSORS` remains empty; component
+  implementation does not enable public generation. No frontend/Docker config
+  changed and no new local browser/native-generation result is claimed.
+
+Official API behavior was checked against the
+[Ollama chat API](https://docs.ollama.com/api/chat) and
+[structured-output guide](https://docs.ollama.com/capabilities/structured-outputs).
+The [LangGraph workflow guide](https://docs.langchain.com/oss/python/langgraph/workflows-agents)
+informs 4b only; no hosted tracing/service or model dependency is activated here.
+
+Checks used cached, labelled disposable PostgreSQL/Redis containers with random
+loopback ports, tmpfs data, public pgvector and isolated synthetic schemas/Redis
+prefixes/worker processes. Test schema count and Redis key count both ended at
+zero; both labelled containers were removed after verification. No owner `.env`,
+credentials, database/data, model installation or running service configuration
+was changed. Only read-only inventory requests reached the existing model service;
+all inference responses came from test HTTP servers. Whitespace/local Markdown
+target checks passed, and README is unchanged. The exact new commit's hosted
+workflow must be checked separately from the green starting baseline.
+
 ## Continuation
 
-Next: step 4 in `implementation-plan.md`, the application-owned local provider and
-bounded LangGraph workflow. Start with read-only inventory of already installed
-local model/engine identities and explicit prompt/stage budgets. Do not download
-weights or enable public generation prematurely; the current registry is empty.
+Next: step 4b in `implementation-plan.md`: application-owned objective/coverage
+prompts and bounded source batches, then finite LangGraph generation/validation/
+bounded revision using the provider, scoped call receipts and existing run
+checkpoints. Pin LangGraph when introducing it, without an unscoped library state
+store or hosted tracing. Do not download weights or enable public generation
+prematurely; the current registry is empty. Native model output/quality still
+needs separate review and does not close the independent real-video gate.
 Preserve source/context scope,
 original actor, exact command replay and complete deletion; no synthetic source.
 

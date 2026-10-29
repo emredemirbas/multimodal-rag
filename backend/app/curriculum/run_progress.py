@@ -27,6 +27,11 @@ LOGGER = logging.getLogger("tutorial_workspace")
 
 class RunProgressRepository(RunRepository):
     @staticmethod
+    def _call_live_at_finish(connection, run):
+        return connection.execute("SELECT %s::timestamptz>clock_timestamp() AS live",
+                                  (run["lease_expires_at"],)).fetchone()["live"]
+
+    @staticmethod
     def _progress_invalid():
         return SourceError("invalid_curriculum_progress", "The run progress could not be validated.", 422)
 
@@ -144,9 +149,16 @@ class RunProgressRepository(RunRepository):
 
     def begin_call(self, claim: RunClaim, body: ModelCallStart) -> ModelCallView | None:
         body = self._checked(ModelCallStart, body)
-        digest = hashlib.sha256(self._json(body.model_dump(mode="json"))[0]).hexdigest()
+        # Preserve replay of accepted pre-0024 receipts: their hash did not
+        # contain these newly optional NULL metadata fields.
+        metadata = body.model_dump(mode="json")
+        if body.input_sha256 is None:
+            for key in ("input_sha256", "schema_version", "request_version"):
+                metadata.pop(key)
+        digest = hashlib.sha256(self._json(metadata)[0]).hexdigest()
         with self.store._connect() as connection:
-            if self._lease(connection, claim) is None:
+            run = self._lease(connection, claim)
+            if run is None:
                 return None
             scope = self._scope(claim)
             previous = connection.execute(
@@ -166,11 +178,16 @@ class RunProgressRepository(RunRepository):
             row = connection.execute(
                 """INSERT INTO curriculum_model_calls
                    (tenant_id,project_id,run_id,call_id,attempt_number,purpose,provider,model,model_digest,
-                    engine,prompt_version,input_characters,input_tokens,request_sha256,status)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'started') RETURNING *""",
+                    engine,prompt_version,input_characters,input_tokens,request_sha256,
+                    input_sha256,schema_version,request_version,status)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'started') RETURNING *""",
                 (*scope, body.call_id, claim.attempt_number, body.purpose, body.provider, body.model,
-                 body.model_digest, body.engine, body.prompt_version, body.input_characters, body.input_tokens, digest),
+                 body.model_digest, body.engine, body.prompt_version, body.input_characters, body.input_tokens, digest,
+                 body.input_sha256, body.schema_version, body.request_version),
             ).fetchone()
+            if not self._call_live_at_finish(connection, run):
+                connection.rollback()
+                return None
             result = self._call_view(row)
         LOGGER.info(json.dumps({"event": "curriculum_call_started", "tenant_id": claim.tenant_id,
                                 "project_id": str(claim.project_id), "run_id": str(claim.run_id),
@@ -180,7 +197,8 @@ class RunProgressRepository(RunRepository):
     def finish_call(self, claim: RunClaim, body: ModelCallFinish) -> bool:
         body = self._checked(ModelCallFinish, body)
         with self.store._connect() as connection:
-            if self._lease(connection, claim) is None:
+            run = self._lease(connection, claim)
+            if run is None:
                 return False
             scope = self._scope(claim)
             previous = connection.execute(
@@ -202,6 +220,9 @@ class RunProgressRepository(RunRepository):
                 (body.status, body.input_tokens, body.output_tokens, body.output_characters,
                  body.duration_ms, body.failure_code, *scope, body.call_id, claim.attempt_number),
             )
+            if not self._call_live_at_finish(connection, run):
+                connection.rollback()
+                return False
         LOGGER.info(json.dumps({"event": "curriculum_call_finished", "tenant_id": claim.tenant_id,
                                 "project_id": str(claim.project_id), "run_id": str(claim.run_id),
                                 "call_id": str(body.call_id), "outcome": body.status, "duration_ms": body.duration_ms}))

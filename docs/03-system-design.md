@@ -284,6 +284,15 @@ Expose application-owned interfaces for:
 
 Record provider, model identifier, prompt/template version, latency, tokens, and cost attribution. Provider payloads should not leak into domain models.
 
+The internal curriculum JSON adapter is now separate from chat answers. It requires
+an explicit local `qwen3:4b` digest/engine pin, checks identity before and after
+inference and returns bounded raw JSON plus usage to the application. A scoped
+call receipt commits before inference; no database lock spans the HTTP request.
+Exact request-body hashes and schema/request versions complement the existing
+prompt/model metadata. No generation processor is registered yet. Objective/
+coverage prompts and the model-driven LangGraph workflow remain the next slice;
+the queue and CRUD stay ordinary application code.
+
 ### LangGraph workflows
 
 Appropriate uses:

@@ -8,7 +8,7 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-**Sprint 5 has contracts, saved contexts, versioned draft APIs and durable queued delivery/publication**; full
+**Sprint 5 has contracts, saved contexts, versioned draft APIs, durable queued delivery/publication and a local provider foundation**; full
 Sprint 4/Alpha 2 quality approval remains open. Project/auth/isolation,
 authorized subtitle jobs, scoped retrieval/chat/citations, optional free local
 answers/embeddings, ordered playlist relationships, constrained WAV transcription
@@ -32,7 +32,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Context/draft APIs, durable runs and separate queue/worker/atomic publication implemented (0020–0023). Real extraction/generation, UI and pending policy remain; see the plan/validation |
+| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication and pinned local JSON/call-attribution foundation implemented (0020–0024). Objective/coverage prompts, LangGraph generation, UI and pending policy remain; see the plan/validation |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -89,8 +89,9 @@ The owner has now explicitly selected Sprint 5 planning and staged implementatio
 The current plan is `sprint5/implementation-plan.md`. Strict curriculum contracts
 and authoritative evidence binding, immutable saved contexts and versioned draft
 create/read/edit/delete, durable run lifecycle/progress and separate curriculum
-queue/worker delivery, continuation and fenced publication are implemented.
-Next is local/LangGraph generation, followed by official-document
+queue/worker delivery, continuation, fenced publication and the pinned local JSON
+provider/call-attribution foundation are implemented. Next is objective/coverage
+batching and LangGraph generation, followed by official-document
 snapshots and draft review/activation UI. Submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
@@ -102,10 +103,10 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
-and continue step 4's application-owned local provider and bounded LangGraph
-workflow. Start with read-only inventory of already installed local model/engine
-identities and explicit budgets; do not download weights or enable the public
-generation path prematurely. Step 3b's actual SIGKILL/duplicate-delivery evidence
+and continue step 4b's application prompts, bounded objective/coverage batches and
+finite LangGraph workflow. Reuse step 4a's local identity/request/usage boundary
+and run checkpoints. Native model output/quality is unreviewed; do not download
+weights or enable public generation prematurely. Step 3b's actual SIGKILL/duplicate-delivery evidence
 is recorded separately from native model quality. Draft objective/evidence relationships are versioned;
 whole-context objective extraction/semantic coverage still belongs to generation.
 Resolve the pending extension and document-fetch policy before enabling dependent

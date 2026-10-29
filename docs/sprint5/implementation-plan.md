@@ -300,6 +300,41 @@ source/project deletion using isolated schemas/queues/objects/processes.
 
 ### 4. Local provider and model-driven LangGraph workflow
 
+Implement this step in two bounded slices. **4a (implemented):** a separate local JSON
+provider and fenced physical-call attribution, with an explicit model/engine pin,
+request fingerprint and transport/resource bounds. Validate it with authored HTTP
+responses and isolated PostgreSQL; do not call the owner's model or register a
+generation processor in this slice. **4b (next):** application prompts, objective/
+coverage batching and the finite LangGraph transitions/checkpoint continuation,
+then separately review actual native output. Pending product choices still gate
+their dependent behavior; technical provider work does not confirm them.
+
+`LocalCurriculumProvider` implements the application-owned JSON interface;
+`LeasedCurriculumCalls` connects it to the existing scoped call ledger. Migration
+0024 adds exact serialized request-body hash and schema/request versions. Old
+metadata-only rows remain null and preserve their original replay fingerprints.
+Start/finish writes recheck wall time after the write; expired receipts roll back.
+Returned JSON still requires application-contract/evidence validation in 4b;
+the adapter does not claim semantic support or generate a published assignment.
+The default worker registry and public capability remain closed.
+
+The transport follows the official [Ollama chat API](https://docs.ollama.com/api/chat)
+and [structured-output guide](https://docs.ollama.com/capabilities/structured-outputs).
+Local inventory found pre-existing `qwen3:4b` on Ollama 0.40.3; the exact observed
+digest is in the validation record. This is not a hardcoded digest default or
+permission to replace/install weights.
+
+4a technical bounds: existing approved `qwen3:4b` only; explicit full digest and
+engine identity, no automatic model selection/install/fallback. At most 12,000
+combined UTF-8 message bytes, 16,000 schema bytes, 65,536 request bytes, 262,144
+response bytes and 128,000 output-content bytes. These byte bounds are not token
+estimates or whole-context coverage claims. Fixed decoding uses a 16,384 context,
+2,048 output tokens and four CPU threads. A 60-second acceptance deadline covers
+preflight/inference/postflight; socket timeouts are at most 2 seconds for metadata
+and 42 seconds for inference. Reject late output; the worker's 90/120-second
+soft/hard limits remain the ultimate process boundary for blocked I/O. No hidden
+learner effort/difficulty default is introduced by these resource constants.
+
 Add an application-owned assignment provider, separate from chat's answer schema
 and short context limits. Reuse local-only URL/transport rules; no proxy, redirect,
 cloud fallback or automatic weight installation. Missing/busy/unavailable models
@@ -315,7 +350,7 @@ tools or code execution. A revision limit is explicit, not an open-ended loop.
 
 Graph state is subordinate to the scoped durable run. Persist accepted node results
 under the application lease/deletion fence; do not introduce an unscoped library
-checkpoint store. LangGraph is added/pinned only in this slice and orchestrates
+checkpoint store. LangGraph is added/pinned only in 4b and orchestrates
 model-driven transitions, never CRUD or the queue. Node replay/idempotency and
 accepted-output reuse need failure tests; a checkpoint does not make side effects
 exactly once. See the [official workflow guide](https://docs.langchain.com/oss/python/langgraph/workflows-agents)
@@ -370,12 +405,14 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Steps 1, 2a, 2b, 3a and 3b are implemented: contracts/binding, saved contexts,
+Steps 1, 2a, 2b, 3a, 3b and 4a are implemented: contracts/binding, saved contexts,
 versioned draft persistence/API, durable runs and separate queued delivery with
-fenced publication. Results and limits are in `validation-record.md`. README
+fenced publication, plus a pinned local JSON provider and scoped call attribution.
+Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 4's application-owned local provider and bounded LangGraph workflow.
-Start with read-only installed-model inventory and explicit prompt/stage budgets;
-no weight download or premature public generation enablement. Resolve any
+Next is step 4b's application prompts, objective/coverage batching and bounded
+LangGraph workflow. Pin its dependency only when used; reuse the provider/receipt
+boundary and the existing run checkpoints, with no unscoped library state store.
+Do not download weights or prematurely enable public generation. Resolve any
 still-pending product policy before dependent generation/fetch behavior. Check
 the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.

@@ -93,6 +93,17 @@ class ModelCallStart(Contract):
     prompt_version: Identifier
     input_characters: Count
     input_tokens: Count | None
+    # Historical metadata-only calls retain NULL. New prepared requests pin the
+    # exact outbound bytes and their application-owned schema/budget versions.
+    input_sha256: Digest | None = None
+    schema_version: Identifier | None = None
+    request_version: Identifier | None = None
+
+    @model_validator(mode="after")
+    def complete_request_identity(self) -> Self:
+        if len({value is None for value in (self.input_sha256, self.schema_version, self.request_version)}) != 1:
+            raise ValueError("Incomplete request identity")
+        return self
 
 
 class ModelCallFinish(Contract):
