@@ -6,6 +6,13 @@ Read all files in `docs/`, starting with `01-product-brief.md` and `07-open-deci
 
 The repository currently contains a planning handoff, not a finished specification. Do not silently decide a blocking product question. Surface material assumptions in the plan.
 
+## README style
+
+Keep README.md focused on the product: what it does, installation, usage,
+architecture, limitations, development and documentation links. Keep sprint
+details, delivery/completion claims, portfolio milestones, CI run/commit records,
+test counts and internal handoff instructions in docs/, not in the public README.
+
 ## Delivery approach
 
 - Build a modular monolith first, with separate processes for web, API, background workers, scheduler, and sandbox runner.
@@ -58,4 +65,3 @@ A feature is not done until it has:
 - database migrations where relevant;
 - documentation for material architectural or product changes;
 - accessible loading, empty, error, and success states in the UI.
-
