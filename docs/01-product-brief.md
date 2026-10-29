@@ -20,6 +20,13 @@ roadmap below; completing v1 does not start those sprints. Independent real-vide
 quality/audiovisual review remains open for full Sprint 4/Alpha 2 approval and is
 not replaced by the licensed synthetic workflow demonstration.
 
+On 2026-10-29 the owner explicitly authorized **Sprint 5 planning and staged
+implementation** after that milestone. The current scope is cited learning
+objectives, coverage and reviewable assignment drafts; the implementation order
+is in `sprint5/implementation-plan.md`. Submissions, hardened grading and the
+runtime learning/tutoring loop remain later work. Starting this text/evidence
+scope does not close the independent real-video review.
+
 ## Product statement
 
 Build an AI learning workspace that turns programming video tutorials and playlists into searchable, citation-backed course material and practical, assessable coding assignments.

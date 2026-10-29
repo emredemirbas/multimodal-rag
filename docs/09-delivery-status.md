@@ -1,13 +1,15 @@
 # Delivery status and finish lines
 
-Date: 2026-10-29. Selected first finish line: **RAG portfolio v1**.
+Date: 2026-10-29. Current authorized work: **Sprint 5**, in staged implementation.
+The owner explicitly requested this new scope after the RAG milestone.
 **RAG portfolio v1 is complete** within its selected local transcript RAG scope.
 Accepted application baseline: `3c2bff5`; local acceptance and all four hosted CI
 jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-The project is in **Sprint 4**, not finished Alpha 2. Project/auth/isolation,
+**Sprint 5's first internal contract/evidence slice is implemented and locally tested**; full
+Sprint 4/Alpha 2 quality approval remains open. Project/auth/isolation,
 authorized subtitle jobs, scoped retrieval/chat/citations, optional free local
 answers/embeddings, ordered playlist relationships, constrained WAV transcription
 and constrained MP4 -> retained frames/OCR -> indexed frame citations exist.
@@ -30,7 +32,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Not implemented; product decisions must be resolved first |
+| Sprint 5: learning objectives and assignments | Strict internal contracts/binding implemented; 78 focused and 713 backend non-integration tests pass. Persistence, generation, UI and pending product policy remain; see the plan/validation |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -83,12 +85,25 @@ The dated closure entry in `sprint4/validation-record.md` records the result.
 This documentation-only closure does not change the accepted application code;
 its own workflow status must still be reported honestly.
 
-Next `devam`: read this completion record, check current Git/CI for any subsequent
-change, and report that the selected v1 is complete. Do not invent another feature,
-evaluator, polish gate or repeat already passing checks without a new failure.
-Do not begin Sprint 5 or reopen optional experiments automatically. Continuing the
-preserved learning-platform roadmap requires an explicit new scope from the owner.
-The separate real-video/Alpha 2 review below remains open, not a v1 blocker.
+The owner has now explicitly selected Sprint 5 planning and staged implementation.
+The current plan is `sprint5/implementation-plan.md`. Strict curriculum contracts
+and authoritative evidence binding are now implemented and locally tested; next
+is scoped persistence/API, followed by
+project-owned durable runs, local/LangGraph generation, official-document
+snapshots and draft review/activation UI. Submissions and grading remain later.
+
+The source-owned ingestion job/outbox/usage schema must not be repurposed with a
+fake source for multi-source assignments. New persistent curriculum work needs
+project-owned migrations and its own attribution/recovery/deletion coverage.
+
+README now follows product-documentation style; operator detail is in
+`local-development.md`, while plans, validation and CI history stay here. The
+same rule is recorded in `../AGENTS.md` for future updates.
+
+Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
+and continue the next undelivered slice. Resolve the pending extension and
+document-fetch policy before enabling dependent behavior. Do not claim Sprint 5
+complete from internal schema tests, or start code execution/tutoring early.
 
 ## Sprint 4 closure — one remaining gate
 
@@ -168,6 +183,6 @@ deletion or treating an initial source-list error as proof of removal. This chan
 the open browser view, not the independently tracked physical-file cleanup or the
 fact that data already received/copied by a user cannot be recalled.
 
-Before Sprint 5, resolve source selection, difficulty/extension policy and official
-documentation behavior in `07-open-decisions.md`; do not silently choose those
-questions while declaring that sprint implemented.
+Before enabling Sprint 5 generation, resolve the remaining extension and official
+documentation behavior in `07-open-decisions.md`. Explicit source/preferences
+contracts can precede those choices; they do not declare the sprint implemented.

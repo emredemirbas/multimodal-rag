@@ -156,6 +156,15 @@ Citations should reference stable segment/evidence IDs. Store rendered labels se
 
 ### Curriculum
 
+Sprint 5's first implementation is an internal contract/evidence boundary in
+`backend/app/curriculum/`, not these persisted entities or public APIs yet. The
+strict request and draft carry tenant/project scope and explicit source-version
+selection/preferences. Model-provided evidence IDs resolve to trusted existing
+`EvidenceView` projections; tutorial and official-document evidence stay separate.
+Membership checks, transactional dependency/deletion fences, migrations and
+persisted generation/draft/version records are the next slice. See
+`sprint5/implementation-plan.md` and `sprint5/validation-record.md`.
+
 - `learning_objectives`
 - `objective_evidence`
 - `coverage_maps`

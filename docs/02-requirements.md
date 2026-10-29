@@ -9,6 +9,8 @@ The owner selected the existing RAG flow as **portfolio v1** on 2026-10-29;
 its finite acceptance checklist is in `09-delivery-status.md`. Assignment,
 submission, grading and tutoring requirements below remain post-v1 roadmap.
 Experimental media/model capabilities do not imply full Alpha 2 quality approval.
+The owner subsequently authorized staged Sprint 5 implementation on 2026-10-29;
+`sprint5/implementation-plan.md` defines its current delivery boundary.
 
 ## Functional requirements
 

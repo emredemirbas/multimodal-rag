@@ -11,6 +11,8 @@ See `09-delivery-status.md` for its finite acceptance checklist and current next
 step. Sprint 5–7 assignments, submissions, hardened grading and learning feedback
 remain on the original roadmap below, after v1; do not start them automatically.
 Independent real-example review still gates full Sprint 4/Alpha 2 approval.
+The owner's subsequent explicit request on 2026-10-29 opens Sprint 5 planning and
+staged implementation; see `sprint5/implementation-plan.md`.
 
 ## Estimation assumptions
 
@@ -278,6 +280,11 @@ fractional-PTS and complete authored workflow probes. Default uniform and all
 remaining quality/Alpha 2 gates stay unchanged. See `docs/sprint4/change-ocr-guide.md`.
 
 ## Sprint 5 — Learning model and case studies
+
+**Implementation status (2026-10-29):** Explicitly authorized. The ordered plan
+is in `sprint5/implementation-plan.md`; internal strict contracts and authoritative
+evidence binding are implemented and locally tested. No generated assignment API/UI,
+persistence, model workflow or Sprint 5 acceptance is claimed by that first slice.
 
 **Duration:** 2 weeks
 

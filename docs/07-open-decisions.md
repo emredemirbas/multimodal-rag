@@ -18,6 +18,24 @@ default now. Completing v1 must not automatically open the next sprint. Independ
 owned/licensed real-video quality/audiovisual review remains open for full Alpha 2;
 synthetic workflow acceptance does not satisfy it.
 
+## Explicit Sprint 5 continuation (2026-10-29)
+
+The owner now requests a step-by-step Sprint 5 plan and implementation, and a
+product-focused public README. This explicitly opens the next scope after v1;
+the earlier rule against automatic sprint progression remains valid.
+
+See `sprint5/implementation-plan.md` for sequence and surfaced assumptions.
+Two product answers have been requested and remain pending: whether external
+prerequisite/extension material is opt-in or always excluded, and whether approved
+official documentation is fetched automatically after opt-in or selected/approved
+per document. Do not mark either as confirmed without the owner's answer.
+The first pure schema/binding slice requires explicit policy/preferences and
+fetches nothing; later dependent behavior waits for these choices.
+
+Difficulty, available effort, source selection and output language are explicit
+inputs rather than hidden defaults. The source-first bounded contract does not
+resolve deadlines, missed deadlines, grading dependencies or project mastery.
+
 ## Blocking before broad implementation
 
 | Decision | Proposed default | Status |
