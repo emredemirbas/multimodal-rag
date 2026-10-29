@@ -43,6 +43,10 @@ class StageFailure(Exception):
 StageExecutor = Callable[[StageInput], StageResult]
 
 
+class StageLeaseLost(Exception):
+    """Discard detached work when its database admission/finish fence lost."""
+
+
 def advance_run(repository: RunDeliveryRepository, tenant: str, project: UUID, run_id: UUID,
                 processors: Mapping[str, StageExecutor]) -> None:
     claim = repository.claim(tenant, project, run_id)
@@ -65,6 +69,8 @@ def advance_run(repository: RunDeliveryRepository, tenant: str, project: UUID, r
         # Recheck even a mutated/constructed result before choosing a branch.
         if (result.checkpoint is None) == (result.content is None):
             raise ValueError("Invalid stage result")
+    except StageLeaseLost:
+        return
     except StageFailure as error:
         repository.fail(claim, error.code, retryable=error.retryable)
         return

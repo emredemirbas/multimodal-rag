@@ -78,9 +78,18 @@ redirects, tools, thinking and cloud fallback; only local tags/show/version/chat
 endpoints are used. Schema `$ref` links must point inside the supplied schema. Bound request/body/
 response bytes, reject duplicate/non-finite JSON and reject incomplete or late
 output. A completed JSON object is not evidence support or assignment-schema
-approval: the later workflow must parse its application contract and bind it
-against the authorized context before publication. Its processor remains
-unregistered until that workflow exists. See the Sprint 5 plan for resource caps.
+approval: the internal workflow parses its application contract and binds it
+against the authorized context before publication. Exact quotes must occur in
+their named source slice; every slice needs an explicit model coverage status.
+This verifies literal grounding/relationships, not semantic entailment. Unsupported
+output cannot waive deterministic validation; only one bounded draft revision is
+allowed. Public/default processor registration stays closed pending native review.
+LangGraph hosted tracing is explicitly disabled inside construction/invocation
+without changing owner environment variables; no library checkpoint store receives
+project text. Logs contain only safe identifiers and fixed rejection codes.
+True external-topic/document permissions fail before inference in the current
+internal path; pending product policy is not silently decided. See the Sprint 5
+plan for resource caps.
 
 ### Malicious uploaded files
 

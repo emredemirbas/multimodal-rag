@@ -237,8 +237,8 @@ Context/source/project deletion still removes the entire dependent run history.
 
 The scheduler dispatches a separate `curriculum` Celery queue and recovers expired
 leases; an optional `curriculum-internal` worker profile executes one bounded
-application stage per delivery outside DB locks. The processor registry is empty
-until the local workflow is implemented; unknown versions fail explicitly.
+application stage per delivery outside DB locks. The default processor registry
+remains empty pending native-output review/enablement; unknown versions fail explicitly.
 There is no run HTTP producer or user generation capability.
 See steps 3a/3b in the Sprint 5 plan for bounds, replay and delivery details.
 
@@ -253,6 +253,20 @@ zero remains zero. Accepted responses need a successful scoped finish receipt;
 lease expiry during either receipt write rolls the write back. Cancellation,
 revocation/archive and dependency deletion discard late output. This internal
 provider connection does not register a processor or create generation endpoints.
+
+The internal `tutorial-assignment-graph-v1` workflow uses those existing scoped
+checkpoints; no new table/migration or endpoint is added. The first delivery pins
+context/recipe/batch-plan hashes and explicit model identity without inference.
+Later deliveries accept one batch extraction, goal selection or revision input at
+a time. State retains exact quote anchors and coverage for every lossless slice,
+all extracted goals and the selected subset. Unselected/insufficient material
+is inspectable in private progress, not claimed as covered by the assignment.
+Resume validates each checkpoint's scope, sequence, digest, header and legal
+transition against the original context. Final content must preserve selected
+objectives and valid tutorial relationships; publication binds again under the
+database fence. Raw source/proposal text is private checkpoint data subject to
+context/source/project deletion, never usage/log data. These are structural checks,
+not semantic support or exercise-solvability verification.
 
 - `learning_objectives`
 - `objective_evidence`

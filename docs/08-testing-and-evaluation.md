@@ -38,8 +38,20 @@ PostgreSQL + HTTP tests prove that a receipt commits before the physical request
 no lock spans inference, failed commits prevent calls and in-flight cancellation/
 deletion/expiry cannot deliver output. Migration tests preserve old metadata-only
 receipts and exact replay, while new request hashes/versions conflict on reuse.
-No real model is invoked by these tests; schema binding and native draft-quality
-review remain later workflow gates.
+No real model is invoked by these tests; native draft-quality review remains a
+separate gate.
+
+The actual internal LangGraph is tested with authored local replies: lossless
+Unicode slicing, complete coverage records, exact quote checks, goal selection,
+selected-objective/effort/evidence validation, at most one revision, strict resume
+identity/transitions and rejection before inference when unsupported permissions
+are true. Env-enabled hosted tracing must still create no trace client. SQL/HTTP
+tests exercise atomic checkpoints/publication, nullable/failed call attribution,
+transient retry and revoked/cancelled/deleted/expired late work. A real Celery
+worker is SIGKILLed after this graph commits extraction; its replacement must
+select/generate without extracting again and duplicate deliveries must leave one
+draft/result. This proves recovery and structural validity, not native model
+quality, semantic coverage, appropriate difficulty or solvability.
 
 ## Software test pyramid
 

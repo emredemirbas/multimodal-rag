@@ -2,7 +2,9 @@
 
 Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts,
 saved contexts/versioned editable drafts, durable runs and separate queued
-delivery/atomic publication implemented. This is the next selected scope after the
+delivery/atomic publication, local provider and internal bounded LangGraph
+workflow implemented. Native-output review and public enablement remain open.
+This is the next selected scope after the
 accepted RAG milestone, not an automatic sprint transition. The independent
 real-video quality/audiovisual gate for full Sprint 4/Alpha 2 stays open.
 
@@ -304,9 +306,9 @@ Implement this step in two bounded slices. **4a (implemented):** a separate loca
 provider and fenced physical-call attribution, with an explicit model/engine pin,
 request fingerprint and transport/resource bounds. Validate it with authored HTTP
 responses and isolated PostgreSQL; do not call the owner's model or register a
-generation processor in this slice. **4b (next):** application prompts, objective/
-coverage batching and the finite LangGraph transitions/checkpoint continuation,
-then separately review actual native output. Pending product choices still gate
+generation processor in this slice. **4b (implemented internally):** application
+prompts, objective/coverage batching and finite LangGraph transitions/checkpoint
+continuation. Next separately review actual native output. Pending product choices still gate
 their dependent behavior; technical provider work does not confirm them.
 
 `LocalCurriculumProvider` implements the application-owned JSON interface;
@@ -314,9 +316,36 @@ their dependent behavior; technical provider work does not confirm them.
 0024 adds exact serialized request-body hash and schema/request versions. Old
 metadata-only rows remain null and preserve their original replay fingerprints.
 Start/finish writes recheck wall time after the write; expired receipts roll back.
-Returned JSON still requires application-contract/evidence validation in 4b;
+Returned JSON receives application-contract/evidence validation in 4b;
 the adapter does not claim semantic support or generate a published assignment.
 The default worker registry and public capability remain closed.
+
+4b implementation boundary: internal tutorial-only workflow for explicit false
+prerequisite/extension/documentation permissions. Other permissions fail before
+inference until their dependent policy/capture exists; this is not a permanent
+product-policy choice. Default processor registration/public generation stays
+closed. Pin LangGraph 1.2.18 (Python >=3.10), disable hosted tracing explicitly
+without changing owner environment variables, and use no library checkpointer.
+
+Split source text losslessly at Unicode character boundaries into <=1,800-byte
+prompt slices, preserving original evidence IDs and exact character offsets.
+At most four slices/batch and 20 batches; refuse larger contexts before inference,
+without truncating or silently selecting sources. Extraction returns <=2 goals
+per batch with exact quotes and a model-reported supported/insufficient status for
+every slice. These are unreviewed interpretations, not semantic quality scores.
+Select <=4 of the <=40 extracted goals for a small draft; retain unselected goals
+as explicit omissions from that assignment. Bounds are technical limits, not
+hidden learner effort/difficulty defaults.
+
+One delivery initializes/pins state without inference; later deliveries make at
+most one physical call each (extract, select, generate or revise), followed by
+deterministic validation and an atomic checkpoint or bound draft publication.
+Accepted extraction/selection checkpoints are reused after process loss. Invalid
+extraction/selection fails safely; an invalid draft receives at most one revision
+with bounded raw proposal and fixed feedback codes. Oversized repair input fails
+without truncation. At most 23 checkpoints/23 physical workflow calls, excluding
+the existing explicitly bounded transient retry budget. No model may waive schema,
+scope, selected-objective, evidence, effort or covered-only requirements.
 
 The transport follows the official [Ollama chat API](https://docs.ollama.com/api/chat)
 and [structured-output guide](https://docs.ollama.com/capabilities/structured-outputs).
@@ -405,14 +434,19 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Steps 1, 2a, 2b, 3a, 3b and 4a are implemented: contracts/binding, saved contexts,
+Steps 1, 2a, 2b, 3a, 3b, 4a and internal 4b are implemented: contracts/binding, saved contexts,
 versioned draft persistence/API, durable runs and separate queued delivery with
-fenced publication, plus a pinned local JSON provider and scoped call attribution.
+fenced publication, plus a pinned local JSON provider, scoped call attribution and
+bounded objective/coverage extraction, selection, generation and one revision.
 Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 4b's application prompts, objective/coverage batching and bounded
-LangGraph workflow. Pin its dependency only when used; reuse the provider/receipt
-boundary and the existing run checkpoints, with no unscoped library state store.
-Do not download weights or prematurely enable public generation. Resolve any
-still-pending product policy before dependent generation/fetch behavior. Check
-the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.
+Next is native-output review of the internal step 4b workflow. Record a small owned/
+licensed sample and expected supported goals, forbidden extensions and insufficient
+evidence before invoking the pre-existing explicitly pinned local model. Use an
+isolated context/run and review generated requirements, effort and progressive
+hints; report actual failures rather than treating authored HTTP tests as quality
+evidence. No downloads or default/public enablement. Preserve the existing scoped
+provider/receipt/checkpoint boundaries and disabled hosted tracing. Resolve pending
+product policy before dependent external-topic/document behavior; then continue
+the planned documentation and draft review/activation work. Check the exact
+pushed commit's CI; no user-facing generation/activation flow is claimed yet.

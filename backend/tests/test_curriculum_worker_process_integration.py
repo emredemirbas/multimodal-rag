@@ -5,6 +5,7 @@ test child, so these recovery fixtures cannot become a product generation path.
 """
 
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -19,6 +20,8 @@ from app.curriculum.run_contracts import RunCreate
 from app.curriculum.runs import RunRepository
 from app.jobs.curriculum_dispatch import dispatch_once, recover_expired
 from test_curriculum_drafts_integration import content_for, saved_context
+from test_curriculum_local_provider import local_curriculum_server
+from test_curriculum_workflow import authored_reply
 from test_ingestion_integration import ingestion
 from test_postgres_integration import isolated_postgres_url
 
@@ -48,11 +51,20 @@ def fixture_processor(stage_input):
     return StageResult(content=AssignmentContent.model_validate_json(os.environ['PROBE_CONTENT']))
 
 PROCESSORS['probe-curriculum-v1'] = fixture_processor
+if os.environ.get('PROBE_GRAPH_ENDPOINT'):
+    from app.curriculum.local_provider import LocalCurriculumProvider,LocalModelIdentity
+    from app.curriculum.model_calls import LeasedCurriculumCalls
+    from app.curriculum.workflow import TutorialAssignmentWorkflow,WORKFLOW_VERSION
+    from app.jobs.curriculum_worker import settings
+    from app.postgres import PostgresStore
+    PROCESSORS[WORKFLOW_VERSION] = TutorialAssignmentWorkflow(LeasedCurriculumCalls(
+        RunDeliveryRepository(PostgresStore(settings.database_url)),LocalCurriculumProvider(os.environ['PROBE_GRAPH_ENDPOINT'],
+            LocalModelIdentity(model_digest='a'*64,engine='0.40.3'))))
 if os.environ['PROBE_PAUSE'] == 'after_checkpoint_commit':
     original_continue = RunDeliveryRepository.continue_with_checkpoint
     def checkpoint_and_pause(self,*args,**kwargs):
         saved = original_continue(self,*args,**kwargs)
-        if saved:
+        if saved and args[1].stage == os.environ.get('PROBE_CHECKPOINT_STAGE','prepared'):
             record('after_checkpoint_commit')
             time.sleep(120)
         return saved
@@ -203,6 +215,107 @@ def test_actual_sigkill_recovery_commits_one_draft_and_reuses_accepted_stage(ing
                     worker.kill()
                     worker.wait(timeout=5)
         # Only this test's random namespace; never flush the Redis database.
+        keys = list(redis.scan_iter(match=prefix + "*"))
+        if keys:
+            redis.delete(*keys)
+        redis.close()
+        client.close()
+
+
+def test_actual_graph_resumes_after_sigkill_without_repeating_accepted_extraction(ingestion, local_curriculum_server):
+    if os.getenv("TEST_CURRICULUM_WORKER") != "1":
+        pytest.skip("Set TEST_CURRICULUM_WORKER=1 with an isolated Redis broker")
+    from app.curriculum.workflow import WORKFLOW_VERSION
+    broker = os.environ["TEST_CURRICULUM_REDIS_URL"]
+    sources, _, principal, project, actor = ingestion
+    provider, state = local_curriculum_server
+    phases = []
+    def reply(request):
+        body = json.loads(request["messages"][1]["content"])
+        phases.append(body["stage"])
+        state["content"] = json.dumps(authored_reply(body))
+    state["on_chat"] = reply
+    context = saved_context(ingestion)
+    runs = RunRepository(sources.store)
+    run = runs.create(principal.tenant_id, project.id, actor, context.id,
+        RunCreate(idempotency_key="graph-process-recovery", workflow_version=WORKFLOW_VERSION))
+    with sources.store._connect() as connection:
+        connection.execute("CREATE TABLE probe_curriculum_stages(tenant_id text,project_id uuid,run_id uuid,stage text)")
+    scope = (principal.tenant_id, project.id, run.id)
+    prefix, queue = "curriculum-graph-" + uuid4().hex + ":", "curriculum-graph-" + uuid4().hex
+    client = Celery("curriculum_graph_probe", broker=broker)
+    client.conf.broker_transport_options = {"global_keyprefix": prefix, "socket_connect_timeout": 3, "socket_timeout": 5}
+    redis = Redis.from_url(broker)
+    redis.ping()
+    assert not list(redis.scan_iter(match=prefix + "*"))
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "APP_ENV": "test",
+        "DATABASE_URL": sources.store.database_url, "CELERY_BROKER_URL": broker,
+        "AUTH_MODE": "development", "DEVELOPMENT_AUTH_TOKEN": "probe-development-token",
+        "EMBEDDING_PROVIDER": "hash", "ANSWER_PROVIDER": "extractive",
+        "PROBE_TENANT": principal.tenant_id, "PROBE_PROJECT": str(project.id), "PROBE_RUN": str(run.id),
+        "PROBE_PREFIX": prefix, "PROBE_QUEUE": queue, "PROBE_BOUNDARY": "graph",
+        "PROBE_GRAPH_ENDPOINT": provider.base_url, "PROBE_CHECKPOINT_STAGE": "curriculum.extracted"}
+    workers = []
+
+    def start(pause):
+        process = subprocess.Popen([sys.executable, "-c", WORKER_CODE], env={**env, "PROBE_PAUSE": pause},
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        workers.append(process)
+        return process
+
+    def publish(tenant, project_id, run_id):
+        client.send_task("curriculum.advance_run", args=[tenant, str(project_id), str(run_id)], queue=queue, expires=60)
+
+    def current():
+        return runs.read(principal.tenant_id, project.id, actor, run.id)
+
+    def recorded(name):
+        with sources.store._connect() as connection:
+            return connection.execute("SELECT 1 FROM probe_curriculum_stages WHERE tenant_id=%s AND project_id=%s AND run_id=%s AND stage=%s",
+                                      (*scope, name)).fetchone() is not None
+
+    def wait_until(predicate):
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if predicate():
+                return
+            assert workers[-1].poll() is None, "The test-owned graph worker exited"
+            assert current().status not in {"failed", "cancelled"}, current().failure_code
+            dispatch_once(sources.store, publish)
+            time.sleep(.1)
+        pytest.fail("The test-owned graph worker did not reach the checkpoint/result")
+
+    try:
+        first = start("after_checkpoint_commit")
+        wait_until(lambda: recorded("after_checkpoint_commit"))
+        first.kill()
+        first.wait(timeout=5)
+        interrupted = current()
+        assert interrupted.status == "pending" and interrupted.checkpoint_seq == 2
+        assert interrupted.failure_count == 0 and phases == ["extract"]
+        start("continue")
+        wait_until(lambda: current().status == "succeeded")
+        completed = current()
+        assert completed.attempt_count == 4 and completed.checkpoint_seq == 3 and completed.failure_count == 0
+        assert completed.result_draft_id is not None and phases == ["extract", "select", "generate"]
+        publish(*scope)
+        publish(*scope)
+        client.send_task("probe.curriculum_barrier", queue=queue, expires=60)
+        wait_until(lambda: recorded("barrier"))
+        assert current() == completed and phases == ["extract", "select", "generate"]
+        with sources.store._connect() as connection:
+            for table in ("curriculum_drafts", "curriculum_draft_revisions", "curriculum_run_results"):
+                assert connection.execute(f"SELECT count(*) AS n FROM {table} WHERE tenant_id=%s AND project_id=%s", scope[:2]).fetchone()["n"] == 1
+            assert connection.execute("SELECT count(*) AS n FROM curriculum_model_calls WHERE tenant_id=%s AND project_id=%s AND run_id=%s", scope).fetchone()["n"] == 3
+    finally:
+        for worker in workers:
+            if worker.poll() is None:
+                worker.terminate()
+                try:
+                    worker.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    worker.kill()
+                    worker.wait(timeout=5)
         keys = list(redis.scan_iter(match=prefix + "*"))
         if keys:
             redis.delete(*keys)

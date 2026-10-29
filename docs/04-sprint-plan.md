@@ -282,9 +282,11 @@ remaining quality/Alpha 2 gates stay unchanged. See `docs/sprint4/change-ocr-gui
 ## Sprint 5 — Learning model and case studies
 
 **Implementation status (2026-10-29):** Explicitly authorized. The ordered plan
-is in `sprint5/implementation-plan.md`; internal strict contracts and authoritative
-evidence binding are implemented and locally tested. No generated assignment API/UI,
-persistence, model workflow or Sprint 5 acceptance is claimed by that first slice.
+is in `sprint5/implementation-plan.md`. Contracts/binding, saved contexts and
+versioned drafts, durable queued runs, pinned local provider/call attribution and
+the internal bounded LangGraph workflow are implemented and locally tested.
+Public generation/activation UI, native draft-quality review and Sprint 5
+acceptance remain open; external-topic/document policy answers are pending.
 
 **Duration:** 2 weeks
 

@@ -564,17 +564,106 @@ all inference responses came from test HTTP servers. Whitespace/local Markdown
 target checks passed, and README is unchanged. The exact new commit's hosted
 workflow must be checked separately from the green starting baseline.
 
+## Internal objective extraction and LangGraph workflow (2026-10-29)
+
+Starting checkout/origin was clean at `6407ca4` (pinned provider/call attribution).
+Its exact [CI run 40906315963](https://github.com/emredemirbas/multimodal-rag/actions/runs/40906315963)
+was rechecked: it was initially still running, then all four jobs completed
+successfully before this commit. Its success does not certify the new change.
+Pending extension/document-policy answers remain pending; `devam` is not an answer.
+
+Delivered step 4b as an internal component:
+
+- Pinned `langgraph==1.2.18`; actual `StateGraph` nodes perform model ->
+  deterministic validation -> checkpoint or publication. The existing Celery
+  queue, scoped lease/call ledger and database checkpoints own delivery/recovery.
+  No library checkpointer, environment change or hosted tracing is introduced;
+  `tracing_context(enabled=False)` covers compilation/invocation and node threads.
+- Tutorial-only eligibility requires all three external-topic/document flags
+  explicitly false. A true flag fails before inference, without choosing a
+  permanent product policy. Default worker registry remains empty; no public
+  generation/run producer, activation, external fetch or UI is enabled.
+- Lossless Unicode slicing retains original segment/source/processing identity
+  and exact character offsets. <=1,800 UTF-8 bytes/slice, four slices/batch,
+  20 batches; excessive input fails before any call. No prefix truncation or
+  silently selected subset of source text. Existing context bounds still apply.
+- Each extraction has <=2 goals, exact nonempty quotes in named slices and
+  supported/insufficient-evidence coverage for every slice. ASR/OCR/description
+  origins are explicitly unreviewed. Quote membership and relationships are
+  structural checks; model-reported support is not verified semantic entailment.
+- Select <=4 known goals from <=40, preserving all extracted goals/coverage and
+  the selected subset in private progress. Unselected material is omitted from
+  the assignment, not reported as fully covered. Drafts must copy selected
+  objectives exactly and use all of them with consistent covered tutorial links.
+  Existing schema, effort, permission and authoritative evidence binding remain
+  mandatory; publication rebinds under the database fence.
+- First delivery pins context/recipe/plan/model identity without inference.
+  Each later delivery makes at most one physical call. Resume validates scope,
+  sequence, payload hash, context/recipe/plan/provider identity and each legal
+  transition before inference. Accepted extraction/selection is reused after loss.
+- Invalid extraction/selection fails safely. Invalid draft gets at most one
+  bounded revision with a fixed feedback code; oversized proposal/prompt fails
+  without truncation. At most 23 checkpoints/23 workflow calls, apart from the
+  existing bounded transient retries. Lost admission/finish discards work without
+  adding a failure or allowing stale progress. No schema migration is needed:
+  private text uses the existing context-owned checkpoints/deletion cascades.
+
+Actual checks:
+
+- **50 graph/objective unit cases passed, 7.04s**: lossless multibyte/escaped text,
+  overflow before calls, exact identities/offsets, ASR and visual origin labels,
+  UTF-8 caps, invented quotes/IDs, incomplete/ambiguous coverage, selection,
+  explicit omissions, strict scope/pin/progress replay, invalid/transient/late
+  output, one repair and a maximum-size plan with exactly 23 calls/checkpoints.
+  Graph construction is repeated between deliveries; no in-memory continuation
+  is required. Env-enabled tracing is tested with hosted client creation forbidden.
+- **17 focused PostgreSQL/HTTP/real-worker cases passed, 17.35s** after final
+  recipe pinning. Fourteen exercise the real graph with authored HTTP inference:
+  detached checkpoint resume, one bound result, physical-call receipts, failed
+  JSON repair attribution, invalid revision, transient retry and cancellation/
+  archive/revocation/expiry/source/project deletion during unlocked inference.
+  Wrong tenant/project/run cannot start the graph or contact HTTP.
+- Three actual Celery process probes passed, including the two existing generic
+  delivery boundaries and the new graph extraction boundary: SIGKILL after the
+  accepted extraction commit, replacement selects/generates without extracting
+  again, two duplicate tasks consumed before a FIFO barrier, one draft/revision/
+  result and exactly three physical calls. Only owned test processes are killed.
+- Final backend non-integration regression: **836 passed, 680 deselected, 16.19s**.
+- Full PostgreSQL/Redis regression: **670 passed, 10 skipped, 831 deselected,
+  276.96s**. The ten existing skips require separate media-worker/MinIO opt-ins.
+  Five subsequently added unit boundary cases were run in the final unit suite;
+  final graph/integration focused reruns passed as recorded above.
+- Fresh worker image built from `backend/Dockerfile` target `curriculum-worker`.
+  With networking disabled/read-only filesystem and both tracing env flags true,
+  it imports pinned LangGraph, compiles the graph without a checkpointer and
+  reports an empty default registry. No model/database request is made by this
+  smoke. `uv pip check` found all 75 temporary-environment packages compatible.
+
+All inference replies in these tests are authored; no actual model generation,
+native quality, semantic coverage, feasible difficulty or exercise solvability
+has been reviewed. No installed weights were downloaded/replaced, no owner model
+received an inference request and no paid endpoint was used. The independent
+owned/licensed real-video quality gate stays open. README is unchanged.
+
+Tests used a separate temporary Python environment, cached labelled disposable
+PostgreSQL/Redis containers with random loopback ports/tmpfs, isolated schemas,
+random Redis prefixes and owned worker processes. Schema count and Redis key
+count ended at zero; both test containers and the temporary worker-image tag were
+removed. Owner `.env`, credentials, Docker configuration, data and running
+services were not changed. The exact new commit's CI must be checked after push;
+local results do not make a running hosted workflow successful.
+Whitespace and changed Markdown local-target checks passed; README is unchanged.
+
 ## Continuation
 
-Next: step 4b in `implementation-plan.md`: application-owned objective/coverage
-prompts and bounded source batches, then finite LangGraph generation/validation/
-bounded revision using the provider, scoped call receipts and existing run
-checkpoints. Pin LangGraph when introducing it, without an unscoped library state
-store or hosted tracing. Do not download weights or enable public generation
-prematurely; the current registry is empty. Native model output/quality still
-needs separate review and does not close the independent real-video gate.
-Preserve source/context scope,
-original actor, exact command replay and complete deletion; no synthetic source.
+Next: the planned small native-output review for step 4b. Record owned/licensed
+sample content plus expected supported objectives, forbidden extensions and
+insufficient-evidence cases before inference. Use isolated context/run data and
+the pre-existing explicitly pinned local model, review actual drafts/effort/hints
+and record failures. Keep default/public generation closed; do not download
+weights. The component tests above do not replace this review or close Sprint 4.
+Preserve source/context scope, original actor, exact command replay and complete
+deletion; no synthetic source used to fake curriculum ownership.
 
 Resolve the pending extension and official-document policy before enabling their
 dependent behavior. Preserve source-generation pins, no paid calls/downloads,

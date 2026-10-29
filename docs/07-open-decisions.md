@@ -34,6 +34,10 @@ policy/preferences and fetch nothing. Persisting a permission does not enable
 generation or document access; later dependent behavior waits for these choices.
 Draft content can bind only to tutorial evidence already captured in its context;
 trusted external-document capture is not delivered by this persistence slice.
+The internal LangGraph component accepts only contexts whose three external-topic/
+document permissions are explicitly false; any true flag fails before inference.
+This independent tutorial-only implementation does not settle either product
+choice or enable public generation. Native-output review is still required.
 
 Difficulty, available effort, source selection and output language are explicit
 inputs rather than hidden defaults. The source-first bounded contract does not

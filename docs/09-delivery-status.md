@@ -90,8 +90,10 @@ The current plan is `sprint5/implementation-plan.md`. Strict curriculum contract
 and authoritative evidence binding, immutable saved contexts and versioned draft
 create/read/edit/delete, durable run lifecycle/progress and separate curriculum
 queue/worker delivery, continuation, fenced publication and the pinned local JSON
-provider/call-attribution foundation are implemented. Next is objective/coverage
-batching and LangGraph generation, followed by official-document
+provider/call-attribution foundation and internal bounded LangGraph workflow are
+implemented. The graph extracts objectives/coverage, selects a small goal subset,
+generates and allows one revision, reusing scoped checkpoints after process loss.
+Native-output quality review is next, followed by policy-dependent official-document
 snapshots and draft review/activation UI. Submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
@@ -103,15 +105,15 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
-and continue step 4b's application prompts, bounded objective/coverage batches and
-finite LangGraph workflow. Reuse step 4a's local identity/request/usage boundary
-and run checkpoints. Native model output/quality is unreviewed; do not download
-weights or enable public generation prematurely. Step 3b's actual SIGKILL/duplicate-delivery evidence
-is recorded separately from native model quality. Draft objective/evidence relationships are versioned;
-whole-context objective extraction/semantic coverage still belongs to generation.
-Resolve the pending extension and document-fetch policy before enabling dependent
-behavior. Do not claim Sprint 5
-complete from internal schema tests, or start code execution/tutoring early.
+and perform the planned small native-output review of step 4b. Record an owned/
+licensed sample, expected goals, forbidden extensions and insufficient-evidence
+cases before calling the pre-existing explicitly pinned local model through an
+isolated context/run. Inspect actual drafts/effort/hints and record failures.
+Authored HTTP and real SIGKILL recovery checks establish software behavior, not
+semantic coverage/solvability. Keep the default registry/public producer closed;
+no downloads or owner-data/service changes. Resolve pending extension/document
+policy before dependent fetch/enablement. Do not claim Sprint 5 complete or close
+the independent real-video gate from these tests; do not start grading/tutoring.
 
 ## Sprint 4 closure — one remaining gate
 

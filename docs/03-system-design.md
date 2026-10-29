@@ -289,9 +289,15 @@ an explicit local `qwen3:4b` digest/engine pin, checks identity before and after
 inference and returns bounded raw JSON plus usage to the application. A scoped
 call receipt commits before inference; no database lock spans the HTTP request.
 Exact request-body hashes and schema/request versions complement the existing
-prompt/model metadata. No generation processor is registered yet. Objective/
-coverage prompts and the model-driven LangGraph workflow remain the next slice;
-the queue and CRUD stay ordinary application code.
+prompt/model metadata. `TutorialAssignmentWorkflow` now uses pinned LangGraph
+1.2.18 internally for model -> deterministic validation -> checkpoint/publication
+transitions. It extracts objectives from lossless bounded source batches, selects
+a small goal subset, generates and allows at most one revision. Each delivery
+does at most one physical model call; accepted progress remains in the existing
+tenant/project-owned run checkpoints. No library checkpointer or hosted tracing
+is used (tracing is explicitly disabled even if enabled in the environment).
+The default registry/public producer remain closed pending native-output review
+and dependent product choices. Queue coordination and CRUD stay ordinary code.
 
 ### LangGraph workflows
 
