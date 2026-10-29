@@ -8,4 +8,5 @@ addopts = "-q"
 markers = [
     "integration: requires external PostgreSQL with the pgvector extension",
     "worker_integration: requires Redis, MinIO and TEST_REAL_WORKER=1",
+    "curriculum_worker_integration: requires isolated Redis and TEST_CURRICULUM_WORKER=1",
 ]

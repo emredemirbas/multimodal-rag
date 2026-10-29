@@ -8,7 +8,7 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-**Sprint 5 has contracts, saved contexts, versioned draft APIs and an internal durable-run foundation**; full
+**Sprint 5 has contracts, saved contexts, versioned draft APIs and durable queued delivery/publication**; full
 Sprint 4/Alpha 2 quality approval remains open. Project/auth/isolation,
 authorized subtitle jobs, scoped retrieval/chat/citations, optional free local
 answers/embeddings, ordered playlist relationships, constrained WAV transcription
@@ -32,7 +32,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Context/draft APIs and internal run/attempt/outbox/checkpoint/usage foundation implemented (0020–0022). Actual queue/worker/publication, extraction/generation, UI and pending policy remain; see the plan/validation |
+| Sprint 5: learning objectives and assignments | Context/draft APIs, durable runs and separate queue/worker/atomic publication implemented (0020–0023). Real extraction/generation, UI and pending policy remain; see the plan/validation |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -88,9 +88,9 @@ its own workflow status must still be reported honestly.
 The owner has now explicitly selected Sprint 5 planning and staged implementation.
 The current plan is `sprint5/implementation-plan.md`. Strict curriculum contracts
 and authoritative evidence binding, immutable saved contexts and versioned draft
-create/read/edit/delete and internal durable run lifecycle/progress are implemented.
-Next is actual curriculum queue/worker delivery, continuation and fenced publication,
-followed by local/LangGraph generation, official-document
+create/read/edit/delete, durable run lifecycle/progress and separate curriculum
+queue/worker delivery, continuation and fenced publication are implemented.
+Next is local/LangGraph generation, followed by official-document
 snapshots and draft review/activation UI. Submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
@@ -102,9 +102,11 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
-and continue step 3b's real queue/worker boundary (next migration currently 0023
-if needed). Do not claim repository lease tests are real process recovery or
-expose generation before a processor exists. Draft objective/evidence relationships are versioned;
+and continue step 4's application-owned local provider and bounded LangGraph
+workflow. Start with read-only inventory of already installed local model/engine
+identities and explicit budgets; do not download weights or enable the public
+generation path prematurely. Step 3b's actual SIGKILL/duplicate-delivery evidence
+is recorded separately from native model quality. Draft objective/evidence relationships are versioned;
 whole-context objective extraction/semantic coverage still belongs to generation.
 Resolve the pending extension and document-fetch policy before enabling dependent
 behavior. Do not claim Sprint 5

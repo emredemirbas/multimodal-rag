@@ -221,10 +221,26 @@ They do not reuse source ingestion jobs or change source processing generations.
 Internal lifecycle methods authorize the original stored actor and use token/
 attempt/wall-clock fences with membership -> project -> context -> run locks.
 Checkpoints and physical-call receipts have bounded immutable identities; unknown
-usage stays null and local billed spend is constrained to zero. Run/attempt states
-cannot report success in this slice. There is no new run HTTP endpoint, broker
-producer, provider call or default worker service. See step 3a in the Sprint 5 plan
-for resource limits, replay rules and the remaining queue/publication boundary.
+usage stays null and local billed spend is constrained to zero.
+
+Migration `0023_curriculum_delivery.sql` adds terminal run success, checkpointed/
+successful delivery attempts and `curriculum_run_results`, scoped to the exact
+generated draft revision. One accepted checkpoint atomically closes its attempt,
+returns the run to pending and resets its outbox without consuming a failure.
+Final publication atomically binds the strict content against its saved context,
+writes draft/revision/result and closes the run/outbox under the live lease.
+Open model-call attribution prevents acceptance until it is finished. The final
+wall-clock check follows the outbox write too; expiry rolls back all output.
+Result reads retain revision 1 after user edits; deleting the draft clears the
+result pointer while its run remains succeeded and cannot regenerate on replay.
+Context/source/project deletion still removes the entire dependent run history.
+
+The scheduler dispatches a separate `curriculum` Celery queue and recovers expired
+leases; an optional `curriculum-internal` worker profile executes one bounded
+application stage per delivery outside DB locks. The processor registry is empty
+until the local workflow is implemented; unknown versions fail explicitly.
+There is no run HTTP producer, model invocation or user generation capability.
+See steps 3a/3b in the Sprint 5 plan for bounds, replay and delivery details.
 
 - `learning_objectives`
 - `objective_evidence`

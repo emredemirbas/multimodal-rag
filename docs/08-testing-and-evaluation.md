@@ -20,8 +20,16 @@ delivered assignment generation/activation UI/workflow.
 The internal run foundation additionally tests original-actor membership, fresh
 lease clocks after real PostgreSQL lock waits, cancellation/recovery, immutable
 checkpoint/call replay, unknown versus zero usage and complete private-state
-deletion. These repository tests do not establish real worker/process recovery;
-actual queue delivery and process loss remain the next slice.
+deletion. Separate delivery tests cover checkpoint/outbox atomicity, final bound
+publication, exact revision results, duplicate/stale tasks, invalid content,
+rollback and wall-clock expiry during lock waits and final outbox writes.
+Test-only adapters exercise cancellation/deletion during unlocked processing and
+bounded failures with interrupted call attribution. Actual owned Celery processes
+are SIGKILLed before output commit and after checkpoint commit; replacement
+deliveries must reuse accepted progress and produce one draft despite duplicates.
+These use isolated PostgreSQL/Redis namespaces, without MinIO/models, and run in
+the backend integration CI job. Fixture processors exist only in test code; they
+do not establish native model generation, semantic quality or solvability.
 
 ## Software test pyramid
 

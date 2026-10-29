@@ -1,7 +1,7 @@
 # Sprint 5 — validation record
 
 Date: 2026-10-29. Status: internal contracts, saved contexts, versioned draft APIs
-and the internal durable-run/progress foundation implemented. Model
+and durable queued delivery/atomic draft publication implemented. Model
 extraction/generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
 The ordered plan is `implementation-plan.md`.
 
@@ -370,15 +370,106 @@ broker outage/redelivery and final draft publication remain step 3b work. Full
 Sprint 5, generation quality and the independent real-video Alpha 2 review remain
 open. README remains product documentation without these delivery details.
 
+## Step 3b — separate delivery and atomic publication (2026-10-29)
+
+Started from `b6f9096` with its exact
+[CI run 40877097378](https://github.com/emredemirbas/multimodal-rag/actions/runs/40877097378)
+rechecked: all four jobs completed successfully. An interrupted work session was
+resumed from its existing uncommitted files rather than replacing them.
+
+Delivered:
+
+- Additive migration `0023_curriculum_delivery.sql`: succeeded runs,
+  checkpointed/succeeded delivery attempts and a scoped exact-revision result
+  relation. Applied 0022 is unchanged. Deleting a generated draft removes the
+  pointer but preserves terminal run history; dependency deletion cascades all
+  private/result state. A later user edit does not move the original result.
+- A separate Celery task/queue, optional `curriculum-internal` Compose worker and
+  Docker target. One process slot, 90/120-second soft/hard limits below the
+  180-second lease, read-only filesystem and bounded resources. Normal startup
+  omits this profile. It needs migrations/Redis and has no model or object-store
+  dependency, shared object credentials, mounted user data or exposed port.
+- Independent scoped outbox dispatch, publication retry, sent/unclaimed rearm
+  after 60 seconds and bounded expired-run recovery in the scheduler. Broker calls
+  happen outside transactions; token-conditioned ACKs cannot overwrite a fast
+  worker's next checkpoint delivery. Logs contain safe IDs/counts/failure codes,
+  never broker exception text, model/source payload or credentials.
+- A detached stage input with original authorized run/context/checkpoints and a
+  private claim for before-invocation call attribution. One trusted bounded stage
+  runs per delivery outside DB locks. Its result is either a new sequential
+  checkpoint or final strict content; call attribution must finish before either
+  can be accepted. Unexpected adapter failures consume the bounded failure budget
+  and interrupt open calls without inventing usage.
+- Checkpoint, attempt closure, pending state and outbox reset commit atomically.
+  Continuation gets a fresh token/attempt and preserves the failure budget. A
+  duplicate old checkpoint cannot repeatedly yield without progress.
+- Final publication revalidates strict content, reconstructs server-owned scope
+  and binds exact saved evidence under the current authority/context/live lease.
+  New draft/revision/result, successful attempt/run and outbox removal share one
+  transaction. No fake user command key or second repository connection is used.
+  Wall time is checked again after the last outbox write; expiry during that write
+  rolls back every output/status change.
+- The application processor registry remains empty. Unknown versions fail
+  explicitly with `processing_unavailable`; there is no environment-selected
+  processor import, fixture generator or public run-create/generation endpoint.
+  Synthetic processors exist only in tests. No model is invoked or downloaded;
+  LangGraph/local provider work remains step 4.
+
+Actual checks:
+
+- **57 focused integration cases passed, 24.05s**: 43 delivery/persistence cases,
+  five dispatcher cases, seven test-adapter execution cases and two actual Celery
+  SIGKILL boundaries. Covers strict/binding failures, scopes, cancellation,
+  archive/revocation, dependency deletion, no lock during processing, concurrent
+  publication, exact result/history, atomic fault rollback and fresh wall-clock
+  checks after project-lock waits and final outbox writes.
+- Actual worker tests kill only their owned subprocess: before final output
+  commit, lost work is recovered/recomputed with one failure; after checkpoint
+  commit/before acknowledgement, the saved stage is reused without spending a
+  failure. Real Redis duplicate deliveries are consumed before a FIFO barrier;
+  one draft/revision/result remains. This is delivery recovery evidence using a
+  labelled fixture adapter, not native model generation or quality evidence.
+- The first focused run exposed an unordered SQL-result assumption in a test.
+  Assertions now compare attempt identities/statuses explicitly; all 57 pass.
+- **7 focused database/upgrade cases passed, 2.17s**. Populated pre-0023 migration
+  preserves existing RAG citations, context/draft history, running attempt,
+  accepted checkpoint and unknown call usage. Fresh/legacy and earlier curriculum
+  upgrades pass; both historical migration enumerations include 0023.
+- The first broad run failed when the disposable database's 768 MiB tmpfs filled
+  with WAL. It is not an application pass. Only that test container was replaced
+  with 2 GiB tmpfs and a bounded WAL setting before repeating the full suite.
+- Final backend non-integration regression: **736 passed, 640 deselected, 8.11s**.
+- Final full PostgreSQL/Redis integration: **630 passed, 10 skipped, 736
+  deselected, 247.77s**. Both actual curriculum worker probes passed. The ten
+  existing skips require separately enabled media worker/MinIO fixtures.
+  The existing Starlette/httpx deprecation warning remains in both suites.
+- The final curriculum worker Docker target built successfully. A network-disabled,
+  read-only disposable container verified task registration, separate queue,
+  90/120-second limits and the empty processor registry. Compose profile/resource/
+  dependency checks used explicit synthetic values with `--env-file /dev/null`.
+  No frontend runtime code changed; no new local UI/browser result is claimed.
+- Whitespace and changed Markdown local-link checks passed. README is unchanged;
+  current status and the concrete next step are recorded in delivery/plan docs.
+
+Tests used only labelled disposable cached PostgreSQL/Redis containers, random
+loopback ports, synthetic schemas, unique Redis prefixes and owned subprocesses.
+Both test schema count and Redis key count were zero after the final suite. The
+test containers and temporary worker image tag were removed after verification.
+No owner `.env`, credentials, real database/data, installed model or running
+application service was changed. The new Compose worker is an optional repository
+definition; it was not started in the owner's application stack.
+This completes the selected delivery slice, not Sprint 5 generation/quality/UI
+acceptance or the independent real-video Alpha 2 review. Check the exact pushed
+commit's hosted workflow separately; the verified starting CI alone does not
+certify this implementation.
+
 ## Continuation
 
-Next: step 3b in `implementation-plan.md`, real curriculum queue/worker and
-scheduler delivery/recovery, bounded stage continuation and atomic bound-draft
-publication under the existing run fence. Use the next additive migration
-(currently 0023) if additional persistence is needed; do not edit applied 0022.
-Exercise actual process loss/redelivery in isolated services before claiming that
-boundary delivered. Keep generation closed until its processor exists and bind
-the optional local model/LangGraph only in step 4. Preserve source/context scope,
+Next: step 4 in `implementation-plan.md`, the application-owned local provider and
+bounded LangGraph workflow. Start with read-only inventory of already installed
+local model/engine identities and explicit prompt/stage budgets. Do not download
+weights or enable public generation prematurely; the current registry is empty.
+Preserve source/context scope,
 original actor, exact command replay and complete deletion; no synthetic source.
 
 Resolve the pending extension and official-document policy before enabling their

@@ -1,4 +1,4 @@
-"""Internal durable-run values; no queue or generation capability is enabled."""
+"""Internal durable-run values; no public generation producer is enabled."""
 
 from datetime import datetime
 from typing import Annotated, Literal, Self
@@ -23,7 +23,7 @@ FailureCode = Literal[
     "provider_unavailable", "provider_timeout", "invalid_output", "worker_lost",
     "authorization_revoked", "project_archived", "cancelled", "processing_unavailable",
 ]
-RunStatus = Literal["pending", "running", "retrying", "failed", "cancelled"]
+RunStatus = Literal["pending", "running", "retrying", "failed", "cancelled", "succeeded"]
 Count = Annotated[int, Field(ge=0, le=2_147_483_647)]
 
 
@@ -61,6 +61,8 @@ class RunView(Contract):
     updated_at: datetime
     finished_at: datetime | None
     failure_code: FailureCode | None
+    result_draft_id: UUID | None = None
+    result_revision: int | None = Field(default=None, ge=1)
 
 
 class CheckpointSave(Contract):

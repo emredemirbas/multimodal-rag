@@ -31,6 +31,38 @@ x-api-image: &api-image
     context: ./backend
 
 services:
+  curriculum-worker:
+    profiles: [curriculum-internal]
+    build:
+      context: ./backend
+      target: curriculum-worker
+    environment:
+      APP_ENV: development
+      APP_STORE: postgres
+      APP_AUTO_MIGRATE: "false"
+      DEVELOPMENT_AUTH_TOKEN: curriculum-worker-is-not-an-api-service
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tutorial}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-tutorial}
+      CELERY_BROKER_URL: redis://redis:6379/0
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "celery -A app.jobs.curriculum_worker:celery_app inspect ping --timeout=3 -d curriculum@$$HOSTNAME | grep -q pong"]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    read_only: true
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
   description-worker:
     profiles: [local-vision]
     build:

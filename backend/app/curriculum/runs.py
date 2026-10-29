@@ -42,7 +42,7 @@ class RunRepository:
 
     @staticmethod
     def _view(row):
-        return RunView.model_validate({name: row[name] for name in RunView.model_fields})
+        return RunView.model_validate({name: row[name] for name in RunView.model_fields if name in row})
 
     @staticmethod
     def _digest(value):
@@ -51,8 +51,13 @@ class RunRepository:
     @staticmethod
     def _row(connection, tenant, project, run_id, *, lock=False):
         row = connection.execute(
-            "SELECT * FROM curriculum_runs WHERE tenant_id=%s AND project_id=%s AND id=%s"
-            + (" FOR UPDATE" if lock else ""), (tenant, project, run_id),
+            """SELECT r.*,
+                      (SELECT draft_id FROM curriculum_run_results z WHERE z.tenant_id=r.tenant_id
+                       AND z.project_id=r.project_id AND z.run_id=r.id) AS result_draft_id,
+                      (SELECT revision FROM curriculum_run_results z WHERE z.tenant_id=r.tenant_id
+                       AND z.project_id=r.project_id AND z.run_id=r.id) AS result_revision
+               FROM curriculum_runs r WHERE tenant_id=%s AND project_id=%s AND id=%s"""
+            + (" FOR UPDATE OF r" if lock else ""), (tenant, project, run_id),
         ).fetchone()
         if row is None:
             raise ProjectNotFoundError("curriculum run not found")
@@ -191,7 +196,7 @@ class RunRepository:
             if existing is not None:
                 if existing["request_sha256"] != digest:
                     raise SourceError("idempotency_conflict", "This run key was used for different input.", 409)
-                return self._view(existing)
+                return self._view(self._row(connection, tenant, project, existing["id"]))
             if state["status"] != "active":
                 raise SourceError("project_archived", "Restore the project before creating a curriculum run.", 409)
             if self._context(connection, tenant, project, context_id) is None:

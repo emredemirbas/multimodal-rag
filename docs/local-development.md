@@ -57,6 +57,13 @@ media/model services have separate profiles. Local MinIO is built from pinned
 official source; the first build can take several minutes. Its archived CE build
 is a local development dependency, not a hosted-storage recommendation.
 
+The optional `curriculum-internal` profile provides a separate bounded curriculum
+delivery worker. It is an internal development component: its workflow registry
+is currently empty, unknown workflow versions fail explicitly, and there is no
+public generation/run-create endpoint. Starting it does not generate assignments
+or install/contact a model. It requires PostgreSQL migrations and Redis only;
+the scheduler manages its independent outbox/recovery. Normal startup omits it.
+
 Inspect or stop services without erasing data:
 
 ```bash
@@ -468,6 +475,15 @@ TEST_REAL_WORKER=1 PYTHONPATH=. pytest -m integration --tb=short
 Use the environment file of the intended test stack. Ordinary CI does not download
 model weights; local HTTP fixtures and actual database/worker checks exercise
 recovery independently of native model quality.
+
+Curriculum delivery tests need only disposable PostgreSQL/pgvector and Redis.
+Set `TEST_DATABASE_URL`, `TEST_CURRICULUM_REDIS_URL` and
+`TEST_CURRICULUM_WORKER=1`, then run `PYTHONPATH=. pytest -m integration` from
+`backend/`. Install pgvector in the disposable database's public schema before
+parallel isolated-schema suites. These tests start and kill only their own worker
+processes, delete only random Redis prefixes and drop only their synthetic DB
+schemas; they require no MinIO/model service. The backend integration CI job
+includes them. Real processors are never replaced by fixtures in the product.
 
 ### Frontend
 

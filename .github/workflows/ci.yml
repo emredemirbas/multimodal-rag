@@ -30,6 +30,15 @@ jobs:
   backend-integration:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7.4.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
       postgres:
         image: pgvector/pgvector:0.8.6-pg16
         env:
@@ -58,6 +67,8 @@ jobs:
         env:
           PYTHONPATH: backend
           TEST_DATABASE_URL: postgresql://tutorial:tutorial-ci-password@localhost:5432/tutorial
+          TEST_CURRICULUM_REDIS_URL: redis://localhost:6379/0
+          TEST_CURRICULUM_WORKER: "1"
         run: python -m pytest backend -m integration
 
   frontend:
@@ -120,6 +131,16 @@ jobs:
         run: docker compose build visual-inspect visual-worker
       - name: Build optional local description worker without model downloads
         run: docker compose --profile local-ai --profile local-vision build description-worker
+      - name: Build the optional internal curriculum delivery worker
+        run: docker compose --profile curriculum-internal build curriculum-worker
+      - name: Verify the internal worker has no enabled generator or model dependency
+        run: >-
+          docker compose --profile curriculum-internal run --rm -T --no-deps --entrypoint python curriculum-worker
+          -c "from app.jobs.curriculum_worker import celery_app, PROCESSORS;
+          assert not PROCESSORS and 'curriculum.advance_run' in celery_app.tasks;
+          assert celery_app.conf.task_default_queue == 'curriculum';
+          assert celery_app.conf.task_time_limit == 120 and celery_app.conf.task_soft_time_limit == 90;
+          print('PASS: separate bounded delivery worker; no generator enabled')"
       - name: Verify local descriptions remain opt-in with a separate bounded worker
         run: >-
           docker compose --profile local-ai --profile local-vision config --format json |

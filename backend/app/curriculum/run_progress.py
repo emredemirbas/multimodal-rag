@@ -74,53 +74,59 @@ class RunProgressRepository(RunRepository):
         return ModelCallView(**{key: row[key] for key in ModelCallView.model_fields if key != "billed_usd"},
                              billed_usd=0)
 
-    def save_checkpoint(self, claim: RunClaim, body: CheckpointSave) -> bool:
-        body = self._checked(CheckpointSave, body)
+    def _save_checkpoint(self, connection, run, claim, body, *, new_only=False):
+        """Append inside the caller's already fenced transaction."""
         compact, spaced = self._json(body.payload)
         if len(compact) > MAX_CHECKPOINT_BYTES or len(spaced) > MAX_CHECKPOINT_STORAGE_BYTES:
             raise self._progress_invalid()
+        scope = self._scope(claim)
+        if new_only and body.sequence != run["checkpoint_seq"] + 1:
+            raise self._conflict("checkpoint_sequence_conflict")
+        # JSONB expands exponents and normalizes negative zero/large floats.
+        # Bound its actual representation before INSERT or transferring an
+        # expanded payload, then hash the values a later load will return.
+        normalized = connection.execute(
+            """SELECT octet_length(value::text) AS byte_count,
+                      CASE WHEN octet_length(value::text)<=%s THEN value ELSE NULL END AS payload
+               FROM (SELECT %s::jsonb AS value) AS checkpoint""",
+            (MAX_CHECKPOINT_STORAGE_BYTES, Jsonb(body.payload)),
+        ).fetchone()
+        if normalized["byte_count"] > MAX_CHECKPOINT_STORAGE_BYTES:
+            raise self._progress_invalid()
+        payload = normalized["payload"]
+        compact, spaced = self._json(payload)
+        if len(compact) > MAX_CHECKPOINT_BYTES or len(spaced) > MAX_CHECKPOINT_STORAGE_BYTES:
+            raise self._progress_invalid()
+        digest = hashlib.sha256(compact).hexdigest()
+        previous = connection.execute(
+            """SELECT stage,content_sha256 FROM curriculum_run_checkpoints
+               WHERE tenant_id=%s AND project_id=%s AND run_id=%s AND sequence=%s""",
+            (*scope, body.sequence),
+        ).fetchone()
+        if previous:
+            if previous["stage"] != body.stage or previous["content_sha256"] != digest:
+                raise self._conflict("checkpoint_conflict")
+            return
+        if body.sequence != run["checkpoint_seq"] + 1:
+            raise self._conflict("checkpoint_sequence_conflict")
+        connection.execute(
+            """INSERT INTO curriculum_run_checkpoints
+               (tenant_id,project_id,run_id,sequence,attempt_number,stage,workflow_version,payload,content_sha256)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (*scope, body.sequence, claim.attempt_number, body.stage, run["workflow_version"], Jsonb(payload), digest),
+        )
+        connection.execute(
+            """UPDATE curriculum_runs SET checkpoint_seq=%s,updated_at=clock_timestamp()
+               WHERE tenant_id=%s AND project_id=%s AND id=%s""", (body.sequence, *scope),
+        )
+
+    def save_checkpoint(self, claim: RunClaim, body: CheckpointSave) -> bool:
+        body = self._checked(CheckpointSave, body)
         with self.store._connect() as connection:
             run = self._lease(connection, claim)
             if run is None:
                 return False
-            scope = self._scope(claim)
-            # JSONB expands exponents and normalizes negative zero/large floats.
-            # Bound its actual representation before INSERT or transferring an
-            # expanded payload, then hash the values a later load will return.
-            normalized = connection.execute(
-                """SELECT octet_length(value::text) AS byte_count,
-                          CASE WHEN octet_length(value::text)<=%s THEN value ELSE NULL END AS payload
-                   FROM (SELECT %s::jsonb AS value) AS checkpoint""",
-                (MAX_CHECKPOINT_STORAGE_BYTES, Jsonb(body.payload)),
-            ).fetchone()
-            if normalized["byte_count"] > MAX_CHECKPOINT_STORAGE_BYTES:
-                raise self._progress_invalid()
-            payload = normalized["payload"]
-            compact, spaced = self._json(payload)
-            if len(compact) > MAX_CHECKPOINT_BYTES or len(spaced) > MAX_CHECKPOINT_STORAGE_BYTES:
-                raise self._progress_invalid()
-            digest = hashlib.sha256(compact).hexdigest()
-            previous = connection.execute(
-                """SELECT stage,content_sha256 FROM curriculum_run_checkpoints
-                   WHERE tenant_id=%s AND project_id=%s AND run_id=%s AND sequence=%s""",
-                (*scope, body.sequence),
-            ).fetchone()
-            if previous:
-                if previous["stage"] != body.stage or previous["content_sha256"] != digest:
-                    raise self._conflict("checkpoint_conflict")
-                return True
-            if body.sequence != run["checkpoint_seq"] + 1:
-                raise self._conflict("checkpoint_sequence_conflict")
-            connection.execute(
-                """INSERT INTO curriculum_run_checkpoints
-                   (tenant_id,project_id,run_id,sequence,attempt_number,stage,workflow_version,payload,content_sha256)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                (*scope, body.sequence, claim.attempt_number, body.stage, run["workflow_version"], Jsonb(payload), digest),
-            )
-            connection.execute(
-                """UPDATE curriculum_runs SET checkpoint_seq=%s,updated_at=clock_timestamp()
-                   WHERE tenant_id=%s AND project_id=%s AND id=%s""", (body.sequence, *scope),
-            )
+            self._save_checkpoint(connection, run, claim, body)
         LOGGER.info(json.dumps({"event": "curriculum_checkpoint_saved", "tenant_id": claim.tenant_id,
                                 "project_id": str(claim.project_id), "run_id": str(claim.run_id),
                                 "sequence": body.sequence, "stage": body.stage}))

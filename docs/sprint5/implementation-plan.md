@@ -1,8 +1,8 @@
 # Sprint 5 — learning objectives and assignment drafts
 
 Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts,
-saved contexts/versioned editable drafts and the internal durable-run foundation
-implemented. This is the next selected scope after the
+saved contexts/versioned editable drafts, durable runs and separate queued
+delivery/atomic publication implemented. This is the next selected scope after the
 accepted RAG milestone, not an automatic sprint transition. The independent
 real-video quality/audiovisual gate for full Sprint 4/Alpha 2 stays open.
 
@@ -204,13 +204,13 @@ index generations to host assignment work.
 `curriculum_runs`, `curriculum_run_attempts`, `curriculum_run_outbox`,
 `curriculum_run_commands`, `curriculum_run_checkpoints` and
 `curriculum_model_calls`. Internal `RunRepository` and `RunProgressRepository`
-provide the scoped lifecycle and progress boundary. They have no HTTP producer,
-broker/scheduler connection, model invocation or success/publication transition.
+provide the scoped lifecycle and progress boundary. Step 3b below adds delivery
+and success/publication; no HTTP producer or model invocation is enabled.
 
 Creation pins an existing immutable context and an explicit application workflow
 version. It atomically writes a pending run and its own outbox row; create replay
-does not enqueue another run. Pending/running/retrying/failed/cancelled are the
-implemented states. One claim wins per run, with a fresh token and monotonically
+does not enqueue another run. Pending/running/retrying/failed/cancelled and, with
+0023, succeeded are the implemented states. One claim wins per run, with a fresh token and monotonically
 increasing attempt number. Three automatic failures end in failure; a new explicit
 retry command from the original actor resets that budget while preserving accepted
 checkpoints. Cancel invalidates the current lease immediately. Cancel/retry keys
@@ -247,12 +247,44 @@ receipts and attribution for unused selected dependencies. Outbox state changes
 are atomic with lifecycle transitions. Logs contain scoped IDs/status/counts or
 stages, never checkpoint text, model payload, credentials or request keys.
 
-**3b — next:** connect the separate Celery curriculum queue/worker and scheduler
-outbox delivery/recovery, with a bounded application-owned stage executor. Add
-checkpoint continuation and atomic validator-bound draft publication under the
-same live lease, plus real worker loss/redelivery tests in isolated services.
-Keep the user-facing generation capability closed until its processor exists;
-repository lease simulations are not process recovery or working generation.
+**3b — implemented:** migration 0023, `RunDeliveryRepository`, private stage
+contracts and a separate `curriculum.advance_run` Celery task/queue. The existing
+scheduler delivers its own outbox, retries publication failures, rearms sent but
+unclaimed work after 60 seconds and recovers expired run leases in bounded batches.
+Broker calls hold no database locks. All acknowledgements include the outbox lease
+token, so a fast continuation cannot be hidden by the previous publish ACK.
+
+The optional `curriculum-internal` Compose worker profile has one process slot,
+90/120-second soft/hard task limits below the 180-second run lease, fixed resource
+bounds and no model/object-store service dependency or shared object credentials.
+Default startup stays unchanged. Its app-owned processor registry is empty:
+unknown workflow versions fail terminally with `processing_unavailable`. No
+environment-selected imports or runtime fixture generator exist. Public run
+creation/generation stays closed until the real processor exists in step 4.
+
+Each delivery loads detached authorized input and accepted checkpoints, releases
+DB locks and executes at most one trusted stage. The private stage input includes
+a detached claim for before-invocation call attribution. A stage returns either
+one new sequential checkpoint or strict final content. Checkpoint acceptance,
+attempt closure (`checkpointed`), pending state and outbox reset commit together.
+The next delivery gets a fresh token/attempt; accepted continuation does not spend
+a failure, and an already accepted sequence cannot yield indefinitely.
+
+Final content is rebound against the immutable context in the live transaction.
+New draft/revision, exact revision result, attempt/run success and outbox removal
+commit together. Both output paths recheck wall time after their last outbox write;
+expiry rolls the entire transaction back. Neither path can leave started model
+calls orphaned. The result relation survives later draft edits as the original
+revision pointer. Deleting a draft removes its result pointer while its succeeded
+run stays terminal; stale deliveries cannot restore it. Dependency deletion
+continues to remove every copied private/result row. No user command key is forged
+for generated publication.
+
+Real Redis/Celery SIGKILL tests cover loss before final output commit and after
+checkpoint commit/before acknowledgement, plus duplicate delivery and one-result
+publication. Synthetic stage adapters live only in test subprocess code. The
+database/worker tests establish delivery recovery, not actual model generation,
+semantic support, tutorial coverage or exercise solvability.
 
 Reuse Celery delivery, scheduler, scoped lease and orphan/retry patterns in a
 separate curriculum queue/worker. Accept source pins before inference; one bounded
@@ -338,11 +370,12 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Steps 1, 2a, 2b and 3a are implemented: contracts/binding, saved contexts,
-versioned draft persistence/API and the internal durable-run foundation. Results and limits are
-in `validation-record.md`. README now
+Steps 1, 2a, 2b, 3a and 3b are implemented: contracts/binding, saved contexts,
+versioned draft persistence/API, durable runs and separate queued delivery with
+fenced publication. Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 3b's actual queue/worker delivery, continuation and fenced draft
-publication, while resolving any
+Next is step 4's application-owned local provider and bounded LangGraph workflow.
+Start with read-only installed-model inventory and explicit prompt/stage budgets;
+no weight download or premature public generation enablement. Resolve any
 still-pending product policy before dependent generation/fetch behavior. Check
 the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.

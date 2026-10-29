@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+import json
 from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
 import psycopg
+from psycopg.types.json import Jsonb
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
 import pytest
@@ -71,7 +73,7 @@ def install_before(database_url, cutoff):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql"])
+@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql"])
 def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url, cutoff):
     """Upgrade populated RAG/context/draft databases, rather than only fresh schemas."""
     from app.curriculum.persistence import ContextCreate
@@ -99,7 +101,7 @@ def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url
     )
     existing = repository.create(principal.tenant_id, project.id, actor, body) if cutoff > "0020_curriculum_contexts.sql" else None
     previous_draft = None
-    if cutoff == "0022_curriculum_runs.sql":
+    if cutoff >= "0022_curriculum_runs.sql":
         from app.curriculum.drafts import DraftRepository
         from app.curriculum.persistence import DraftCreate, DraftReplace
         from test_curriculum_drafts_integration import content_for
@@ -108,6 +110,35 @@ def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url
         first_draft = drafts.create(principal.tenant_id, project.id, actor, existing.id, draft_body)
         previous_draft = drafts.replace(principal.tenant_id, project.id, actor, first_draft.id, DraftReplace(
             idempotency_key="pre-runs-edit", expected_revision=1, content=content_for(existing, title="Before runs upgrade")))
+    run_tables = ("curriculum_runs", "curriculum_run_attempts", "curriculum_run_outbox",
+                  "curriculum_run_commands", "curriculum_run_checkpoints", "curriculum_model_calls")
+    previous_runs = {}
+    if cutoff == "0023_curriculum_delivery.sql":
+        from app.curriculum.run_contracts import RunCreate
+        from app.curriculum.runs import RunRepository
+        run = RunRepository(store).create(principal.tenant_id, project.id, actor, existing.id,
+                                         RunCreate(idempotency_key="pre-delivery-run", workflow_version="upgrade-probe-v1"))
+        token = uuid4()
+        scope = (principal.tenant_id, project.id, run.id)
+        # Seed the historical schema directly: current claim/progress reads
+        # correctly require the result relation added by the deployment migration.
+        payload = {"accepted": "Synthetic saved stage"}
+        with store._connect() as connection:
+            connection.execute("""UPDATE curriculum_runs SET status='running',attempt_count=1,checkpoint_seq=1,
+                lease_token=%s,lease_expires_at=clock_timestamp()+interval '180 seconds'
+                WHERE tenant_id=%s AND project_id=%s AND id=%s""", (token, *scope))
+            connection.execute("""INSERT INTO curriculum_run_attempts
+                (tenant_id,project_id,run_id,attempt_number,lease_token) VALUES (%s,%s,%s,1,%s)""", (*scope, token))
+            connection.execute("""INSERT INTO curriculum_run_checkpoints
+                (tenant_id,project_id,run_id,sequence,attempt_number,stage,workflow_version,payload,content_sha256)
+                VALUES (%s,%s,%s,1,1,'saved-stage','upgrade-probe-v1',%s,%s)""",
+                (*scope, Jsonb(payload), sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()))
+            connection.execute("""INSERT INTO curriculum_model_calls
+                (tenant_id,project_id,run_id,call_id,attempt_number,purpose,provider,model,model_digest,
+                 request_sha256,engine,prompt_version,input_characters,input_tokens)
+                VALUES (%s,%s,%s,%s,1,'upgrade-probe','ollama-local','fixture-model',%s,%s,'fixture-engine','fixture-prompt',12,NULL)""",
+                (*scope, uuid4(), "a"*64, "b"*64))
+            previous_runs = {table: connection.execute(f"SELECT * FROM {table}").fetchall() for table in run_tables}
     store.run_migrations()
     store.run_migrations()
     after = service.ask(principal, project.id, "GET /health")
@@ -124,9 +155,9 @@ def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url
         for table in ("curriculum_drafts", "curriculum_draft_revisions", "curriculum_draft_commands"):
             expected = (1 if table == "curriculum_drafts" else 2) if previous_draft is not None else 0
             assert connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"] == expected
-        for table in ("curriculum_runs", "curriculum_run_attempts", "curriculum_run_outbox",
-                      "curriculum_run_commands", "curriculum_run_checkpoints", "curriculum_model_calls"):
-            assert connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"] == 0
+        for table in run_tables:
+            assert connection.execute(f"SELECT * FROM {table}").fetchall() == previous_runs.get(table, [])
+        assert connection.execute("SELECT count(*) AS count FROM curriculum_run_results").fetchone()["count"] == 0
 
 
 @pytest.mark.integration
@@ -162,7 +193,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:
