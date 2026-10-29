@@ -2,6 +2,13 @@
 
 The product needs ordinary software tests, security tests, model-system evaluations, and learning-outcome measurements. None substitutes for the others.
 
+For the owner's selected **RAG portfolio v1** (2026-10-29), use the finite
+workflow acceptance checklist in `09-delivery-status.md` and record actual
+fresh-stack results in `sprint4/validation-record.md`. The broader assignment,
+grading and learning-outcome strategy below remains post-v1 roadmap. Synthetic
+workflow checks never replace the independent real-video quality/audiovisual
+review required for full Sprint 4/Alpha 2 approval.
+
 ## Software test pyramid
 
 ### Unit tests

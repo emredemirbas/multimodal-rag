@@ -5,6 +5,10 @@ This is a baseline for Sprint 0 refinement, not a claim that every detail is fin
 The current target is a local GitHub portfolio demonstration with no paid
 API/service requirement (ADR 0015). Preserve isolation, safe content handling,
 provenance and testing; hosted beta performance/launch targets are deferred.
+The owner selected the existing RAG flow as **portfolio v1** on 2026-10-29;
+its finite acceptance checklist is in `09-delivery-status.md`. Assignment,
+submission, grading and tutoring requirements below remain post-v1 roadmap.
+Experimental media/model capabilities do not imply full Alpha 2 quality approval.
 
 ## Functional requirements
 

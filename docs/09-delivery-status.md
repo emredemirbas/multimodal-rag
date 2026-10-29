@@ -1,7 +1,8 @@
 # Delivery status and finish lines
 
-Date: 2026-10-29. Hosted code baseline: `ba4710a`. These are planning estimates, not a
-completion percentage, delivery promise or background-work schedule.
+Date: 2026-10-29. Selected first finish line: **RAG portfolio v1**.
+Verified hosted application baseline: `411a5c8`. **Local v1 acceptance passed**;
+only the hosted CI result for this scope/acceptance change remains to be verified.
 
 ## Where we are
 
@@ -14,10 +15,10 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The `ba4710a` code baseline passes all four hosted CI jobs, including the description
-workflow, real worker/checkpoint recovery, local setup diagnostics and existing-flow
-error recovery, keyless demo guide and live source filters:
-[run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988).
+The `411a5c8` code baseline was rechecked on 2026-10-29: all four hosted CI jobs
+completed successfully, including worker/checkpoint recovery, keyless onboarding,
+live source filters and source-removal chat consistency:
+[run 40782756288](https://github.com/emredemirbas/multimodal-rag/actions/runs/40782756288).
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -31,32 +32,54 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
 
-## Two possible finish lines (owner choice pending)
+## Selected portfolio v1 — finite scope and acceptance
 
-The owner selected a free GitHub portfolio, not a production launch. Do not silently
-delete the original learning-platform roadmap or report a narrower demo as its
-completion. A separate first portfolio release is proposed, not yet selected.
+The owner selected this first finish line on 2026-10-29. It demonstrates the
+existing authorized transcript RAG flow locally, without paid APIs/services or
+model downloads. It is not the completion of the longer learning-platform vision.
 
-1. **RAG portfolio v1**: reproducible local setup, an owned/licensed demo, working
-   transcript/optional media -> scoped answers -> inspectable evidence -> complete
-   deletion, clear limitations and polished README/demo. Core flows and fresh-start
-   verification must pass. Deferred multimodal capabilities are explicitly named;
-   no full Sprint 4/Alpha 2 claim. Estimate: **1–3 active engineering weeks** with
-   stable scope, including sample review, UX fixes and packaging. The current app
-   already demonstrates much of this loop; this is a release/quality buffer, not
-   three more weeks of invented infrastructure prerequisites.
-2. **Learning-workspace scope**: finish the accepted multimodal scope, then add
-   cited objectives/assignment drafts and approval, immutable submissions, a real
-   hardened runner with deterministic results, progressive feedback and progress.
-   Estimate: **8–12+ active engineering weeks**, not a hosted production launch.
-   Runner isolation/security, local-model quality, hardware and product review can
-   extend it. Never substitute ordinary Docker execution to hit an estimate.
+| Acceptance criterion | Evidence / current state |
+|---|---|
+| Reproducible keyless local startup, documented prerequisites and licensed sample | Fresh default Compose build/start passed on empty dedicated volumes; `/demo` and exact MIT sample/license downloads verified |
+| Authorized SRT/VTT -> actual queued processing -> project/source-scoped answer or explicit abstention | Canonical downloaded VTT uploaded through the browser; real queue reached ready; both supported questions cited the expected chunk and unsupported Kubernetes question abstained |
+| Inspectable source/timestamp/processing generation, saved chat and recoverable delivery/reprocessing | Browser evidence/transcript/history checks passed; all four existing smoke scripts passed, including disconnect replay and generation stability |
+| Complete source/project deletion, tracked physical cleanup, isolation and accessible recovery states | Browser source removal hid both cited turns while preserving draft/limitation; history stayed clean; source/project cleanup completed; isolated DB/bucket ended empty. Isolation remains covered by verified baseline CI |
+| Truthful README/demo, explicit optional-feature limits, current validation and green hosted application checks | README/demo and baseline docs agree; 4 demo tests, lint, typecheck and production Docker build passed. Baseline CI is green; verify this change's hosted run after push |
 
-Assume regular focused development, unchanged zero-paid-service requirement,
-timely review of blocking choices and no major new feature requests. These ranges
-are judgement-based planning bands, not measured remaining labor or calendar
-automation. Sporadic sessions, CPU limits and human evaluation change elapsed time.
-Re-estimate after the owner selects a finish line and after the first runner spike.
+Only a defect exposed by these checks can add implementation work. Do not create
+another evaluator, feature, polish backlog or new release threshold to extend v1.
+Completion means these checks pass and their actual results are recorded; then
+report v1 complete and stop automatic sprint progression.
+
+Optional local answers/semantic embeddings, ordered metadata relationships,
+restricted WAV/MP4, OCR, change selection, temporal inspection and image descriptions
+remain available at their existing documented experimental boundaries. Their
+setup/native evidence and limitations stay visible; v1 does not require enabling
+all profiles or certify representative model/media quality. The MIT sample is
+synthetic and has no corresponding recording.
+
+Assignment generation, solution uploads, hardened deterministic code assessment,
+progressive tutoring/deadlines/mastery and the later learning loop stay on the
+original Sprint 5–7 roadmap in `04-sprint-plan.md`, **after v1**. Hosted production/
+SaaS and beta operations are outside this selected target. Completing v1 does not
+start any of those sprints or settle their unresolved product decisions.
+
+## Current continuation point
+
+The selected scope, README/demo corrections and fresh default acceptance are
+recorded in `sprint4/validation-record.md` under **Portfolio v1 scope and fresh
+keyless acceptance (2026-10-29)**. No new feature/evaluator/schema or model setup
+was needed. The disposable stack used separate credentials, random loopback ports,
+new volumes and no optional profiles. Its test project and retained files were
+removed; the temporary stack/volumes were removed and existing container IDs
+were unchanged.
+
+**One remaining v1 step:** inspect GitHub Actions for the pushed commit titled
+`docs: define portfolio v1 scope and record fresh keyless acceptance`. Do not infer
+success from the earlier `411a5c8` run. If its four jobs pass, record/report v1
+complete and stop; if a job fails, address only that concrete failure. A running
+or queued run is still pending. Do not reopen optional experiments or begin
+Sprint 5. There is no additional v1 feature or polish backlog.
 
 ## Sprint 4 closure — one remaining gate
 
@@ -120,7 +143,8 @@ The static `/demo` walkthrough makes the existing default keyless path easier to
 try: MIT-licensed authored subtitle download, manual permission/upload, supported
 and unsupported questions, actual chunk-level citations, saved history and confirmed
 demo-only cleanup. It creates no records, changes no settings and includes no real
-recording. It neither selects a finish line nor replaces independent quality review.
+recording. It supports the selected v1 workflow acceptance and does not replace
+independent quality review.
 
 The project page now shares successful source-list updates with chat: newly published
 sources become selectable without a page reload. Failed refreshes preserve the last

@@ -1,12 +1,18 @@
 # Multimodal Tutorial Learning Workspace
 
 A local, zero-service-spend GitHub portfolio project: authorized programming
-tutorials become searchable, citation-backed learning material. Assignments and
-feedback remain on the roadmap; this is not a production/SaaS deployment.
+tutorials become searchable, citation-backed learning material. The selected
+first release is **RAG portfolio v1**: the default local transcript-to-answer
+workflow, inspectable evidence and complete deletion. Assignments, submissions,
+hardened grading and the learning/feedback loop remain on the roadmap after v1;
+this is not a production/SaaS deployment.
 
 Current stage: **Sprint 4**, with a constrained local multimodal workflow, not a
-finished learning/assessment platform. See the consolidated
-[delivery status, remaining work and estimated finish lines](docs/09-delivery-status.md).
+finished learning/assessment platform. Portfolio v1 acceptance is tracked in the
+[finite scope, completion criteria and delivery status](docs/09-delivery-status.md).
+Optional local models and media features remain experimental opt-ins. Independent
+owned/licensed real-video review remains open outside v1 and still blocks full
+Sprint 4/Alpha 2 approval.
 
 Sprint 0 validated the transcript-to-cited-answer path. Sprint 1 adds the product
 foundation around it:
@@ -39,8 +45,8 @@ sampling remains default. The retained gallery also offers a version-pinned
 frame/transcript timeline with explicit user-asserted source pairing. Optional
 local Qwen3.5 vision descriptions now interpret retained images, stay separately
 labelled from OCR and feed versioned frame evidence/citations. They require an
-explicit full model digest and `FRAME_DESCRIPTIONS_ENABLED=false` opt-in; nothing
-downloads automatically. See [setup, validation and known model errors](docs/sprint4/frame-descriptions.md).
+explicit full model digest and `FRAME_DESCRIPTIONS_ENABLED=true`; the flag defaults
+to false. Nothing downloads automatically. See [setup, validation and known model errors](docs/sprint4/frame-descriptions.md).
 Independent real-example audiovisual/quality verification remains the final
 Sprint 4 closure gate; software/native probes do not establish quality approval.
 
@@ -70,9 +76,9 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted code baseline is `ba4710a`, with all four jobs
-successful in [CI run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988),
-including worker recovery, the keyless walkthrough and live chat source filters. That run
+The latest separately verified hosted code baseline is `411a5c8`, with all four jobs
+successful in [CI run 40782756288](https://github.com/emredemirbas/multimodal-rag/actions/runs/40782756288),
+including the keyless walkthrough, live source filters and deleted-source chat fences. That run
 does not certify subsequent code changes. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
@@ -159,8 +165,9 @@ For a first try, open **Demo guide** in the app. It includes the repository-auth
 permission instructions, supported/unsupported questions, citation inspection and
 confirmed cleanup. Nothing is created, uploaded or deleted automatically. It assumes
 default keyless extractive/hash retrieval and changes no settings. The actual queued
-uploader combines this sample into one **00:01–00:22** chunk; the guide is not a real
-recording, multimedia-quality validation or a release-scope decision.
+uploader combines this sample into one **00:01–00:22** chunk. The guide demonstrates
+the selected portfolio v1 workflow using synthetic content; it includes no real
+recording and does not establish multimedia quality or full Alpha 2 approval.
 
 The chat source filter updates from successful source-list refreshes and processing
 polls without reloading or discarding your chat draft. A removed or incompatible
@@ -353,8 +360,9 @@ Do not add the tool profile to ordinary application startup.
 
 A separate optional **private service boundary** now exposes the same parser to a
 profile-pinned, validating worker client. `visual` (`local-visual` profile) has no
-published ports, app credentials or mounts; current workers are not connected.
-It is still stateless and **does not enable video upload**. Exercise its real
+published ports, app credentials or mounts; the dedicated `visual-worker` connects
+to it in the opt-in workflow below. The parser service is stateless; starting it
+alone **does not enable video upload**. Exercise its real
 native HTTP boundary without starting any application service:
 
 ```bash
@@ -379,8 +387,9 @@ The private workflow continuation (ADR 0022, migration 0014) now supplies intern
 authorized MP4 registration, a dedicated `visual-worker` queue, complete-result
 recovery and independently verified raw-object cleanup. Both `visual-worker` and
 the credential-free native service are opt-in under `local-visual`; normal startup
-is unchanged. There is deliberately **no public MP4 endpoint or upload form**.
-Internal success means `visual_prepared` / source `metadata_ready`, not searchable
+is unchanged. This component initially supplied only private registration; the
+current opt-in MP4 endpoint and form are described below. Extraction-stage success
+means `visual_prepared` / source `metadata_ready`, not searchable
 `ready`: PNG/OCR remains private, without published evidence or citations. Raw
 processing expires one hour after job creation; terminal paths retire the original,
 while permitted derived staging remains until source/project deletion. No paid
@@ -396,8 +405,8 @@ frames** on retained video sources. It shows actual timestamps, literal unreview
 OCR and processing origin; PNGs pass through a bounded authenticated API/server-only
 no-store proxy. Incomplete galleries stay hidden. Gallery publication alone is
 **inspection, not a search index**: sources remain `metadata_ready` until the
-separate OCR index step below, and no public
-MP4 upload or original-video playback is enabled. Raw cleanup is unchanged; source/
+separate OCR index step below. The MP4 upload boundary is a separate opt-in; no
+original-video playback is provided. Raw cleanup is unchanged; source/
 project deletion removes selected images and all staging too. See
 [retained-frame scope](docs/sprint4/visual-gallery-plan.md) and
 [verification](docs/sprint4/visual-gallery-validation.md).
@@ -411,8 +420,9 @@ Blank OCR produces no invented evidence. Frame citations/history retain exact
 point-in-time PTS, original extraction origin and protected supporting-frame links.
 The gallery now reports active OCR index generation/space separately; mismatched
 spaces remain excluded from search. Reindexing is still an internal operator
-command; public video reprocess/upload stays closed. This does not certify OCR
-accuracy, add scene detection/descriptions or complete Alpha 2. See the
+command; public video reprocess is unavailable and uploads require the separate
+opt-in below. OCR indexing alone does not add image-model descriptions or certify
+OCR accuracy or full Alpha 2. See the
 [index scope](docs/sprint4/visual-index-plan.md) and
 [verification](docs/sprint4/visual-index-validation.md).
 
@@ -465,7 +475,8 @@ The form requires rights, explicit English/Turkish/experimental combined OCR, an
 permission to retain selected frames/literal OCR until source/project deletion.
 MP4 <=100 MB/10 minutes, H.264/avc1 yuv420p <=1080p/60fps, zero-based/unrotated only.
 Optional AAC is ignored. No sound transcription, original-video player, scene
-detector, visual description or playlist association is implied. OCR can be wrong,
+detector or playlist association is provided by this upload. Image-model
+descriptions require their [separate opt-in](docs/sprint4/frame-descriptions.md). OCR can be wrong,
 especially code/symbols and combined language, and uniform sampling can miss changes.
 
 Actual multipart wire bytes/time/part counts are bounded; one video delivery per
@@ -514,7 +525,7 @@ and [separate validation record](docs/sprint4/visual-evaluation-validation.md).
 
 An additional [isolated change-candidate experiment](docs/sprint4/scene-selection-guide.md)
 compares a one-second thumbnail scan against the actual current uniform pipeline
-on an authored transient view. It does not yet change the app's sampling/profile,
+on an authored transient view. The experiment itself does not change the app's sampling/profile,
 stored evidence or upload defaults; no representative scene/code-quality claim.
 
 The following [versioned selection-manifest component](docs/sprint4/selection-manifest-plan.md)
@@ -555,7 +566,8 @@ matching identifiers/terms: weak matches abstain before invoking the model and
 are labelled `local-evidence-policy`, not falsely attributed to Qwen. Generated
 answers use only retrieved citation IDs, but reasoning can still be wrong;
 inspect the evidence. Saved history is not implicit context. ASR is a separate
-explicit WAV opt-in; OCR/vision is unimplemented.
+explicit WAV opt-in; MP4/OCR and local image descriptions also require their
+separate opt-in setup described above.
 
 Return to the lightweight demo without editing credentials:
 
@@ -795,18 +807,27 @@ Every project-owned repository operation is scoped by tenant and project. An
 unknown, deleted, or differently scoped project returns the same safe `404`
 shape.
 
-## Confirmed first-release boundary
+## Selected portfolio v1 boundary
 
 - Python backend programming tutorials
-- Uploaded, user-owned, authorized, or appropriately licensed content
-- Timestamped transcript plus selected meaningful frames
-- Project-scoped hybrid retrieval with source and timestamp citations
-- Generated backend coding case studies
-- ZIP/file submission initially; Git integration later
-- Deterministic tests plus rubric-grounded AI feedback
-- Private single-user projects
-- Docker Compose for local development
-- Default keyless demo and optional free local models behind application-owned interfaces
+- User-owned, authorized, or appropriately licensed SRT/VTT uploads
+- Queued processing with visible progress and recovery controls
+- Project-scoped hybrid retrieval and default keyless extractive answers
+- Saved conversations, stable timestamp citations and versioned transcript inspection
+- Private single-user projects with tenant/project isolation and complete deletion
+- Reproducible local Docker Compose setup and the licensed synthetic demo guide
+
+The finite acceptance checklist and current completion state are in
+[delivery status](docs/09-delivery-status.md). Optional local answers/embeddings,
+WAV transcription, MP4/OCR, image descriptions and timeline inspection remain
+available as experimental extensions; v1 does not require their enablement or
+claim representative media/model quality. Independent real-video review remains
+open before full Sprint 4/Alpha 2 approval.
+
+The original [sprint roadmap](docs/04-sprint-plan.md) retains generated coding
+assignments, ZIP/file submissions, a hardened deterministic runner, rubric
+feedback, progressive hints and the learning loop after v1. Completing v1 does not
+automatically begin those later sprints.
 
 ## Core stack
 

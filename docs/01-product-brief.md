@@ -1,12 +1,24 @@
 # Product brief
 
-## Current delivery target (2026-10-11)
+## Current delivery target (2026-10-29)
 
 The owner selected a **GitHub portfolio project**, not a production launch, and
 requires no paid API/service dependency (ADR 0015). Default startup is a keyless
 demo; real model generation is optional and local. Local model downloads and
 CPU/RAM usage remain explicit. The product vision below is the demonstration
 roadmap, not a current commitment to a hosted private beta or managed vendors.
+
+The owner selected **RAG portfolio v1** as the first finite finish line: local
+setup, licensed sample, authorized subtitle processing, project-scoped answers,
+inspectable stable citations, saved chat and complete deletion. Optional local
+models and constrained media stay documented experiments, off by default. The
+acceptance checklist and continuation point are in `09-delivery-status.md`.
+
+Assignment generation, solution uploads, hardened code assessment and the later
+learning/feedback loop are **after v1**. Preserve their original Sprint 5–7
+roadmap below; completing v1 does not start those sprints. Independent real-video
+quality/audiovisual review remains open for full Sprint 4/Alpha 2 approval and is
+not replaced by the licensed synthetic workflow demonstration.
 
 ## Product statement
 
@@ -18,7 +30,9 @@ The product should help a learner move through this loop:
 Import material → understand it → ask questions → apply it → receive feedback → retry
 ```
 
-The assessment and feedback loop is the principal differentiator. Chat supports the learning experience; it is not the whole product.
+The assessment and feedback loop is the principal differentiator of the longer
+learning-platform vision. The first portfolio release demonstrates the existing
+RAG/evidence portion of that vision.
 
 ## Problem
 

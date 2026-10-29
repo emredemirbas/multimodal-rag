@@ -58,8 +58,9 @@ export function DemoGuide() {
         confirmation dialog. Do not delete your other projects. Records become inaccessible
         first; retained files have separate cleanup. Wait for “Retained file cleanup completed.”
         before treating physical file deletion as confirmed.</p>
-      <p>This walkthrough does not complete the independent real-example review or choose
-        between the RAG portfolio and learning/assessment roadmap.</p>
+      <p>This walkthrough demonstrates the selected RAG portfolio v1 workflow. It does not complete the independent
+        real-example review or grant full Alpha 2 approval. Assignments, submissions and the
+        learning/assessment loop remain on the roadmap after v1.</p>
     </section>
     <Link href="/projects" prefetch={false}>Back to projects</Link>
   </article>;

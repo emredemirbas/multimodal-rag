@@ -339,3 +339,89 @@ issue. The previously pushed `ba4710a` baseline is separately green in all four
 jobs of [CI run 40707364988](https://github.com/emredemirbas/multimodal-rag/actions/runs/40707364988);
 that run does not certify this subsequent patch. The independent real-example
 quality gate and the owner's release finish-line choice remain unresolved.
+
+
+## Portfolio v1 scope and fresh keyless acceptance (2026-10-29)
+
+The owner selected the existing **RAG portfolio v1** as the finite first release.
+This supersedes earlier entries' pending finish-line choice, not their historical
+validation results. `../09-delivery-status.md` contains the five acceptance
+criteria and the only remaining step. Brief, requirements, sprint plan, decisions,
+test strategy, README and `/demo` now consistently defer assignments, solution
+uploads, hardened code grading and the learning loop until after v1, preserving
+the original roadmap. No subsequent sprint starts automatically.
+
+Before changes, the worktree was clean and local/remote `main` both resolved to
+`411a5c82098013451b03b310071e1f9e03b03b9f`. GitHub was queried again: all four jobs
+of [run 40782756288](https://github.com/emredemirbas/multimodal-rag/actions/runs/40782756288)
+were **completed/success**, including the image/real-worker check. This certifies
+that application baseline, not the later packaging commit's still-unverified CI.
+
+### Fresh default stack
+
+- Used base `compose.yaml` with explicit project name `rag-portfolio-v1-20261029`,
+  a temporary test-only env file and an allowlisted subprocess environment. Shell
+  provider/profile settings and the owner's `.env` were not inherited. All six
+  published ports used random loopback bindings. PostgreSQL, Redis and MinIO had
+  three new project-owned volumes and a separate network; no application mounts.
+- Built the seven default-service images from repository Dockerfiles (including
+  the source-built MinIO), then ran `up --no-build --pull never -d --wait
+  --wait-timeout 120`. Both one-shot initializers exited successfully and all seven
+  runtime services became healthy. Updated frontend production build passed and
+  prerendered `/demo`. No optional profile, model weights or paid service was used.
+- Authenticated runtime reported `extractive`, `local-deterministic`,
+  `evidence-extractive-v2`, `deterministic-hash-and-lexical`, `signed-hash-v1:64`
+  and `no-paid-provider`. Both WAV and MP4 capabilities were disabled.
+- Existing `scripts/smoke_sprint1.py`, `smoke_sprint2.py`, `smoke_sprint3.py` and
+  `smoke_transcript_viewer.py` all **passed** against this fresh stack. This checks
+  real queued processing, upload replay, malformed input/retry, project lifecycle,
+  BFF/SSE disconnect recovery and saved history, source filters, reprocessing with
+  stable old evidence, 53-segment transcript pagination/SSR/archive reads and
+  confirmed test-owned source/project file cleanup. No new test tool was added.
+
+### Canonical browser walkthrough
+
+- Opened the production `/demo`, downloaded its actual `fastapi-intro.vtt`, and
+  checked byte equality with `examples/fastapi-intro.vtt`. HTTP-served VTT and MIT
+  license also matched their canonical repository files exactly.
+- Created a separate test project through the UI, selected the downloaded file,
+  standalone source and **Its license permits this processing**, then submitted
+  **Process transcript**. The real queue advanced queued -> ready with one indexed
+  chunk; Refresh sources made it selectable without a page reload.
+- Selected that source and asked both guide questions. Each returned the expected
+  literal passage with the same stable generation-1 evidence ID and
+  **00:01–00:22** span. The unrelated Kubernetes/TLS question saved an explicit
+  evidence limitation without citations. These are workflow expectations for the
+  authored synthetic sample, not learned semantic/model-quality measurements.
+- Followed a citation to literal evidence, `transcript-chunks-v1:g1` and the pinned
+  one-segment transcript view. Returning to the project and a full reload preserved
+  both cited answers and the unsupported turn.
+- Typed a new draft, then confirmed deletion of only the test source. Both whole
+  cited turns disappeared from the mounted chat, while the draft and unsupported
+  turn stayed. Reload history did not restore the removed answers. Source cleanup
+  separately reached **Retained file cleanup completed**.
+- Confirmed deletion of only the test project in its named UI dialog. The project
+  list became empty and project cleanup separately reached completion. A read-only
+  check of this isolated PostgreSQL database found **0 projects**; its MinIO bucket
+  contained **0 objects**. Browser warning/error logs were empty.
+- Closed the temporary tab, removed only this Compose project's containers,
+  network and three volumes, and compared the before/after container inventory:
+  all pre-existing container IDs/names were unchanged. Existing user data,
+  credentials, Docker settings and running services were not modified.
+
+### Checks and continuation
+
+The copy change passes the existing **4 demo component tests**, lint, typecheck,
+production Docker build and `git diff --check`; no new test mirrors the copy.
+Independent diff review found no blocking scope/consistency issue. No backend,
+API/auth contract, schema, migration, provider, retention or default changed.
+
+Local v1 acceptance is complete. **Only the hosted CI result for this new
+scope/acceptance commit remains to be verified after push.** Next `devam` checks
+that exact run: record/report v1 complete if all four jobs pass, or fix the
+specific failure. Do not add another feature/evaluator/polish gate or open Sprint 5.
+
+Independent owned/licensed **real-video quality and audiovisual review remains
+open for full Sprint 4/Alpha 2**. This synthetic sample has no corresponding
+recording. These successful application checks neither satisfy that review nor
+approve representative ASR/OCR/image-model/RAG quality.

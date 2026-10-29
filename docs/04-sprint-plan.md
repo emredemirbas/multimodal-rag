@@ -6,10 +6,11 @@ boundaries; hosted release milestones and staffing estimates below are historica
 planning references. Local answer generation can complete the earlier RAG slice
 without enabling paid providers or jumping to assignments/grading.
 
-For the current consolidated status and two explicitly different finish lines
-(RAG portfolio v1 versus the full learning loop), see `09-delivery-status.md`.
-Its 1–3 and 8–12+ active-week estimates are planning judgements with assumptions,
-not a percentage-complete measure, automatic scope reduction or delivery promise.
+On 2026-10-29 the owner selected **RAG portfolio v1** as the first finish line.
+See `09-delivery-status.md` for its finite acceptance checklist and current next
+step. Sprint 5–7 assignments, submissions, hardened grading and learning feedback
+remain on the original roadmap below, after v1; do not start them automatically.
+Independent real-example review still gates full Sprint 4/Alpha 2 approval.
 
 ## Estimation assumptions
 

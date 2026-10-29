@@ -1,6 +1,6 @@
 # Sprint 4 — implementation and finite closure checklist
 
-Updated: 2026-10-28. The original playlist slice is in `validation-record.md` and
+Updated: 2026-10-29. The original playlist slice is in `validation-record.md` and
 ADR 0014. This is the consolidated current plan, not a fresh sprint for every
 supporting component. Full multimodal/Alpha 2 is not yet approved.
 
@@ -52,10 +52,19 @@ prototypes/evaluator infrastructure are not new closure prerequisites unless a
 specific regression requires them. Fix defects and finish the independent review
 gate; do not treat the completed description slice as representative quality.
 
-## Decisions before the next sprint
+## Selected first release and continuation
 
-Do not silently reduce the original learning-platform roadmap to a smaller demo.
-The portfolio-v1 versus full learning-loop finish line remains the owner's choice
-in `../09-delivery-status.md`. Before Sprint 5, resolve difficulty/extensions,
-source selection and official-document retrieval behavior in `../07-open-decisions.md`.
-The current timeline view makes none of those choices.
+The owner selected **RAG portfolio v1** on 2026-10-29. Its finite checklist and
+current continuation point are in `../09-delivery-status.md`: fresh default
+keyless setup, licensed transcript -> scoped chat -> stable evidence/history ->
+confirmed deletion, truthful packaging and verified checks. Local acceptance
+passed using the existing four smoke scripts and a full browser walkthrough on a fresh disposable stack; see the dated entry in
+`validation-record.md`. Only verification of this scope/acceptance commit's
+hosted CI remains for v1. Only a failing required check justifies further work.
+
+The independent real-example gate above stays open for full Sprint 4/Alpha 2;
+synthetic v1 workflow acceptance does not close it. The original Sprint 5–7
+assignment/submission/hardened-grading/learning-loop roadmap is preserved after
+v1 and must not start automatically when v1 completes. Before any future Sprint 5,
+resolve difficulty/extensions, source selection and official-document retrieval
+behavior in `../07-open-decisions.md`.

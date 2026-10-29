@@ -2,6 +2,22 @@
 
 Resolve the blocking section during Sprint 0. Replace `Proposed` with `Confirmed` or record the selected alternative and rationale.
 
+## Confirmed first finish line (2026-10-29)
+
+The owner selected **RAG portfolio v1**, a free local GitHub demonstration, with
+the finite acceptance checklist in `09-delivery-status.md`. This supersedes the
+historical private-beta first-release answer below and the previously pending
+portfolio-versus-learning-platform choice. Production/SaaS is outside this target.
+Keep existing authorized subtitle -> scoped chat -> stable evidence -> complete
+deletion flows; local models and restricted media remain optional experiments.
+No paid service, automatic model download or owner-stack change is authorized.
+
+Assignments, solution uploads, hardened code grading and the later learning loop
+remain Sprint 5–7 roadmap after v1. Their unresolved decisions need no silent
+default now. Completing v1 must not automatically open the next sprint. Independent
+owned/licensed real-video quality/audiovisual review remains open for full Alpha 2;
+synthetic workflow acceptance does not satisfy it.
+
 ## Blocking before broad implementation
 
 | Decision | Proposed default | Status |
@@ -37,8 +53,9 @@ working answers for the MVP are:
 2. SRT and VTT transcript uploads are the first supported path. Authorized media
    and audio uploads are planned behind isolated workers; the API does not process
    arbitrary media inline.
-3. The first release is a private personal-learning beta. The schema remains
-   tenant-aware so a later SaaS transition does not require removing isolation.
+3. The historical first-release choice was a private personal-learning beta.
+   The 2026-10-11 free local portfolio direction and 2026-10-29 RAG v1 choice above
+   supersede that delivery target. The schema remains tenant-aware.
 4. The eventual grading image targets one pinned Python 3.12 environment first.
    Additional versions require separate versioned images and compatibility tests.
 5. Third-party learner dependencies must be allowlisted and hash-pinned during a
@@ -222,8 +239,8 @@ quality threshold. See `sprint4/visual-evaluation-guide.md`.
 The change-aware continuation is initially an operator-only candidate prototype,
 with its own identity and no managed `WireResult`/checkpoint/profile change. No
 application scene-aware sampling or quality approval is implied. See
-`sprint4/scene-selection-plan.md`. The first portfolio finish line is now explicitly
-under review in `09-delivery-status.md`; keep the original roadmap until selected.
+`sprint4/scene-selection-plan.md`. RAG portfolio v1 is the selected first finish
+line in `09-delivery-status.md`; the original later roadmap remains preserved.
 
 ADR 0027 supplies the next versioned selection-manifest/checkpoint contract and
 additive migration 0018, preserving old digests and temporal-return provenance.
@@ -260,7 +277,8 @@ semantic audiovisual verification or automatic changes to the owner's stack.
 Complete descriptions feed separately labelled v2 visual evidence while old OCR
 citations remain stable. See `sprint4/frame-descriptions.md`. Independent real-
 example quality/audiovisual review remains required; native/schema success is not
-an acceptance threshold. This chooses no assignment or release finish line.
+an acceptance threshold. That component did not select a release finish line;
+the owner's later RAG portfolio v1 choice above now governs the first release.
 
 | Decision | Proposed default | Status |
 |---|---|---|
