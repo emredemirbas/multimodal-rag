@@ -1,1 +1,1 @@
-"""Internal curriculum contracts; no public API or generation capability."""
+"""Curriculum contracts and saved contexts; assignment generation is unavailable."""

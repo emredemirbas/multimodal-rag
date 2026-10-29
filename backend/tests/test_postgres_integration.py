@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
@@ -57,6 +58,50 @@ def isolated_postgres_url():
 
 
 @pytest.mark.integration
+def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url):
+    """Upgrade a populated pre-curriculum database, rather than only a fresh one."""
+    from app.curriculum.persistence import ContextCreate
+    from app.curriculum.repository import ContextRepository
+
+    migrations = Path(__file__).resolve().parents[1] / "app/migrations"
+    with psycopg.connect(isolated_postgres_url) as connection:
+        connection.execute("CREATE TABLE schema_migrations (version text PRIMARY KEY, sha256 text)")
+        for migration in sorted(migrations.glob("*.sql")):
+            if migration.name >= "0020_curriculum_contexts.sql":
+                break
+            script = migration.read_text()
+            connection.execute(script)
+            connection.execute("INSERT INTO schema_migrations (version,sha256) VALUES (%s,%s)",
+                               (migration.name, sha256(script.encode()).hexdigest()))
+    store = PostgresStore(isolated_postgres_url)
+    service = TutorialService(store, DeterministicHashEmbeddingProvider(), EvidenceExtractiveAnswerProvider())
+    principal = AuthenticatedPrincipal(provider="test", subject="curriculum-upgrade", tenant_id="upgrade-rag")
+    project = service.create_project(principal, ProjectCreate(title="Existing RAG workspace"))
+    source = service.ingest_transcript(principal, project.id, TranscriptIngestRequest(
+        filename="upgrade.vtt", authorization_mode="owner_upload", idempotency_key="pre-curriculum-source",
+        content="WEBVTT\n\n00:01.000 --> 00:05.000\nGET /health reports service availability.\n",
+    )).source
+    before = service.ask(principal, project.id, "GET /health")
+    assert not before.abstained
+    store.run_migrations()
+    store.run_migrations()
+    after = service.ask(principal, project.id, "GET /health")
+    assert after.answer == before.answer and after.citations == before.citations
+    repository = ContextRepository(store)
+    actor = store.bootstrap_principal(principal)
+    body = ContextCreate(
+        idempotency_key="post-upgrade-context",
+        selected_sources=[{"source_id": source.id, "generation": 1, "processing_version": source.processing_version}],
+        learner={"experience": "intermediate", "difficulty": "beginner", "language": "en",
+                 "available_minutes": 60, "allow_prerequisites": False, "allow_extensions": False,
+                 "allow_external_documentation": False},
+    )
+    saved = repository.create(principal.tenant_id, project.id, actor, body)
+    assert saved.tutorial_snapshots[0].segments[0].segment_id == after.citations[0].segment_id
+    assert repository.read(principal.tenant_id, project.id, actor, saved.id) == saved
+
+
+@pytest.mark.integration
 @pytest.mark.parametrize("legacy_sprint0", [False, True])
 def test_fresh_database_and_sprint0_upgrade(
     isolated_postgres_url: str, legacy_sprint0: bool
@@ -89,7 +134,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:

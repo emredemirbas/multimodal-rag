@@ -1,7 +1,7 @@
 # Sprint 5 — learning objectives and assignment drafts
 
-Date: 2026-10-29. Status: explicitly authorized by the owner; first internal
-contract/evidence slice implemented and locally tested. This is the next selected scope after the
+Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts
+and immutable saved tutorial contexts implemented. This is the next selected scope after the
 accepted RAG milestone, not an automatic sprint transition. The independent
 real-video quality/audiovisual gate for full Sprint 4/Alpha 2 stays open.
 
@@ -80,18 +80,71 @@ passing a scoped DTO is not authentication.
 
 ### 2. Project-owned persistence and read/edit API
 
-Add the next migration (currently 0020) and `curriculum/repository.py`.
-Persist project-scoped learner settings, immutable source/evidence/coverage
-snapshots and versioned editable drafts with tenant/project composite keys.
-Use project/membership locks, archived-project write fences, idempotent request
-replay/conflict detection and optimistic edit revisions. Revalidate dependencies
-in the commit transaction. Add source/project deletion behavior from this first
-persisted slice, including derived text and private staging.
+**2a — implemented:** migration 0020, `curriculum/persistence.py`, `repository.py`
+and `http.py`. Save explicit preferences and exact selected source generations
+with their authoritative evidence in an immutable context. There is no global
+learner default and no generated objectives/coverage claim. The API accepts only
+source pins and preferences, never client-supplied evidence or scope metadata.
 
-Expose only completed persisted data. API authentication/isolation and no-store
-contracts precede frontend wiring. Reuse existing evidence inspection rather than
-creating a second citation format. Database integration tests cover migration
-upgrade/repeat, foreign scopes, concurrent edits/replay, archive and deletion.
+`POST /api/v1/projects/{project_id}/curriculum/contexts` accepts this shape;
+example values are caller choices, not application defaults:
+
+```json
+{
+  "idempotency_key": "save-learning-context-001",
+  "selected_sources": [{
+    "source_id": "00000000-0000-0000-0000-000000000001",
+    "generation": 1,
+    "processing_version": "transcript-chunks-v1:g1"
+  }],
+  "learner": {
+    "experience": "intermediate",
+    "difficulty": "beginner",
+    "language": "tr",
+    "available_minutes": 90,
+    "allow_prerequisites": false,
+    "allow_extensions": false,
+    "allow_external_documentation": false
+  }
+}
+```
+
+Use real published IDs/parser values from the selected project. Same key/input
+replays the same 201 response; changing input returns 409. Source order is
+canonicalized. `GET` and `DELETE` on the returned context ID read/remove it;
+successful delete returns 204, missing context returns 404. Archived projects
+permit read/replay/delete, but block a new capture. No list/edit/activation API yet.
+
+Recheck and lock membership after identity mapping, then lock the project and
+selected sources. Load/validate/copy evidence in the same transaction. Retained
+old generations and legacy published generation-one transcripts remain valid.
+Exact existing ASR/visual origins and labels are copied, with no fabricated scores.
+Source reprocessing cannot rewrite an existing context; deletion of any source
+removes the entire multi-source context, including copied text and replay state.
+Project deletion cascades all new rows. No new object-storage artifact is created.
+The existing identity bootstrap still provisions membership on a later authenticated
+request; these repository locks do not claim persistent local-identity revocation.
+
+The authenticated JSON body is bounded to 16,384 actual bytes before parsing,
+including chunked input. Reject duplicate keys/nonstandard JSON constants and
+unknown fields. All responses, including errors, are private/no-store. Capture
+all segments of the selected generations or fail without truncation: <=500 total
+segments/500,000 characters, existing per-segment bounds, <=4,000,000 serialized
+snapshot bytes. This is not a prompt budget or an assertion of semantic coverage.
+Stored permissions enable no model or documentation access in this slice.
+
+**2b — next:** add coverage/objective records and versioned editable draft
+persistence/API with the next additive migration (currently 0021). Use the saved
+context, deterministic draft/evidence binding, optimistic revisions and durable
+mutation receipts so a retry can replay an earlier accepted edit after later edits.
+Reauthorize and revalidate dependencies in the commit transaction. Preserve the
+existing complete source/project deletion cascade. Do not accept model/coverage
+claims as validated merely because they satisfy a structural schema.
+
+Database/API tests cover migration upgrade/repeat, foreign scopes, concurrent
+replay, archive, retained generations, managed provenance, resource overflow,
+source deletion and actual membership/source lock waits. Frontend wiring remains
+later; no generated-assignment UI or qualitative approval is implied.
 
 ### 3. Durable curriculum runs and attribution
 
@@ -184,10 +237,10 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Step 1 is implemented: strict contracts and authoritative evidence binding,
-78 focused tests (also passing on Pydantic 2.10.0) and 713 backend non-integration
-tests passed. Actual results and limits are in `validation-record.md`. README now
+Steps 1 and 2a are implemented: strict contracts/binding and immutable saved
+tutorial contexts with scoped create/read/delete. Actual results and limits are
+in `validation-record.md`. README now
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 2's scoped persistence/API design and migration, while resolving any
+Next is step 2b's versioned editable draft/coverage persistence and API, while resolving any
 still-pending product policy before dependent generation/fetch behavior. Check
 the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.

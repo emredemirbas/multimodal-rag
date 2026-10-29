@@ -156,14 +156,36 @@ Citations should reference stable segment/evidence IDs. Store rendered labels se
 
 ### Curriculum
 
-Sprint 5's first implementation is an internal contract/evidence boundary in
-`backend/app/curriculum/`, not these persisted entities or public APIs yet. The
-strict request and draft carry tenant/project scope and explicit source-version
-selection/preferences. Model-provided evidence IDs resolve to trusted existing
-`EvidenceView` projections; tutorial and official-document evidence stay separate.
-Membership checks, transactional dependency/deletion fences, migrations and
-persisted generation/draft/version records are the next slice. See
-`sprint5/implementation-plan.md` and `sprint5/validation-record.md`.
+Sprint 5 has strict internal assignment contracts and immutable saved tutorial
+contexts in `backend/app/curriculum/`. Migration `0020_curriculum_contexts.sql`
+adds `curriculum_contexts` and `curriculum_context_sources`, with tenant/project
+composite keys and source dependencies. Preferences and exact source generations
+are explicit; application code captures authoritative `EvidenceView` projections
+under the same membership/project/source transaction fence. Reprocessing does not
+rewrite saved text, labels or provenance. Deleting any dependency deletes the
+entire copied context; project deletion cascades both tables.
+
+Implemented endpoints:
+
+- `POST /api/v1/projects/{project_id}/curriculum/contexts`: explicit preferences,
+  source/version selection and idempotency key; identical replay returns the saved
+  context, changed input conflicts. Archived projects permit replay but no new save.
+- `GET /api/v1/projects/{project_id}/curriculum/contexts/{context_id}`: read the
+  saved authoritative snapshot, including from archived projects.
+- `DELETE /api/v1/projects/{project_id}/curriculum/contexts/{context_id}`: delete
+  that context and dependencies; missing records return 404, success returns 204.
+
+Scope comes from authenticated identity/path, never a client-provided tenant or
+evidence payload. All responses are private/no-store. A context captures all
+segments of the explicitly selected generations or rejects the request at the
+bounded resource limit; it neither silently truncates nor generates a coverage map.
+See `sprint5/implementation-plan.md` for the JSON shape and limits. The existing
+identity bootstrap remains unchanged; repository membership checks/locks do not
+establish persistent revocation of a local identity that later authenticates again.
+
+Generation, coverage/objective records and editable/activated draft persistence
+are still undelivered. The entities below describe that later schema, not tables
+already introduced by migration 0020. See `sprint5/validation-record.md`.
 
 - `learning_objectives`
 - `objective_evidence`

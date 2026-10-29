@@ -8,9 +8,12 @@ fresh-stack results in `sprint4/validation-record.md`. The broader assignment,
 grading and learning-outcome strategy below remains post-v1 roadmap. Synthetic
 workflow checks never replace the independent real-video quality/audiovisual
 review required for full Sprint 4/Alpha 2 approval.
-The newly authorized Sprint 5 starts with strict contract/evidence-binding tests;
-see `sprint5/implementation-plan.md`. These do not constitute model-quality review
-or a delivered assignment UI/workflow.
+The newly authorized Sprint 5 has contract/evidence-binding tests and real
+PostgreSQL/HTTP coverage for immutable saved contexts: scoped membership locks,
+concurrent replay, archive rules, retained generations, managed provenance,
+bounded input/snapshots and complete deletion. See `sprint5/implementation-plan.md`
+and its validation record. These do not constitute model-quality review or a
+delivered assignment generation/edit/activation UI/workflow.
 
 ## Software test pyramid
 

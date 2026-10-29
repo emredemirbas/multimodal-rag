@@ -61,6 +61,9 @@ from .local_model import OllamaAnswerProvider
 from .chat.contracts import Conversation, ConversationCreate, ConversationList, EvidenceView, History, MessageRequest
 from .chat.repository import ChatRepository
 from .chat.delivery import deliver
+from .curriculum.http import CurriculumHttpMiddleware
+from .curriculum.persistence import ContextCreate, ContextView
+from .curriculum.repository import ContextRepository
 from .vision.gallery import VisualGalleryRepository
 from .vision.gallery_contracts import VisualGallery
 from .vision.descriptions import DescriptionRepository, DescriptionView
@@ -141,6 +144,7 @@ def create_app(
         application.state.metrics = metrics
         application.state.sources = None
         application.state.chat = ChatRepository(active_store, metrics) if isinstance(active_store, PostgresStore) else None
+        application.state.curriculum = ContextRepository(active_store) if isinstance(active_store, PostgresStore) else None
         if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
             application.state.sources = SourceRepository(active_store, artifacts or S3ArtifactStore(active_settings), active_settings)
         yield
@@ -154,6 +158,7 @@ def create_app(
     app.add_middleware(UploadLimitMiddleware, limit=active_settings.upload_limit_bytes + 16_384,
                        audio_upload_enabled=active_settings.audio_upload_enabled,
                        video_upload_enabled=active_settings.video_upload_enabled, authenticator=active_authenticator)
+    app.add_middleware(CurriculumHttpMiddleware, authenticator=active_authenticator)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -270,6 +275,11 @@ def create_app(
         if request.app.state.chat is None:
             raise SourceError("chat_not_configured", "Persisted conversations require PostgreSQL.", 503)
         return request.app.state.chat
+
+    def curriculum(request: Request) -> ContextRepository:
+        if request.app.state.curriculum is None:
+            raise SourceError("curriculum_not_configured", "Saved learning contexts require PostgreSQL.", 503)
+        return request.app.state.curriculum
 
     @app.get("/health/live")
     async def health_live() -> dict[str, str]:
@@ -548,6 +558,19 @@ def create_app(
         principal: CurrentPrincipal,
     ) -> QuestionResponse:
         return service(request).ask(principal, project_id, body.question, body.source_ids)
+
+    @app.post("/api/v1/projects/{project_id}/curriculum/contexts", response_model=ContextView, status_code=201)
+    def create_curriculum_context(project_id: UUID, body: ContextCreate, request: Request, principal: CurrentPrincipal):
+        return curriculum(request).create(principal.tenant_id, project_id, actor(request, principal), body)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}", response_model=ContextView)
+    def read_curriculum_context(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum(request).read(principal.tenant_id, project_id, actor(request, principal), context_id)
+
+    @app.delete("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}", status_code=204)
+    def delete_curriculum_context(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal):
+        curriculum(request).delete(principal.tenant_id, project_id, actor(request, principal), context_id)
+        return Response(status_code=204)
 
     @app.post("/api/v1/projects/{project_id}/conversations", response_model=Conversation, status_code=201)
     def create_conversation(project_id: UUID, body: ConversationCreate, request: Request, principal: CurrentPrincipal):
