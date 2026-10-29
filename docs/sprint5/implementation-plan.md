@@ -36,13 +36,15 @@ validation counts, CI run identities and handoff instructions belong in `docs/`.
   explicit request fields initially. Do not silently confirm the old proposed
   2–4 hour default. Initial language choices are English/Turkish, consistent with
   current local use; language must be selected rather than inferred from metadata.
-- Owner answer pending: tutorial-only forever, or tutorial-only by default with
-  optional prerequisite/extension material. The first contracts carry explicit
-  permissions; no runtime choice is enabled before this decision is recorded.
-- Owner answer pending: opt-in automatic official-document retrieval from an
-  application allowlist, or document selection/approval before each retrieval.
-  The first slice contains no fetcher or approved-domain default. Its binding
-  interface accepts only already-authorized trusted documentation snapshots.
+- Owner confirmed 2026-10-29: tutorial-only by default, with prerequisite/extension
+  material available only after explicit learner opt-in. Keep requirement labels
+  and tutorial/document evidence separate. The current internal path still rejects
+  true flags until approved documentation capture is implemented.
+- Owner confirmed 2026-10-29: learner selection/approval for each official document
+  before retrieval; external-topic opt-in does not authorize automatic fetching.
+  Keep the application allowlist as an additional restriction. The current binding
+  interface accepts only already-authorized trusted documentation snapshots;
+  no fetcher or approved-domain default is enabled yet.
 - Draft updates use optimistic version checks. Activation produces a pinned
   version; corrections can start a new editable draft, preserving the old version.
   This satisfies ADR 0010's eventual post-submission immutability without adding
@@ -189,7 +191,7 @@ Only client-supplied draft content is persisted here. Structural binding is not
 semantic support, feasibility, quality approval, activation or deterministic code
 assessment. No generation/docs provider is called. External/document requirements
 cannot be bound without trusted snapshots that step 5 has not delivered; saved
-permission flags do not settle the pending policy or enable this capability.
+permission flags alone do not authorize document fetching or enable this capability.
 
 Database/API tests cover migration upgrade/repeat, foreign scopes, concurrent
 replay, archive, retained generations, managed provenance, resource overflow,
@@ -308,8 +310,9 @@ request fingerprint and transport/resource bounds. Validate it with authored HTT
 responses and isolated PostgreSQL; do not call the owner's model or register a
 generation processor in this slice. **4b (implemented internally):** application
 prompts, objective/coverage batching and finite LangGraph transitions/checkpoint
-continuation. Next separately review actual native output. Pending product choices still gate
-their dependent behavior; technical provider work does not confirm them.
+continuation. Native supported-draft quality still needs review. The owner has
+confirmed optional external topics with per-document approval; dependent approved
+capture/enablement remains unimplemented.
 
 `LocalCurriculumProvider` implements the application-owned JSON interface;
 `LeasedCurriculumCalls` connects it to the existing scoped call ledger. Migration
@@ -322,8 +325,8 @@ The default worker registry and public capability remain closed.
 
 4b implementation boundary: internal tutorial-only workflow for explicit false
 prerequisite/extension/documentation permissions. Other permissions fail before
-inference until their dependent policy/capture exists; this is not a permanent
-product-policy choice. Default processor registration/public generation stays
+inference until approved document capture exists; this does not forbid the owner's
+confirmed opt-in behavior permanently. Default processor registration/public generation stays
 closed. Pin LangGraph 1.2.18 (Python >=3.10), disable hosted tracing explicitly
 without changing owner environment variables, and use no library checkpointer.
 
@@ -387,7 +390,7 @@ and [graph replay guidance](https://github.com/langchain-ai/docs/blob/main/src/o
 
 ### 5. Official documentation snapshots
 
-Implement the owner's chosen retrieval policy before enabling external topics.
+Implement the owner's per-document selection/approval policy before enabling external topics.
 Maintain an application-owned exact-domain/route allowlist; no arbitrary supplied
 URL fetch, off-allowlist redirect, credentials or model-selected destination.
 Bound time/bytes/content type, persist canonical URL, retrieval time, detected
@@ -440,13 +443,13 @@ fenced publication, plus a pinned local JSON provider, scoped call attribution a
 bounded objective/coverage extraction, selection, generation and one revision.
 Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
-Next is native-output review of the internal step 4b workflow. Record a small owned/
-licensed sample and expected supported goals, forbidden extensions and insufficient
-evidence before invoking the pre-existing explicitly pinned local model. Use an
-isolated context/run and review generated requirements, effort and progressive
-hints; report actual failures rather than treating authored HTTP tests as quality
-evidence. No downloads or default/public enablement. Preserve the existing scoped
-provider/receipt/checkpoint boundaries and disabled hosted tracing. Resolve pending
-product policy before dependent external-topic/document behavior; then continue
-the planned documentation and draft review/activation work. Check the exact
-pushed commit's CI; no user-facing generation/activation flow is claimed yet.
+The small predeclared native review is recorded in `native-output-review.md`.
+Supported cases exposed local latency and extraction-contract failures; a bounded
+schema/prompt correction preserves strict grounding. No supported native draft
+quality is claimed yet. Next address the demonstrated extraction latency/quote
+binding within a finite local worker budget before enabling generation; preserve
+the existing lease/call/checkpoint fences and do not increase limits blindly.
+No downloads or default/public enablement. The owner confirmed tutorial-only by
+default, optional external topics and approval for each official document; implement
+approved capture in step 5 before their runtime behavior, then the planned draft
+review/activation workspace. No user-facing generation/activation flow is claimed.

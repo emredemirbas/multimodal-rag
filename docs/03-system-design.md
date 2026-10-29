@@ -297,7 +297,8 @@ does at most one physical model call; accepted progress remains in the existing
 tenant/project-owned run checkpoints. No library checkpointer or hosted tracing
 is used (tracing is explicitly disabled even if enabled in the environment).
 The default registry/public producer remain closed pending native-output review
-and dependent product choices. Queue coordination and CRUD stay ordinary code.
+and approved document capture. The owner selected optional external topics with
+approval for each official document. Queue coordination and CRUD stay ordinary code.
 
 ### LangGraph workflows
 

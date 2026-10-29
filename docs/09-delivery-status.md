@@ -8,7 +8,8 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-**Sprint 5 has contracts, saved contexts, versioned draft APIs, durable queued delivery/publication and a local provider foundation**; full
+**Sprint 5 has contracts, saved contexts, versioned draft APIs, durable queued
+delivery/publication, a local provider and an internal LangGraph workflow**; full
 Sprint 4/Alpha 2 quality approval remains open. Project/auth/isolation,
 authorized subtitle jobs, scoped retrieval/chat/citations, optional free local
 answers/embeddings, ordered playlist relationships, constrained WAV transcription
@@ -32,7 +33,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication and pinned local JSON/call-attribution foundation implemented (0020–0024). Objective/coverage prompts, LangGraph generation, UI and pending policy remain; see the plan/validation |
+| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication, pinned local JSON/call attribution (0020–0024) and internal bounded LangGraph implemented. Small native review failed on latency/semantic abstention; generation stays closed. Opt-in external topics and per-document approval confirmed; capture/activation UI remain |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -93,8 +94,11 @@ queue/worker delivery, continuation, fenced publication and the pinned local JSO
 provider/call-attribution foundation and internal bounded LangGraph workflow are
 implemented. The graph extracts objectives/coverage, selects a small goal subset,
 generates and allows one revision, reusing scoped checkpoints after process loss.
-Native-output quality review is next, followed by policy-dependent official-document
-snapshots and draft review/activation UI. Submissions and grading remain later.
+The small native review failed: supported examples time out and the insufficient
+case produced a semantically incorrect supported objective. Versioned extraction
+schema/prompt v2 strengthens decoding but does not establish quality; see
+`sprint5/native-output-review.md`. Official-document approval/capture and draft
+review/activation UI remain. Submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
 fake source for multi-source assignments. New persistent curriculum work needs
@@ -105,15 +109,16 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
-and perform the planned small native-output review of step 4b. Record an owned/
-licensed sample, expected goals, forbidden extensions and insufficient-evidence
-cases before calling the pre-existing explicitly pinned local model through an
-isolated context/run. Inspect actual drafts/effort/hints and record failures.
-Authored HTTP and real SIGKILL recovery checks establish software behavior, not
-semantic coverage/solvability. Keep the default registry/public producer closed;
-no downloads or owner-data/service changes. Resolve pending extension/document
-policy before dependent fetch/enablement. Do not claim Sprint 5 complete or close
-the independent real-video gate from these tests; do not start grading/tutoring.
+and address step 4b's recorded native latency/false-positive objective failures in
+a bounded local profile/prompt slice. Start from `sprint5/native-output-review.md`
+and its exact outputs; declare changed budgets/expectations before inference,
+preserve strict grounding and lease/call/checkpoint fences. Do not retry until a
+favorable output, weaken checks or add sample-specific semantic keyword filters.
+Keep the default registry/public producer closed; no downloads or owner-data/
+service changes. The owner confirmed tutorial-only default, optional external
+topics and selection/approval for each official document; approved capture still
+needs implementation before dependent behavior. Do not claim Sprint 5 complete,
+close the independent real-video gate or start grading/tutoring.
 
 ## Sprint 4 closure — one remaining gate
 
@@ -193,6 +198,6 @@ deletion or treating an initial source-list error as proof of removal. This chan
 the open browser view, not the independently tracked physical-file cleanup or the
 fact that data already received/copied by a user cannot be recalled.
 
-Before enabling Sprint 5 generation, resolve the remaining extension and official
-documentation behavior in `07-open-decisions.md`. Explicit source/preferences
-contracts can precede those choices; they do not declare the sprint implemented.
+Before enabling Sprint 5 generation, address the recorded native failures and
+implement the confirmed opt-in/per-document approval behavior where applicable.
+See `07-open-decisions.md`; contracts alone do not complete the sprint.

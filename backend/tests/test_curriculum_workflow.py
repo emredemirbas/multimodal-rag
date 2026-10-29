@@ -13,7 +13,7 @@ from app.curriculum.execution import StageFailure, StageInput, StageLeaseLost
 from app.curriculum.local_provider import JsonModelResponse, LocalCurriculumProvider, _json_bytes
 from app.curriculum.objectives import (
     BatchExtraction, MAX_BATCHES, MAX_SLICE_BYTES, checked_context, context_digest,
-    parse_value, plan_batches, validate_extraction,
+    extract_spec, parse_value, plan_batches, validate_extraction,
 )
 from app.curriculum.persistence import ContextView
 from app.curriculum.run_contracts import CheckpointView, RunClaim, RunView
@@ -181,6 +181,36 @@ def test_extraction_rejects_invented_quotes_ids_and_incomplete_coverage(session,
         validate_extraction(batch, parse_value(BatchExtraction, json.dumps(result)))
 
 
+def test_native_schema_only_offers_supplied_slice_ids_and_coherent_status_fields(session):
+    session.context.tutorial_snapshots[0].segments[0].text = "route " * 700
+    batch = plan_batches(session.context)[0]
+    spec = extract_spec(batch, session.context.request.learner)
+    assert spec.prompt_version == "tutorial-objectives-v2" and spec.schema_version == "tutorial-objectives-json-v2"
+    definitions = spec.output_schema["$defs"]
+    expected = [item.id for item in batch.slices]
+    assert len(expected) > 1
+    for name in ("GoalAnchor", "SupportedCoverage", "InsufficientCoverage"):
+        assert definitions[name]["properties"]["slice_id"]["enum"] == expected
+    supported = definitions["SupportedCoverage"]["properties"]
+    insufficient = definitions["InsufficientCoverage"]["properties"]
+    assert supported["reason"]["type"] == "null" and supported["goal_ids"]["minItems"] == 1
+    assert insufficient["reason"]["type"] == "string" and insufficient["goal_ids"]["maxItems"] == 0
+    # Dynamic schema construction must not contaminate another source batch.
+    assert "enum" not in BatchExtraction.model_json_schema()["$defs"]["GoalAnchor"]["properties"]["slice_id"]
+
+
+@pytest.mark.parametrize("status,ids,reason", [
+    ("supported", ["route"], "Native v1 incorrectly supplied an explanation."),
+    ("supported", [], None), ("supported", ["route", "route"], None),
+    ("insufficient_evidence", ["route"], "Not supported."),
+    ("insufficient_evidence", [], None), ("insufficient_evidence", [], " "),
+])
+def test_status_invariants_remain_mandatory_after_native_schema_fix(session, status, ids, reason):
+    value = {"goals": [], "coverage": [{"slice_id": "s00000", "status": status, "goal_ids": ids, "reason": reason}]}
+    with pytest.raises(ValueError):
+        parse_value(BatchExtraction, json.dumps(value))
+
+
 def test_graph_extracts_selects_and_generates_with_exact_bound_evidence(session):
     assert session.advance().checkpoint.stage == "curriculum.initialized" and not session.calls.requests
     content = session.finish()
@@ -281,7 +311,7 @@ def test_unusable_outputs_stop_without_guessing_or_extra_revisions(session, mode
 
 
 @pytest.mark.parametrize("flag", ["allow_prerequisites", "allow_extensions", "allow_external_documentation"])
-def test_pending_product_policy_cannot_be_implicitly_enabled(session, flag):
+def test_external_permissions_stay_closed_until_approved_capture_exists(session, flag):
     setattr(session.context.request.learner, flag, True)
     with pytest.raises(StageFailure) as error:
         session.advance()

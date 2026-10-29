@@ -1,0 +1,10 @@
+WEBVTT
+
+00:00.000 --> 00:20.000
+This short example uses FastAPI to return a typed list of strings. Create app = FastAPI(). The route decorator @app.get("/items", response_model=list[str]) registers a GET endpoint and declares the response shape.
+
+00:20.000 --> 00:40.000
+Define def read_items(): and return ["pen", "book"] from it. Calling GET /items returns a JSON array of strings. Changing the endpoint path or the example strings does not require another service. The response model is list[str], not a database model.
+
+00:40.000 --> 01:00.000
+Keep the example in one Python file with from fastapi import FastAPI. This lesson covers creating the application, the GET decorator, a function returning a string list, and response_model=list[str]. It does not teach persistence, authentication, deployment, test libraries, async functions or request-body validation.

@@ -53,6 +53,13 @@ select/generate without extracting again and duplicate deliveries must leave one
 draft/result. This proves recovery and structural validity, not native model
 quality, semantic coverage, appropriate difficulty or solvability.
 
+The separate small native review in `sprint5/native-output-review.md` used actual
+pre-existing local weights and authored MIT subtitle fixtures. It failed on
+latency and semantic abstention; strengthened v2 decoding is not quality approval.
+Exact failures/usage are recorded separately from authored HTTP test success.
+Neither these native text samples nor the software tests close the independent
+real-video/audiovisual gate.
+
 ## Software test pyramid
 
 ### Unit tests

@@ -1,0 +1,584 @@
+{
+  "format": "native-assignment-review-v1",
+  "date": "2026-10-29",
+  "scope": "Authored MIT fixtures only; no corresponding recording; no native quality approval.",
+  "baseline_commit": "caaa619f90a5b876548e9142d0e97b4945d2f365",
+  "model": {
+    "provider": "ollama-local",
+    "model": "qwen3:4b",
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "engine": "0.40.3"
+  },
+  "options": {
+    "temperature": 0,
+    "num_ctx": 16384,
+    "num_predict": 2048,
+    "num_thread": 4
+  },
+  "passes": [
+    {
+      "pass": "original-v1",
+      "recipe_sha256": "7c8605cd4225642f12797e23fd7dd85f254e22abeee6b62dfe944e15c21cf1e9",
+      "started_at": "2026-10-29T16:51:44.470360+00:00",
+      "finished_at": "2026-10-29T16:53:32.683884+00:00",
+      "physical_calls": 3,
+      "remaining_artifacts": 0,
+      "cases": [
+        {
+          "case": "typed-list-en.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "en",
+            "available_minutes": 45,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+          "batches": 1,
+          "final_status": "retrying",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "730e953a9c579c6274800680db30749cbc919e882d9cd8a9cfaf103729bb51b8",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "output_characters": null,
+              "duration_ms": 42043,
+              "billed_usd": "0.000000",
+              "failure_code": "provider_timeout"
+            }
+          ],
+          "failure_code": "provider_timeout",
+          "accepted_stages": [
+            "curriculum.initialized"
+          ],
+          "accepted_extractions": [],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "input_sha256": "730e953a9c579c6274800680db30749cbc919e882d9cd8a9cfaf103729bb51b8",
+              "inference_requested": true,
+              "outcome": "provider_failure",
+              "failure_code": "provider_timeout",
+              "retryable": true,
+              "elapsed_ms": 42061
+            }
+          ]
+        },
+        {
+          "case": "health-route-tr.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "tr",
+            "available_minutes": 30,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+          "batches": 1,
+          "final_status": "retrying",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "c35655699a10260d34fd52fa84888afaf565f9c211cc1a5bbefd6cb6fffcab82",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "output_characters": null,
+              "duration_ms": 42042,
+              "billed_usd": "0.000000",
+              "failure_code": "provider_timeout"
+            }
+          ],
+          "failure_code": "provider_timeout",
+          "accepted_stages": [
+            "curriculum.initialized"
+          ],
+          "accepted_extractions": [],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "input_sha256": "c35655699a10260d34fd52fa84888afaf565f9c211cc1a5bbefd6cb6fffcab82",
+              "inference_requested": true,
+              "outcome": "provider_failure",
+              "failure_code": "provider_timeout",
+              "retryable": true,
+              "elapsed_ms": 42057
+            }
+          ]
+        },
+        {
+          "case": "insufficient-en.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "en",
+            "available_minutes": 30,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+          "batches": 1,
+          "final_status": "failed",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "e0736f0bf06b7dff9d893c082f1543078800dcbde0c202ba6b49a1539541e244",
+              "status": "succeeded",
+              "input_tokens": 428,
+              "output_tokens": 88,
+              "output_characters": 340,
+              "duration_ms": 22997,
+              "billed_usd": "0.000000",
+              "failure_code": null
+            }
+          ],
+          "failure_code": "invalid_output",
+          "accepted_stages": [
+            "curriculum.initialized"
+          ],
+          "accepted_extractions": [],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v1",
+              "schema_version": "tutorial-objectives-json-v1",
+              "input_sha256": "e0736f0bf06b7dff9d893c082f1543078800dcbde0c202ba6b49a1539541e244",
+              "inference_requested": true,
+              "outcome": "accepted_response",
+              "elapsed_ms": 23015,
+              "native_response": {
+                "done": true,
+                "done_reason": "stop",
+                "model": "qwen3:4b",
+                "prompt_eval_count": 428,
+                "eval_count": 88,
+                "total_duration": 22990893594,
+                "load_duration": 6058801770,
+                "prompt_eval_duration": 9631402000,
+                "eval_duration": 7295577000,
+                "role": "assistant",
+                "has_thinking": false,
+                "has_tool_calls": false,
+                "output": {
+                  "coverage": [
+                    {
+                      "goal_ids": [],
+                      "reason": "insufficient_evidence: No technical learning objective can be supported by this title card. The text is a placeholder with no programming demonstration, code, explanation or actual",
+                      "slice_id": "s01000",
+                      "status": "insufficient_evidence"
+                    }
+                  ],
+                  "goals": []
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pass": "corrective-v2",
+      "recipe_sha256": "d7602c8f29111e4062aa45e75af5430cf67771ea5b2c57e0cce780b7f532bb35",
+      "started_at": "2026-10-29T16:58:43.895683+00:00",
+      "finished_at": "2026-10-29T17:01:38.483094+00:00",
+      "physical_calls": 5,
+      "remaining_artifacts": 0,
+      "cases": [
+        {
+          "case": "typed-list-en.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "en",
+            "available_minutes": 45,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+          "batches": 1,
+          "final_status": "retrying",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "b6e7ae73391371233fa1c451a6b2513602653417b0ca85849f41f11eef749a37",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "output_characters": null,
+              "duration_ms": 42042,
+              "billed_usd": "0.000000",
+              "failure_code": "provider_timeout"
+            }
+          ],
+          "failure_code": "provider_timeout",
+          "accepted_stages": [
+            "curriculum.initialized"
+          ],
+          "accepted_extractions": [],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "input_sha256": "b6e7ae73391371233fa1c451a6b2513602653417b0ca85849f41f11eef749a37",
+              "inference_requested": true,
+              "outcome": "provider_failure",
+              "failure_code": "provider_timeout",
+              "retryable": true,
+              "elapsed_ms": 42057
+            }
+          ]
+        },
+        {
+          "case": "health-route-tr.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "tr",
+            "available_minutes": 30,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+          "batches": 1,
+          "final_status": "retrying",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "91c87f1bdd4975e84fbaf65dfc216ee96b205283e621dff815d60c2c3fb33778",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "output_characters": null,
+              "duration_ms": 42042,
+              "billed_usd": "0.000000",
+              "failure_code": "provider_timeout"
+            }
+          ],
+          "failure_code": "provider_timeout",
+          "accepted_stages": [
+            "curriculum.initialized"
+          ],
+          "accepted_extractions": [],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "input_sha256": "91c87f1bdd4975e84fbaf65dfc216ee96b205283e621dff815d60c2c3fb33778",
+              "inference_requested": true,
+              "outcome": "provider_failure",
+              "failure_code": "provider_timeout",
+              "retryable": true,
+              "elapsed_ms": 42058
+            }
+          ]
+        },
+        {
+          "case": "insufficient-en.vtt",
+          "learner": {
+            "experience": "intermediate",
+            "difficulty": "beginner",
+            "language": "en",
+            "available_minutes": 30,
+            "allow_prerequisites": false,
+            "allow_extensions": false,
+            "allow_external_documentation": false
+          },
+          "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+          "batches": 1,
+          "final_status": "retrying",
+          "remaining_project_rows": 0,
+          "remaining_context_rows": 0,
+          "receipts": [
+            {
+              "purpose": "extract-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "b5298c18b20a0beb5f656475c9c340f3c0e712d9517de0c18f794972e439fc61",
+              "status": "succeeded",
+              "input_tokens": 479,
+              "output_tokens": 177,
+              "output_characters": 665,
+              "duration_ms": 34773,
+              "billed_usd": "0.000000",
+              "failure_code": null
+            },
+            {
+              "purpose": "select-objectives",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-goal-selection-v1",
+              "schema_version": "tutorial-goal-selection-json-v1",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "efcca7a6e277d850d85fca63d9d4238ed230166042c5e50ef5368a3f0383f5a7",
+              "status": "succeeded",
+              "input_tokens": 167,
+              "output_tokens": 23,
+              "output_characters": 40,
+              "duration_ms": 12281,
+              "billed_usd": "0.000000",
+              "failure_code": null
+            },
+            {
+              "purpose": "generate-assignment",
+              "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+              "engine": "0.40.3",
+              "prompt_version": "tutorial-assignment-v1",
+              "schema_version": "assignment-draft-v1",
+              "request_version": "curriculum-json-call-v1",
+              "input_sha256": "e235bdfe740621505cec2c08ccd2d2ab5b55d60abd63ef581fc9c3b0a5a7dd53",
+              "status": "failed",
+              "input_tokens": null,
+              "output_tokens": null,
+              "output_characters": null,
+              "duration_ms": 42043,
+              "billed_usd": "0.000000",
+              "failure_code": "provider_timeout"
+            }
+          ],
+          "failure_code": "provider_timeout",
+          "accepted_stages": [
+            "curriculum.initialized",
+            "curriculum.extracted",
+            "curriculum.selected"
+          ],
+          "accepted_extractions": [
+            {
+              "index": 0,
+              "extraction": {
+                "goals": [
+                  {
+                    "id": "s00010",
+                    "anchors": [
+                      {
+                        "quote": "This is an authored title card for a recording that is not included. There is no programming demonstration, code, explanation or instruction in this text. The placeholder ends here. No technical learning objective can be supported by this",
+                        "slice_id": "s00000"
+                      }
+                    ],
+                    "description": "This title card contains no technical content, so no learning goals can be derived from it"
+                  }
+                ],
+                "coverage": [
+                  {
+                    "reason": null,
+                    "status": "supported",
+                    "goal_ids": [
+                      "s00010"
+                    ],
+                    "slice_id": "s00000"
+                  }
+                ]
+              },
+              "input_sha256": "b5298c18b20a0beb5f656475c9c340f3c0e712d9517de0c18f794972e439fc61"
+            }
+          ],
+          "calls": [
+            {
+              "purpose": "extract-objectives",
+              "prompt_version": "tutorial-objectives-v2",
+              "schema_version": "tutorial-objectives-json-v2",
+              "input_sha256": "b5298c18b20a0beb5f656475c9c340f3c0e712d9517de0c18f794972e439fc61",
+              "inference_requested": true,
+              "outcome": "accepted_response",
+              "elapsed_ms": 34803,
+              "native_response": {
+                "done": true,
+                "done_reason": "stop",
+                "model": "qwen3:4b",
+                "prompt_eval_count": 479,
+                "eval_count": 177,
+                "total_duration": 34771258292,
+                "load_duration": 7839968169,
+                "prompt_eval_duration": 13023914000,
+                "eval_duration": 13810297000,
+                "role": "assistant",
+                "has_thinking": false,
+                "has_tool_calls": false,
+                "output": {
+                  "coverage": [
+                    {
+                      "goal_ids": [
+                        "s00010"
+                      ],
+                      "reason": null,
+                      "slice_id": "s00000",
+                      "status": "supported"
+                    }
+                  ],
+                  "goals": [
+                    {
+                      "anchors": [
+                        {
+                          "quote": "This is an authored title card for a recording that is not included. There is no programming demonstration, code, explanation or instruction in this text. The placeholder ends here. No technical learning objective can be supported by this",
+                          "slice_id": "s00000"
+                        }
+                      ],
+                      "description": "This title card contains no technical content, so no learning goals can be derived from it",
+                      "id": "s00010"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "purpose": "select-objectives",
+              "prompt_version": "tutorial-goal-selection-v1",
+              "schema_version": "tutorial-goal-selection-json-v1",
+              "input_sha256": "efcca7a6e277d850d85fca63d9d4238ed230166042c5e50ef5368a3f0383f5a7",
+              "inference_requested": true,
+              "outcome": "accepted_response",
+              "elapsed_ms": 12307,
+              "native_response": {
+                "done": true,
+                "done_reason": "stop",
+                "model": "qwen3:4b",
+                "prompt_eval_count": 167,
+                "eval_count": 23,
+                "total_duration": 12279519976,
+                "load_duration": 6775111592,
+                "prompt_eval_duration": 3834584000,
+                "eval_duration": 1665478000,
+                "role": "assistant",
+                "has_thinking": false,
+                "has_tool_calls": false,
+                "output": {
+                  "goal_ids": [
+                    "g00_s00010"
+                  ]
+                }
+              }
+            },
+            {
+              "purpose": "generate-assignment",
+              "prompt_version": "tutorial-assignment-v1",
+              "schema_version": "assignment-draft-v1",
+              "input_sha256": "e235bdfe740621505cec2c08ccd2d2ab5b55d60abd63ef581fc9c3b0a5a7dd53",
+              "inference_requested": true,
+              "outcome": "provider_failure",
+              "failure_code": "provider_timeout",
+              "retryable": true,
+              "elapsed_ms": 42064
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostic": {
+    "case": "typed-list-en.vtt",
+    "baseline_input_sha256": "730e953a9c579c6274800680db30749cbc919e882d9cd8a9cfaf103729bb51b8",
+    "modified_only": "stream=true",
+    "deadline_seconds": 55,
+    "completed": true,
+    "first_content_ms": 19973,
+    "first_thinking_ms": null,
+    "content_chunks": 390,
+    "content_characters": 1440,
+    "has_thinking": false,
+    "usage": {
+      "done_reason": "stop",
+      "prompt_eval_count": 652,
+      "eval_count": 391,
+      "total_duration": 50715122514,
+      "load_duration": 5805394970,
+      "prompt_eval_duration": 14160079000,
+      "eval_duration": 30742974000
+    },
+    "elapsed_ms": 50720,
+    "output": {
+      "coverage": [
+        {
+          "goal_ids": [
+            "g00001"
+          ],
+          "reason": "The slice s00000 contains the quote: \"This short example uses FastAPI to return a typed list of strings. Create app = FastAPI(). The route decorator @app.get(\"/items\", response_mod",
+          "slice_id": "s00000",
+          "status": "supported"
+        },
+        {
+          "goal_ids": [
+            "g00002"
+          ],
+          "reason": "The slice s00001 contains the quote: \"Keep the example in one Python file with from fastapi import FastAPI. This lesson covers creating the application, the GET decorator, a funct",
+          "slice_id": "s00001",
+          "status": "supported"
+        }
+      ],
+      "goals": [
+        {
+          "anchors": [
+            {
+              "quote": "\"This short example uses FastAPI to return a typed list of strings. Create app = FastAPI(). The route decorator @app.get(\"/items\", response_mod",
+              "slice_id": "s00000"
+            }
+          ],
+          "description": "Define FastAPI app with response_model for typed list of strings",
+          "id": "g00001"
+        },
+        {
+          "anchors": [
+            {
+              "quote": "\"Keep the example in one Python file with from fastapi import FastAPI. This lesson covers creating the application, the GET decorator, a funct",
+              "slice_id": "s00001"
+            }
+          ],
+          "description": "Lesson covers application creation, GET decorator, and string list return without persistence",
+          "id": "g00002"
+        }
+      ]
+    }
+  },
+  "total_physical_calls": 9
+}

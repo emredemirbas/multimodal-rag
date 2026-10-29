@@ -1,0 +1,10 @@
+WEBVTT
+
+00:00.000 --> 00:20.000
+Bu kısa örnekte FastAPI ile tek bir sağlık uç noktası yazıyoruz. from fastapi import FastAPI satırıyla sınıfı içeri aktarın ve app = FastAPI() ile uygulamayı oluşturun.
+
+00:20.000 --> 00:40.000
+@app.get("/health") dekoratörünün altında def health(): fonksiyonunu tanımlayın. Fonksiyon return {"status": "ok"} ile sabit bir sözlük döndürür. GET /health isteğinin yanıtı status alanı ok olan bir JSON nesnesidir.
+
+00:40.000 --> 01:00.000
+Alıştırma için uç nokta adını ve sabit metin değerini değiştirebilirsiniz. Tek Python dosyası, FastAPI uygulaması, GET dekoratörü, fonksiyon ve sabit sözlük bu dersin kapsamıdır. Veritabanı, kullanıcı girişi, kimlik doğrulama, dağıtım, test kütüphanesi ve async işlevi bu derste anlatılmıyor.

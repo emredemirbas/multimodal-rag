@@ -88,7 +88,8 @@ LangGraph hosted tracing is explicitly disabled inside construction/invocation
 without changing owner environment variables; no library checkpoint store receives
 project text. Logs contain only safe identifiers and fixed rejection codes.
 True external-topic/document permissions fail before inference in the current
-internal path; pending product policy is not silently decided. See the Sprint 5
+internal path until approved capture exists. The owner confirmed opt-in external
+topics and explicit approval for each official document. See the Sprint 5
 plan for resource caps.
 
 ### Malicious uploaded files

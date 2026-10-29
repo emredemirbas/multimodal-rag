@@ -286,7 +286,8 @@ is in `sprint5/implementation-plan.md`. Contracts/binding, saved contexts and
 versioned drafts, durable queued runs, pinned local provider/call attribution and
 the internal bounded LangGraph workflow are implemented and locally tested.
 Public generation/activation UI, native draft-quality review and Sprint 5
-acceptance remain open; external-topic/document policy answers are pending.
+acceptance remain open. The owner confirmed optional external topics and approval
+for each official document; dependent capture/enablement is still unimplemented.
 
 **Duration:** 2 weeks
 

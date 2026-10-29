@@ -654,19 +654,99 @@ services were not changed. The exact new commit's CI must be checked after push;
 local results do not make a running hosted workflow successful.
 Whitespace and changed Markdown local-target checks passed; README is unchanged.
 
+## Native review, extraction-schema correction and confirmed policy (2026-10-29)
+
+Starting checkout/origin was clean at `caaa619`. Its exact
+[CI run 40911625107](https://github.com/emredemirbas/multimodal-rag/actions/runs/40911625107)
+was initially still running; all four jobs completed successfully before this
+commit. That is software validation, not native model-quality acceptance.
+
+The owner explicitly confirmed tutorial-only by default with learner opt-in for
+prerequisites/extensions, and learner selection/approval for each official
+document before retrieval. Updated `07-open-decisions.md` and the plan; do not ask
+these questions again or infer that generic opt-in authorizes automatic fetching.
+Current true-flag rejection remains until approved capture is implemented.
+
+Before inference, saved three new MIT-licensed authored VTT samples and explicit
+expected goals, forbidden topics, learner settings and insufficient-evidence
+behavior in `native-output-review.md`. These are text fixtures without a real
+recording. Read-only inventory freshly verified existing local `qwen3:4b` digest
+`359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7`, Ollama
+0.40.3, family/capabilities and no remote identity. No weights were installed.
+
+Used the actual application source processor, saved contexts, graph, scoped
+physical-call receipts, checkpoints and binding against a disposable PostgreSQL.
+The private test-only registry was passed directly to `advance_run`; there is no
+new endpoint, evaluation service or shipped diagnostic tool. A one-off isolated
+CLI runner was used, not the API or owner DB. No Celery recovery is claimed by
+that runner; recovery has its separate real-process tests.
+
+Native findings (**review did not pass**):
+
+- Original profile: both supported examples timed out at extraction around
+  42 seconds. Each failed receipt is `provider_timeout`, tokens remain unknown,
+  and the probe stopped at `retrying` without automatic retries. The insufficient
+  example returned no goals but an invented `s01000` slice ID; strict application
+  validation rejected it as `invalid_output`, not a successful abstention.
+- One predeclared <=55s streaming diagnostic used the same English prompt/schema/
+  model/options, changing only stream delivery. It completed in 50.72s, first
+  content at 19.97s; 652 input/391 output tokens, no thinking/tools. Output would
+  still fail: non-null supported reasons and nonliteral quote/escape characters.
+  It is diagnostic evidence, not an accepted application call or quality pass.
+- Extraction prompt/schema v2 now constrains both anchor/coverage IDs to the
+  supplied batch and encodes supported (`reason:null`, nonempty IDs) versus
+  insufficient (`goal_ids:[]`, bounded reason) branches in structured decoding.
+  Clarified local goal IDs, short literal quotes and single JSON escaping. Strict
+  returned quote/reference/coverage/UTF-8 validation remains; no title-card keyword
+  filter, relaxed grounding, deadline extension, new model or extra semantic judge.
+  Existing payload shape/valid relationships remain; recipe/request hashes and
+  prompt/schema versions change, preventing silent adoption by old pinned runs.
+- Single corrective pass: both supported extractions still timed out. The
+  insufficient text now yielded structurally valid but **semantically wrong**
+  `supported` coverage: its “no learning goals can be derived” statement became a
+  goal and was selected. Generation then timed out. No draft was published; that
+  does not make the false-positive coverage correct. Supported draft quality,
+  effort/language/hint quality and solvability remain unreviewed.
+- **Nine actual native requests total**: 3 original, 1 diagnostic, 5 corrective.
+  Full public sample output, request/recipe hashes, usage and failure receipts
+  are in `native-output-results.json`. All runs stayed within their predeclared
+  budgets. The default registry/public generation remain closed; no Sprint 5 or
+  independent real-video/Alpha 2 quality approval is given.
+
+Checks after correction:
+
+- **57 focused graph/objective unit cases passed, 7.59s**. Seven new cases verify
+  actual-batch native ID choices, schema-expressible status invariants and strict
+  rejection of contradictory status/reason/ID values; existing quote, scope,
+  progress, bounded repair and tracing checks remain.
+- Full backend non-integration regression: **843 passed, 680 deselected, 26.00s**.
+- **17 PostgreSQL/HTTP/real Celery worker cases passed, 24.48s**: actual graph
+  checkpoints/publication, versioned call receipts, retries, lease/authority/
+  deletion races and SIGKILL/duplicate recovery. These authored HTTP tests do not
+  override the native failures. No database schema or frontend behavior changed.
+- Fresh v2 worker image built; no-network read-only smoke verified prompt/schema
+  v2 imports and the empty default registry. README remains unchanged.
+
+All native samples were separate owned/licensed test data. Test project/context/
+run/checkpoint/call rows and in-memory artifacts ended at zero; isolated test
+schemas and Redis keys also ended at zero. Both labelled disposable test containers
+and both temporary image tags were removed. The owner's nine running container
+IDs were identical before/after; `.env`, credentials, application data, Docker
+configuration and model installations were unchanged. Only explicit local
+inference and inventory reached the pre-existing model service.
+
 ## Continuation
 
-Next: the planned small native-output review for step 4b. Record owned/licensed
-sample content plus expected supported objectives, forbidden extensions and
-insufficient-evidence cases before inference. Use isolated context/run data and
-the pre-existing explicitly pinned local model, review actual drafts/effort/hints
-and record failures. Keep default/public generation closed; do not download
-weights. The component tests above do not replace this review or close Sprint 4.
-Preserve source/context scope, original actor, exact command replay and complete
-deletion; no synthetic source used to fake curriculum ownership.
+Next is a bounded fix of step 4b's demonstrated local latency and semantic
+false-positive objectives. Start with `native-output-review.md` and exact outputs;
+declare changed profile/prompt budgets and fixed positive/insufficient expectations
+before inference. Preserve source IDs, quotes, original actor, call/checkpoint/
+lease fences and complete deletion. Do not retry until favorable output, weaken
+validation, add sample-specific keyword filters or enable public generation.
 
-Resolve the pending extension and official-document policy before enabling their
-dependent behavior. Preserve source-generation pins, no paid calls/downloads,
-complete deletion and the separation from later submission/grading/tutoring work.
-Verify the exact new commit's hosted CI after push; the green starting baseline
-alone does not certify subsequent implementations.
+Product choices are now confirmed: tutorial-only default, optional external topics,
+explicit selection/approval for each official document. Implement approval/capture
+in the already planned step 5 before enabling dependent behavior, then draft
+review/activation UI. No paid call/download, Sprint 6 grading/tutoring or independent
+real-video closure follows from this review. Verify the new commit's exact hosted
+CI after push; a running workflow is not success.
