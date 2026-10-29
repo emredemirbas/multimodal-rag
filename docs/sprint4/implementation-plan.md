@@ -58,9 +58,12 @@ The owner selected **RAG portfolio v1** on 2026-10-29. Its finite checklist and
 current continuation point are in `../09-delivery-status.md`: fresh default
 keyless setup, licensed transcript -> scoped chat -> stable evidence/history ->
 confirmed deletion, truthful packaging and verified checks. Local acceptance
-passed using the existing four smoke scripts and a full browser walkthrough on a fresh disposable stack; see the dated entry in
-`validation-record.md`. Only verification of this scope/acceptance commit's
-hosted CI remains for v1. Only a failing required check justifies further work.
+passed using the existing four smoke scripts and a full browser walkthrough on
+a fresh disposable stack. All four hosted CI jobs for exact commit `3c2bff5`
+passed in run `40854790466`; see the dated closure in `validation-record.md`.
+**The selected portfolio v1 is complete.** No v1 implementation/acceptance work
+remains; report completion and stop automatic progression. Further work requires
+a concrete new defect or an explicitly selected new scope.
 
 The independent real-example gate above stays open for full Sprint 4/Alpha 2;
 synthetic v1 workflow acceptance does not close it. The original Sprint 5–7

@@ -425,3 +425,44 @@ Independent owned/licensed **real-video quality and audiovisual review remains
 open for full Sprint 4/Alpha 2**. This synthetic sample has no corresponding
 recording. These successful application checks neither satisfy that review nor
 approve representative ASR/OCR/image-model/RAG quality.
+
+
+## Portfolio v1 completed — hosted acceptance (2026-10-29)
+
+The remaining check in the preceding entry is now resolved. GitHub was queried
+for exact commit `3c2bff5f01c3a09d3932159e39c08faa513e27d0`:
+[CI run 40854790466](https://github.com/emredemirbas/multimodal-rag/actions/runs/40854790466)
+is **completed/success**, with all four jobs **completed/success**.
+
+- Frontend: **291 tests in 43 files passed**, full dependency audit reported zero
+  vulnerabilities; lint, typecheck, lint compatibility and production build passed.
+- Backend unit/API: **635 passed, 398 deselected**.
+- Standalone PostgreSQL integration: **388 passed, 10 skipped, 635 deselected**.
+  These skips are not counted as successes. The later full-stack worker run below
+  exercises all 398 integration tests.
+- Images/full stack: base and optional image builds, ASR kernel isolation and
+  native OCR checks without model downloads, all four existing smoke scripts,
+  MP4/BFF/native OCR/100 MB spooling, change-policy/alignment checks, cleanup and retrieval
+  regression completed successfully. With real workers: **398 passed,
+  635 deselected, no skips**. The existing Starlette/httpx deprecation warning
+  remains; passing tests do not establish representative model/media quality.
+
+Together with the fresh local/browser acceptance above, this satisfies all five
+finite criteria in `../09-delivery-status.md`. **RAG portfolio v1 is complete**
+within the selected free local transcript RAG scope. README, current delivery
+status and Sprint 4 plan record this completion against accepted baseline
+`3c2bff5`. This closure changes documentation only; later documentation commits
+have their own CI status and do not replace that accepted application baseline.
+Local closure checks are whitespace and local Markdown-link validation; no
+application/schema/provider/default or owner data/service changed in this step.
+
+There is no remaining v1 feature, evaluator, polish or repeated-test prerequisite.
+Next `devam` reads the completion record and any later Git/CI state, then reports
+completion unless a new concrete defect or owner-selected scope exists. Do not
+start the later sprint roadmap automatically. Assignment generation, solution
+uploads, hardened grading and learning feedback remain preserved after v1.
+
+Independent owned/licensed real-video quality/audiovisual review remains open
+for full Sprint 4/Alpha 2 approval; the synthetic acceptance and green software
+checks do not close it. No new model download, paid call or owner-stack change
+was needed for this closure.

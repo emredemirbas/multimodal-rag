@@ -1,8 +1,9 @@
 # Delivery status and finish lines
 
 Date: 2026-10-29. Selected first finish line: **RAG portfolio v1**.
-Verified hosted application baseline: `411a5c8`. **Local v1 acceptance passed**;
-only the hosted CI result for this scope/acceptance change remains to be verified.
+**RAG portfolio v1 is complete** within its selected local transcript RAG scope.
+Accepted application baseline: `3c2bff5`; local acceptance and all four hosted CI
+jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
@@ -15,10 +16,12 @@ labelled versioned visual evidence, with inspectable uncertainty and recovery.
 Media uploads are independently opt-in; configured availability is not readiness
 or quality. Original retirement/verified cleanup and complete deletion are tested.
 
-The `411a5c8` code baseline was rechecked on 2026-10-29: all four hosted CI jobs
-completed successfully, including worker/checkpoint recovery, keyless onboarding,
-live source filters and source-removal chat consistency:
-[run 40782756288](https://github.com/emredemirbas/multimodal-rag/actions/runs/40782756288).
+The exact `3c2bff5f01c3a09d3932159e39c08faa513e27d0` acceptance commit was
+verified on 2026-10-29: all four hosted CI jobs completed successfully in
+[run 40854790466](https://github.com/emredemirbas/multimodal-rag/actions/runs/40854790466).
+Frontend: 291 tests; backend unit/API: 635 tests; standalone PostgreSQL: 388 passed
+and 10 skipped; full-stack real-worker integration: 398 passed with no skips.
+Image/native-media, smoke, recovery and cleanup checks also passed.
 Software test counts are not representative ASR/OCR/RAG quality approval. Known
 mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 
@@ -44,12 +47,12 @@ model downloads. It is not the completion of the longer learning-platform vision
 | Authorized SRT/VTT -> actual queued processing -> project/source-scoped answer or explicit abstention | Canonical downloaded VTT uploaded through the browser; real queue reached ready; both supported questions cited the expected chunk and unsupported Kubernetes question abstained |
 | Inspectable source/timestamp/processing generation, saved chat and recoverable delivery/reprocessing | Browser evidence/transcript/history checks passed; all four existing smoke scripts passed, including disconnect replay and generation stability |
 | Complete source/project deletion, tracked physical cleanup, isolation and accessible recovery states | Browser source removal hid both cited turns while preserving draft/limitation; history stayed clean; source/project cleanup completed; isolated DB/bucket ended empty. Isolation remains covered by verified baseline CI |
-| Truthful README/demo, explicit optional-feature limits, current validation and green hosted application checks | README/demo and baseline docs agree; 4 demo tests, lint, typecheck and production Docker build passed. Baseline CI is green; verify this change's hosted run after push |
+| Truthful README/demo, explicit optional-feature limits, current validation and green hosted application checks | README/demo and baseline docs agree; local checks and all four hosted jobs passed for accepted commit `3c2bff5` in run `40854790466` |
 
 Only a defect exposed by these checks can add implementation work. Do not create
 another evaluator, feature, polish backlog or new release threshold to extend v1.
-Completion means these checks pass and their actual results are recorded; then
-report v1 complete and stop automatic sprint progression.
+All five criteria passed and their actual results are recorded. The selected
+v1 milestone is complete; automatic sprint progression stops here.
 
 Optional local answers/semantic embeddings, ordered metadata relationships,
 restricted WAV/MP4, OCR, change selection, temporal inspection and image descriptions
@@ -74,12 +77,18 @@ new volumes and no optional profiles. Its test project and retained files were
 removed; the temporary stack/volumes were removed and existing container IDs
 were unchanged.
 
-**One remaining v1 step:** inspect GitHub Actions for the pushed commit titled
-`docs: define portfolio v1 scope and record fresh keyless acceptance`. Do not infer
-success from the earlier `411a5c8` run. If its four jobs pass, record/report v1
-complete and stop; if a job fails, address only that concrete failure. A running
-or queued run is still pending. Do not reopen optional experiments or begin
-Sprint 5. There is no additional v1 feature or polish backlog.
+**No remaining v1 implementation or acceptance work.** CI run `40854790466`
+for the exact acceptance commit `3c2bff5` completed successfully in all four jobs.
+The dated closure entry in `sprint4/validation-record.md` records the result.
+This documentation-only closure does not change the accepted application code;
+its own workflow status must still be reported honestly.
+
+Next `devam`: read this completion record, check current Git/CI for any subsequent
+change, and report that the selected v1 is complete. Do not invent another feature,
+evaluator, polish gate or repeat already passing checks without a new failure.
+Do not begin Sprint 5 or reopen optional experiments automatically. Continuing the
+preserved learning-platform roadmap requires an explicit new scope from the owner.
+The separate real-video/Alpha 2 review below remains open, not a v1 blocker.
 
 ## Sprint 4 closure — one remaining gate
 

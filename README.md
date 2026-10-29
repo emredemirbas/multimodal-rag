@@ -7,8 +7,8 @@ workflow, inspectable evidence and complete deletion. Assignments, submissions,
 hardened grading and the learning/feedback loop remain on the roadmap after v1;
 this is not a production/SaaS deployment.
 
-Current stage: **Sprint 4**, with a constrained local multimodal workflow, not a
-finished learning/assessment platform. Portfolio v1 acceptance is tracked in the
+**RAG portfolio v1 is complete** within the selected local transcript RAG scope
+(2026-10-29). Its acceptance evidence and preserved later roadmap are in the
 [finite scope, completion criteria and delivery status](docs/09-delivery-status.md).
 Optional local models and media features remain experimental opt-ins. Independent
 owned/licensed real-video review remains open outside v1 and still blocks full
@@ -76,10 +76,10 @@ Codex should also read [`AGENTS.md`](AGENTS.md) before making changes. Sprint
 validation evidence is recorded in [`docs/sprint4/validation-record.md`](docs/sprint4/validation-record.md).
 The free local model follow-up is in
 [`docs/sprint3/local-model-validation.md`](docs/sprint3/local-model-validation.md).
-The latest separately verified hosted code baseline is `411a5c8`, with all four jobs
-successful in [CI run 40782756288](https://github.com/emredemirbas/multimodal-rag/actions/runs/40782756288),
-including the keyless walkthrough, live source filters and deleted-source chat fences. That run
-does not certify subsequent code changes. Current gates and the
+The accepted portfolio v1 application baseline is `3c2bff5`, with all four jobs
+successful in [CI run 40854790466](https://github.com/emredemirbas/multimodal-rag/actions/runs/40854790466),
+including the fresh-stack smoke checks, real worker recovery and native media
+workflow checks. Later commits have separate CI runs. Current gates and the
 distinction between software tests and representative quality are in the
 [delivery status](docs/09-delivery-status.md); historical records retain their
 original component-level results.
