@@ -6,10 +6,13 @@ import re
 from starlette.datastructures import Headers
 
 from ..auth import AuthenticationError
+from .contracts import MAX_DRAFT_BYTES
 
 
 MAX_CONTEXT_REQUEST_BYTES = 16_384
+MAX_DRAFT_REQUEST_BYTES = MAX_DRAFT_BYTES + 16_384
 _PATH = re.compile(r"^/api/v1/projects/[^/]+/curriculum(?:/|$)")
+_DRAFT_PATH = re.compile(r"^/api/v1/projects/[^/]+/curriculum/(?:contexts/[^/]+/drafts|drafts/[^/]+)/?$")
 _PRIVATE_HEADERS = {
     b"cache-control": b"private, no-store",
     b"x-content-type-options": b"nosniff",
@@ -60,15 +63,17 @@ class CurriculumHttpMiddleware:
         except AuthenticationError as exc:
             return await error(401, exc.code, exc.detail)
 
+        draft_request = _DRAFT_PATH.match(scope.get("path", "")) is not None
+        limit = MAX_DRAFT_REQUEST_BYTES if draft_request else MAX_CONTEXT_REQUEST_BYTES
         content = bytearray()
         while True:
             message = await receive()
             if message["type"] == "http.disconnect":
                 return
             chunk = message.get("body", b"")
-            if len(content) + len(chunk) > MAX_CONTEXT_REQUEST_BYTES:
+            if len(content) + len(chunk) > limit:
                 return await error(413, "curriculum_request_too_large",
-                                   "Send curriculum context JSON of at most 16384 bytes.")
+                                   f"Send curriculum {'draft' if draft_request else 'context'} JSON of at most {limit} bytes.")
             content.extend(chunk)
             if not message.get("more_body", False):
                 break

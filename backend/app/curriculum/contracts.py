@@ -110,7 +110,9 @@ def _unique(values: list) -> bool:
     return len(set(values)) == len(values)
 
 
-class AssignmentDraft(ScopedContract):
+class AssignmentContent(Contract):
+    """Unscoped editable content; scope is supplied by the application."""
+
     schema_version: Literal["assignment-draft-v1"]
     title: Annotated[str, StringConstraints(min_length=1, max_length=200, pattern=r"\S")]
     scenario: Text
@@ -151,6 +153,10 @@ class AssignmentDraft(ScopedContract):
         if len(self.model_dump_json().encode("utf-8")) > MAX_DRAFT_BYTES:
             raise ValueError("Draft exceeds the payload limit")
         return self
+
+
+class AssignmentDraft(AssignmentContent, ScopedContract):
+    """Content bound to the authenticated tenant and project by application code."""
 
 
 class TutorialEvidenceSnapshot(Contract):

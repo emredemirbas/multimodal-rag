@@ -29,9 +29,11 @@ Two product answers have been requested and remain pending: whether external
 prerequisite/extension material is opt-in or always excluded, and whether approved
 official documentation is fetched automatically after opt-in or selected/approved
 per document. Do not mark either as confirmed without the owner's answer.
-The schema/binding and saved-context slices require explicit policy/preferences
-and fetch nothing. Persisting a permission does not enable generation or document
-access; later dependent behavior waits for these choices.
+The schema/binding, saved-context and editable-draft slices require explicit
+policy/preferences and fetch nothing. Persisting a permission does not enable
+generation or document access; later dependent behavior waits for these choices.
+Draft content can bind only to tutorial evidence already captured in its context;
+trusted external-document capture is not delivered by this persistence slice.
 
 Difficulty, available effort, source selection and output language are explicit
 inputs rather than hidden defaults. The source-first bounded contract does not

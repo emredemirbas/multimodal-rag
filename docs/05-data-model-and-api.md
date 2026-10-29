@@ -183,9 +183,34 @@ See `sprint5/implementation-plan.md` for the JSON shape and limits. The existing
 identity bootstrap remains unchanged; repository membership checks/locks do not
 establish persistent revocation of a local identity that later authenticates again.
 
-Generation, coverage/objective records and editable/activated draft persistence
-are still undelivered. The entities below describe that later schema, not tables
-already introduced by migration 0020. See `sprint5/validation-record.md`.
+Migration `0021_curriculum_drafts.sql` adds scoped `curriculum_drafts`, append-only
+`curriculum_draft_revisions` and `curriculum_draft_commands`. Each content revision
+versions its objectives, labelled requirements and evidence/acceptance/rubric
+relationships in the strict JSON schema. Cited authoritative evidence is resolved
+from the immutable context rather than copied into every revision. Context/source/
+project deletion cascades the entire revision and command history.
+
+Draft endpoints under the same curriculum prefix:
+
+- `POST /contexts/{context_id}/drafts`: create from `{idempotency_key, content}`.
+- `GET /drafts/{draft_id}` and `GET /drafts/{draft_id}/revisions/{revision}`:
+  latest or exact saved revision.
+- `PUT /drafts/{draft_id}`: append a full replacement using
+  `{idempotency_key, expected_revision, content}`; stale expected revision is 409.
+- `DELETE /drafts/{draft_id}`: delete all draft revisions and receipts, returning 204.
+
+Content excludes client-provided scope/evidence metadata. Each write rebinds it
+against the saved context under membership/project/context fences. Command keys
+are unique per project and bind operation, target, expected revision and content.
+Replay returns the original accepted revision after later edits or archive; the
+response contains no changing latest-head metadata. New writes to archived
+projects fail, while reads/replay/delete remain available. See the Sprint 5 plan
+for strict JSON/resource bounds and validation limits.
+
+Generated objectives/whole-context coverage extraction, model workflows and
+activated assignment versions remain undelivered. The conceptual entities below
+are later schema options, not separate implemented CRUD/tables in 0020/0021.
+See `sprint5/validation-record.md`.
 
 - `learning_objectives`
 - `objective_evidence`

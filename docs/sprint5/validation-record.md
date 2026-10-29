@@ -1,8 +1,8 @@
 # Sprint 5 — validation record
 
-Date: 2026-10-29. Status: internal contracts and immutable saved tutorial context
-persistence/API implemented. Editable assignment/coverage persistence, model
-generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
+Date: 2026-10-29. Status: internal contracts, immutable saved tutorial contexts
+and versioned editable assignment draft persistence/API implemented. Model
+extraction/generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
 The ordered plan is `implementation-plan.md`.
 
 ## Starting state and documentation
@@ -195,14 +195,97 @@ database. No new dependency, model call, generation/coverage/edit/activation
 behavior or runtime permission default was introduced. Stored permission flags
 do not settle the still-pending product policy or enable document retrieval.
 
+## Step 2b — versioned editable drafts (2026-10-29)
+
+Starting worktree was clean at `e51f819`; Git/CI were checked rather than inferred
+from the prior handoff. At the last check,
+[run 40867569194](https://github.com/emredemirbas/multimodal-rag/actions/runs/40867569194)
+had passed backend tests, backend integration and frontend, while its images job
+was still running. A running job is not a successful full run.
+
+Delivered:
+
+- Migration `0021_curriculum_drafts.sql`: scoped draft headers, append-only content
+  revisions and project-scoped durable command receipts, all cascading from the
+  immutable saved context. Receipt foreign keys identify the accepted revision.
+- Shared strict `AssignmentContent` fields/validators, with server-owned scope
+  added by `AssignmentDraft`. The HTTP DTO explicitly parses UUID text without
+  enabling numeric coercion or accepting client scope/authoritative evidence.
+- Create, latest/exact-revision read, optimistic full replacement and whole-draft
+  delete API. Each revision versions the existing objectives, requirement labels,
+  stable evidence references and acceptance/rubric/hint relationships. No extra
+  standalone coverage score/CRUD or whole-tutorial extraction claim was invented.
+- Every new content revision binds against the saved context inside the scoped
+  transaction. Only cited authoritative projections leave the repository; source
+  labels, times and processing versions cannot be supplied by the client. The
+  revision stores content; evidence is resolved from its immutable context rather
+  than duplicated into every content row.
+- Membership/project/context deletion fences, atomic revision/receipt/head update,
+  and a canonical hash of operation/target/expected revision/content. A matching
+  retry returns its original accepted revision after later edits or archive;
+  response metadata does not change to the latest head. Reusing a key for changed
+  input/target/operation conflicts. A stale edit with a new key leaves no receipt.
+- Archive permits history, replay and delete; new create/edit is blocked. Deleting
+  draft/context/any selected source/project removes all dependent content and
+  receipts, including dependencies unused by the draft's citations. A retained
+  context keeps its original generation/filename/provenance after reprocessing.
+- Context row locks fence direct source deletion's cleanup trigger without taking
+  source locks in the opposite order. Existing local identity bootstrap behavior
+  is unchanged; repository membership locking is not persistent identity revocation.
+- Draft wire limit 272,384 bytes, context wire limit still 16,384; normalized scoped
+  draft limit 256,000 UTF-8 bytes and spaced JSONB content limit 300,000 bytes.
+  Reject actual NUL text before PostgreSQL with a safe 422; preserve literal
+  escape text. All responses stay private/no-store, nosniff and same-origin.
+  Logs/metrics carry IDs/revisions/counts/route templates, not content/request keys.
+
+Actual checks:
+
+- **29 repository integration cases passed**: historical command replay,
+  concurrent same-key create/edit and competing stale edits, both scopes/actors,
+  archive, reference/effort/permission/constructed input failures, atomic rollback,
+  byte cap/NUL handling, retained evidence, full cascade and actual PostgreSQL
+  dependency/membership lock waits.
+- **16 PostgreSQL + HTTP integration cases passed** in **6.69s**: scoped lifecycle,
+  exact revision reads, historical/archive replay, stale edit recovery, strict
+  JSON/UUID/numbers/unknown fields, forged metadata, deletion and private logs.
+  The source-delete case invokes the authoritative DB trigger directly because
+  its fixture has no object store; draft/context/project deletion uses actual API.
+- **101 focused contract/boundary tests passed** (78 existing domain cases and
+  23 HTTP boundary cases), including unchanged context limits and exact/over-limit
+  draft chunked input with authentication before reads.
+- **61 PostgreSQL/migration and existing visual-checkpoint cases passed**. Fresh/
+  legacy upgrades and populated pre-0020/pre-0021 upgrades preserve existing RAG
+  citation identity and immutable saved context. Repeated migrations/checksums
+  are verified; both historical explicit migration enumerations include 0021.
+- Backend non-integration regression: **736 passed, 483 deselected, 8.67s**.
+  The existing Starlette/httpx deprecation warning remains.
+- Final broad PostgreSQL integration: **473 passed, 10 skipped, 736 deselected,
+  189.92s** with the same existing warning. The ten skips require separately
+  enabled real worker/object-store fixtures; no owner services were used.
+  No browser/frontend code changed and no new UI/build result is claimed.
+  Independent read-only code review found no unresolved blocker.
+- Final whitespace check passed. README was unchanged; sprint/status/CI records
+  remain in `docs/`.
+
+All database work uses a new labelled disposable container with the cached
+pgvector image, a random loopback port, tmpfs data and vector installed in public
+before parallel isolated-schema tests. No owner `.env`, database, credentials,
+Compose configuration, models or running application service was changed.
+The labelled disposable container was stopped/automatically removed after tests;
+its tmpfs database was discarded.
+No new dependency/model call, automatic generation, activation, code execution or
+deadline/tutoring behavior was introduced. With no authorized documentation
+snapshots yet, external/document requirements fail binding; this does not confirm
+either pending product-policy choice or certify semantic support/solvability.
+
 ## Continuation
 
-Next: step 2b in `implementation-plan.md`, versioned editable drafts and
-coverage/objective persistence/API using the saved context, with the next additive
-migration (currently 0021). Preserve authorization, optimistic edit revisions,
-mutation-receipt replay and complete source/project deletion. Do not repurpose
-source-owned ingestion jobs for multi-source curriculum work; later durable runs
-need project ownership and per-call usage.
+Next: step 3 in `implementation-plan.md`, project-owned durable curriculum
+runs/attempts/outbox/checkpoints and per-call attribution, with the next additive
+migration (currently 0022). Build their scoped lifecycle, recovery/cancellation
+and deletion fences before connecting a model in step 4. Reuse accepted context/
+draft contracts and preserve historical receipt replay. Do not repurpose
+source-owned ingestion jobs with a synthetic source for multi-source curriculum.
 
 Resolve the pending extension and official-document policy before enabling their
 dependent behavior. Preserve source-generation pins, no paid calls/downloads,

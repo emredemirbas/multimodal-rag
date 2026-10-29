@@ -1,1 +1,1 @@
-"""Curriculum contracts and saved contexts; assignment generation is unavailable."""
+"""Curriculum contracts, saved contexts and drafts; generation is unavailable."""

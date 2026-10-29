@@ -11,9 +11,12 @@ review required for full Sprint 4/Alpha 2 approval.
 The newly authorized Sprint 5 has contract/evidence-binding tests and real
 PostgreSQL/HTTP coverage for immutable saved contexts: scoped membership locks,
 concurrent replay, archive rules, retained generations, managed provenance,
-bounded input/snapshots and complete deletion. See `sprint5/implementation-plan.md`
+bounded input/snapshots and complete deletion. Draft tests also cover immutable
+revision reads, historical command replay after later edits/archive, competing
+optimistic edits, binding/effort/permission failures, atomic rollback and complete
+history cleanup. See `sprint5/implementation-plan.md`
 and its validation record. These do not constitute model-quality review or a
-delivered assignment generation/edit/activation UI/workflow.
+delivered assignment generation/activation UI/workflow.
 
 ## Software test pyramid
 

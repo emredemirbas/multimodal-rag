@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from app.curriculum.http import CurriculumHttpMiddleware, MAX_CONTEXT_REQUEST_BYTES
+from app.curriculum.http import CurriculumHttpMiddleware, MAX_CONTEXT_REQUEST_BYTES, MAX_DRAFT_REQUEST_BYTES
 from conftest import MappingAuthenticator
 
 
@@ -164,4 +164,81 @@ async def test_non_body_routes_are_private_without_reading_body(method, status):
 
     await CurriculumHttpMiddleware(app, authenticator=MappingAuthenticator())(scope(method), forbidden, send)
     assert sent[0]["status"] == status
+    assert_private(sent[0])
+
+
+def draft_scope(method, kind):
+    current = scope(method)
+    project = "/api/v1/projects/00000000-0000-0000-0000-000000000001/curriculum"
+    current["path"] = (project + "/contexts/00000000-0000-0000-0000-000000000002/drafts"
+                       if kind == "create" else project + "/drafts/00000000-0000-0000-0000-000000000003")
+    return current
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("method,kind", [("POST", "create"), ("PUT", "replace")])
+async def test_draft_wire_limit_replays_exact_bytes_above_context_limit(method, kind):
+    payload = b'{"value":"' + b"x" * (MAX_DRAFT_REQUEST_BYTES - 12) + b'"}'
+    assert MAX_CONTEXT_REQUEST_BYTES < len(payload) == MAX_DRAFT_REQUEST_BYTES
+    sent = []
+    chunks = iter([
+        {"type": "http.request", "body": payload[:16000], "more_body": True},
+        {"type": "http.request", "body": payload[16000:]},
+    ])
+
+    async def receive():
+        return next(chunks)
+
+    async def app(_, read, send):
+        assert await read() == {"type": "http.request", "body": payload, "more_body": False}
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"{}"})
+
+    async def send(message):
+        sent.append(message)
+
+    await CurriculumHttpMiddleware(app, authenticator=MappingAuthenticator())(draft_scope(method, kind), receive, send)
+    assert_private(sent[0])
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("method,kind", [("POST", "create"), ("PUT", "replace")])
+async def test_draft_wire_limit_rejects_overflow_before_parser(method, kind):
+    sent = []
+    chunks = iter([
+        {"type": "http.request", "body": b"x" * MAX_DRAFT_REQUEST_BYTES, "more_body": True},
+        {"type": "http.request", "body": b"x", "more_body": True},
+    ])
+
+    async def receive():
+        return next(chunks)
+
+    async def forbidden(*_):
+        pytest.fail("Over-limit draft must not reach the API")
+
+    async def send(message):
+        sent.append(message)
+
+    current = draft_scope(method, kind)
+    current["headers"].append((b"content-length", b"1"))
+    await CurriculumHttpMiddleware(forbidden, authenticator=MappingAuthenticator())(current, receive, send)
+    assert sent[0]["status"] == 413
+    assert json.loads(sent[1]["body"])["code"] == "curriculum_request_too_large"
+    assert_private(sent[0])
+
+
+@pytest.mark.anyio
+async def test_draft_authentication_precedes_even_large_body_reads():
+    sent = []
+
+    async def forbidden(*_):
+        pytest.fail("Unauthenticated draft body must not be read")
+
+    async def send(message):
+        sent.append(message)
+
+    current = draft_scope("PUT", "replace")
+    current["headers"] = []
+    await CurriculumHttpMiddleware(forbidden, authenticator=MappingAuthenticator())(current, forbidden, send)
+    assert sent[0]["status"] == 401
     assert_private(sent[0])

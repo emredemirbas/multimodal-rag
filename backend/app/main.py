@@ -7,7 +7,7 @@ from time import perf_counter
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
-from fastapi import Depends, FastAPI, File, Form, Query, Request, Response, Security, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Path, Query, Request, Response, Security, UploadFile
 from starlette.concurrency import run_in_threadpool
 import psycopg
 from fastapi.exceptions import RequestValidationError
@@ -62,8 +62,9 @@ from .chat.contracts import Conversation, ConversationCreate, ConversationList, 
 from .chat.repository import ChatRepository
 from .chat.delivery import deliver
 from .curriculum.http import CurriculumHttpMiddleware
-from .curriculum.persistence import ContextCreate, ContextView
+from .curriculum.persistence import ContextCreate, ContextView, DraftCreate, DraftReplace, DraftRevisionView
 from .curriculum.repository import ContextRepository
+from .curriculum.drafts import DraftRepository
 from .vision.gallery import VisualGalleryRepository
 from .vision.gallery_contracts import VisualGallery
 from .vision.descriptions import DescriptionRepository, DescriptionView
@@ -145,6 +146,7 @@ def create_app(
         application.state.sources = None
         application.state.chat = ChatRepository(active_store, metrics) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum = ContextRepository(active_store) if isinstance(active_store, PostgresStore) else None
+        application.state.curriculum_drafts = DraftRepository(active_store) if isinstance(active_store, PostgresStore) else None
         if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
             application.state.sources = SourceRepository(active_store, artifacts or S3ArtifactStore(active_settings), active_settings)
         yield
@@ -280,6 +282,11 @@ def create_app(
         if request.app.state.curriculum is None:
             raise SourceError("curriculum_not_configured", "Saved learning contexts require PostgreSQL.", 503)
         return request.app.state.curriculum
+
+    def curriculum_drafts(request: Request) -> DraftRepository:
+        if request.app.state.curriculum_drafts is None:
+            raise SourceError("curriculum_not_configured", "Saved assignment drafts require PostgreSQL.", 503)
+        return request.app.state.curriculum_drafts
 
     @app.get("/health/live")
     async def health_live() -> dict[str, str]:
@@ -570,6 +577,28 @@ def create_app(
     @app.delete("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}", status_code=204)
     def delete_curriculum_context(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal):
         curriculum(request).delete(principal.tenant_id, project_id, actor(request, principal), context_id)
+        return Response(status_code=204)
+
+    @app.post("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/drafts", response_model=DraftRevisionView, status_code=201)
+    def create_curriculum_draft(project_id: UUID, context_id: UUID, body: DraftCreate, request: Request, principal: CurrentPrincipal):
+        return curriculum_drafts(request).create(principal.tenant_id, project_id, actor(request, principal), context_id, body)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}", response_model=DraftRevisionView)
+    def read_curriculum_draft(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum_drafts(request).read(principal.tenant_id, project_id, actor(request, principal), draft_id)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}/revisions/{revision}", response_model=DraftRevisionView)
+    def read_curriculum_draft_revision(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal,
+                                      revision: int = Path(ge=1, le=2_147_483_647)):
+        return curriculum_drafts(request).read(principal.tenant_id, project_id, actor(request, principal), draft_id, revision=revision)
+
+    @app.put("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}", response_model=DraftRevisionView)
+    def replace_curriculum_draft(project_id: UUID, draft_id: UUID, body: DraftReplace, request: Request, principal: CurrentPrincipal):
+        return curriculum_drafts(request).replace(principal.tenant_id, project_id, actor(request, principal), draft_id, body)
+
+    @app.delete("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}", status_code=204)
+    def delete_curriculum_draft(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal):
+        curriculum_drafts(request).delete(principal.tenant_id, project_id, actor(request, principal), draft_id)
         return Response(status_code=204)
 
     @app.post("/api/v1/projects/{project_id}/conversations", response_model=Conversation, status_code=201)

@@ -1,7 +1,7 @@
 # Sprint 5 — learning objectives and assignment drafts
 
 Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts
-and immutable saved tutorial contexts implemented. This is the next selected scope after the
+and saved contexts/versioned editable drafts implemented. This is the next selected scope after the
 accepted RAG milestone, not an automatic sprint transition. The independent
 real-video quality/audiovisual gate for full Sprint 4/Alpha 2 stays open.
 
@@ -113,7 +113,8 @@ Use real published IDs/parser values from the selected project. Same key/input
 replays the same 201 response; changing input returns 409. Source order is
 canonicalized. `GET` and `DELETE` on the returned context ID read/remove it;
 successful delete returns 204, missing context returns 404. Archived projects
-permit read/replay/delete, but block a new capture. No list/edit/activation API yet.
+permit read/replay/delete, but block a new capture. Contexts are immutable; there
+is no context-list or activation API in this slice.
 
 Recheck and lock membership after identity mapping, then lock the project and
 selected sources. Load/validate/copy evidence in the same transaction. Retained
@@ -133,13 +134,59 @@ segments/500,000 characters, existing per-segment bounds, <=4,000,000 serialized
 snapshot bytes. This is not a prompt budget or an assertion of semantic coverage.
 Stored permissions enable no model or documentation access in this slice.
 
-**2b — next:** add coverage/objective records and versioned editable draft
-persistence/API with the next additive migration (currently 0021). Use the saved
-context, deterministic draft/evidence binding, optimistic revisions and durable
-mutation receipts so a retry can replay an earlier accepted edit after later edits.
-Reauthorize and revalidate dependencies in the commit transaction. Preserve the
-existing complete source/project deletion cascade. Do not accept model/coverage
-claims as validated merely because they satisfy a structural schema.
+**2b — implemented:** migration 0021 and `curriculum/drafts.py`. Draft headers
+refer to immutable contexts; append-only content revisions contain objectives,
+labelled requirements, stable evidence references, acceptance/rubric links and
+ordered hint content. These are versioned objective/coverage inputs, not a new
+semantic coverage score or a claim that all tutorial topics have been extracted.
+No separate coverage CRUD/schema is necessary before model extraction in step 4.
+
+`AssignmentContent` is the shared unscoped content schema; `AssignmentDraft`
+adds server-owned scope for deterministic binding. HTTP accepts JSON UUID text
+explicitly while preserving strict numbers, unknown-field rejection and the
+existing draft validation. Only cited evidence from the saved context is returned;
+clients cannot supply timestamps, source labels, scope or trusted documentation.
+
+Draft endpoints under `/api/v1/projects/{project_id}/curriculum`:
+
+- `POST /contexts/{context_id}/drafts`: `{idempotency_key, content}` creates
+  revision 1 and returns 201.
+- `GET /drafts/{draft_id}` reads the latest revision; `GET
+  /drafts/{draft_id}/revisions/{revision}` reads that exact saved revision.
+- `PUT /drafts/{draft_id}`: `{idempotency_key, expected_revision, content}` fully
+  replaces the content by appending a revision. A stale expected revision returns
+  `draft_revision_conflict`/409 without reserving the new key or changing data.
+- `DELETE /drafts/{draft_id}` removes all its revisions/receipts and returns 204.
+
+`content` is the existing `assignment-draft-v1` shape without tenant/project
+fields. Revision responses include draft/context IDs, accepted revision/time and
+a scoped bound assignment. They do not include a dynamic current-head value.
+Project-scoped command keys bind operation, target, expected revision and content;
+an identical retry returns its original immutable revision even after newer edits
+or archive. Reusing the key for different input/operation/target returns 409.
+Archive permits history/replay/delete but blocks new create/edit operations.
+An accepted replacement with identical content and a new key is a new revision.
+
+Reauthorize/lock membership and project, then hold the context row as the
+dependency deletion fence. Do not acquire source row locks after the context:
+direct source deletion takes the opposite order via its cleanup trigger. Rebind
+every new revision against the saved context within the transaction. Append the
+revision, receipt and head update atomically. Source/context/project deletion
+cascades all draft/objective text and replay state, including unused selected
+source dependencies. Reprocessing cannot replace pinned evidence.
+
+Draft mutation bodies allow <=272,384 actual wire bytes; the context limit stays
+16,384. The scoped normalized draft remains <=256,000 UTF-8 bytes, with a separate
+300,000-byte spaced JSONB storage bound. Reject actual NUL text before PostgreSQL;
+literal escape text remains ordinary content. Invalid input/storage overflow
+leaves no partial draft/revision/receipt. Responses stay private/no-store and logs
+contain IDs/revisions/counts, not content or request keys.
+
+Only client-supplied draft content is persisted here. Structural binding is not
+semantic support, feasibility, quality approval, activation or deterministic code
+assessment. No generation/docs provider is called. External/document requirements
+cannot be bound without trusted snapshots that step 5 has not delivered; saved
+permission flags do not settle the pending policy or enable this capability.
 
 Database/API tests cover migration upgrade/repeat, foreign scopes, concurrent
 replay, archive, retained generations, managed provenance, resource overflow,
@@ -237,10 +284,11 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Steps 1 and 2a are implemented: strict contracts/binding and immutable saved
-tutorial contexts with scoped create/read/delete. Actual results and limits are
+Steps 1, 2a and 2b are implemented: strict contracts/binding, immutable saved
+contexts and versioned editable draft persistence/API. Actual results and limits are
 in `validation-record.md`. README now
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 2b's versioned editable draft/coverage persistence and API, while resolving any
+Next is step 3's project-owned durable curriculum runs and per-call attribution,
+while resolving any
 still-pending product policy before dependent generation/fetch behavior. Check
 the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.
