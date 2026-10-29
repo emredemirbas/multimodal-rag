@@ -212,6 +212,20 @@ activated assignment versions remain undelivered. The conceptual entities below
 are later schema options, not separate implemented CRUD/tables in 0020/0021.
 See `sprint5/validation-record.md`.
 
+Migration `0022_curriculum_runs.sql` adds internal project/context-owned runs,
+attempts, outbox, cancel/retry receipts, private checkpoints and local model-call
+attribution. All six `curriculum_*` tables cascade from the saved context, so any
+selected-source or project deletion removes intermediate text and usage as well.
+They do not reuse source ingestion jobs or change source processing generations.
+
+Internal lifecycle methods authorize the original stored actor and use token/
+attempt/wall-clock fences with membership -> project -> context -> run locks.
+Checkpoints and physical-call receipts have bounded immutable identities; unknown
+usage stays null and local billed spend is constrained to zero. Run/attempt states
+cannot report success in this slice. There is no new run HTTP endpoint, broker
+producer, provider call or default worker service. See step 3a in the Sprint 5 plan
+for resource limits, replay rules and the remaining queue/publication boundary.
+
 - `learning_objectives`
 - `objective_evidence`
 - `coverage_maps`

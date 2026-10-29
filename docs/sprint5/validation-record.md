@@ -1,7 +1,7 @@
 # Sprint 5 — validation record
 
-Date: 2026-10-29. Status: internal contracts, immutable saved tutorial contexts
-and versioned editable assignment draft persistence/API implemented. Model
+Date: 2026-10-29. Status: internal contracts, saved contexts, versioned draft APIs
+and the internal durable-run/progress foundation implemented. Model
 extraction/generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
 The ordered plan is `implementation-plan.md`.
 
@@ -278,14 +278,108 @@ deadline/tutoring behavior was introduced. With no authorized documentation
 snapshots yet, external/document requirements fail binding; this does not confirm
 either pending product-policy choice or certify semantic support/solvability.
 
+## Step 3a — internal durable runs and progress (2026-10-29)
+
+Starting worktree was clean at `8a5a847`. Its exact
+[CI run 40869469607](https://github.com/emredemirbas/multimodal-rag/actions/runs/40869469607)
+was rechecked: all four jobs completed successfully. This establishes the prior
+baseline, not the new code's hosted result before push.
+
+Delivered:
+
+- Migration `0022_curriculum_runs.sql`: six context/project-owned tables for runs,
+  attempts, outbox, command receipts, private checkpoints and local model-call
+  attribution. All keys/queries are tenant/project scoped, with context deletion
+  cascades. No synthetic ingestion source or source generation change.
+- Internal strict run/progress contracts, `RunRepository` and
+  `RunProgressRepository`. Create atomically accepts an explicit saved context and
+  workflow version with its own outbox row. Scoped read/cancel/manual retry,
+  exclusive claim, heartbeat, bounded automatic retry and expiry recovery exist.
+  There is no HTTP producer, queue/scheduler wiring, provider call, success state
+  or generated-draft publication in this slice.
+- Worker authority is loaded from the stored original actor/context, not supplied
+  by a claim. Membership -> project -> context -> run locks prevent scope/deletion
+  races without reversing the direct source cleanup order. Wall-clock lease checks
+  after lock waits prevent expired heartbeat resurrection. Archive/revoked original
+  membership terminally block work and close started calls. Existing identity
+  bootstrap semantics remain unchanged.
+- Fresh token per attempt, 180-second lease, three automatic failures and a
+  five-second retry delay. Explicit original-actor retry resets the failure budget
+  while retaining accepted private state. Command receipts replay the accepted
+  cancel/retry state even after later state changes. Outbox changes are atomic;
+  no broker publication/delivery is claimed yet.
+- Sequential immutable checkpoint identities, workflow/stage/attempt metadata,
+  hash and bounded JSON. Maximum 64 checkpoints, 300,000 compact UTF-8 bytes and
+  327,680 actual JSONB bytes each. The hash uses compact values normalized as
+  JSONB will return them. Private generic state is not semantic validation or
+  published tutorial evidence.
+- Before-invocation physical-call metadata identity, model/digest/engine/prompt
+  version, counts and immutable accepted completion data. The start fingerprint
+  covers declared metadata, not exact prompt bytes. At most 256 call records/run;
+  a new physical attempt needs a new call ID. Unknown usage/duration stays null,
+  actual zero stays zero, and database-constrained local spend is zero. Interrupted
+  attempts close started calls without inventing results. Tests use synthetic
+  declared/returned counts and never invoke an actual model.
+- Deleting any selected source/context/project removes all new private text,
+  receipts and usage, including unused source dependencies. Stale claims cannot
+  restore deleted/cancelled/expired work. Event logs contain IDs/status/stage/counts,
+  never private payload, credentials or request keys.
+
+Actual checks:
+
+- **31 lifecycle PostgreSQL cases passed**: create/command replay and conflicts,
+  scopes/original actor, concurrent claims, lease expiry during an actual project
+  lock wait, cancellation, retry budget/recovery, archive/revocation, atomic fault
+  rollback and complete dependency cascades.
+- A constructed/mutated boolean regression exposed JSON serialization converting
+  a forged integer `True` into `1`. Strict Python-value reconstruction now keeps
+  the original type and rejects the bypass. The initial failing case passed after
+  the correction; progress DTO validation uses the same strict approach.
+- **67 progress PostgreSQL cases passed**, **27.67s**: checkpoint ordering/replay,
+  payload/storage limits, concurrent writers, actual rollback after insert,
+  metadata/finish receipts, call limits, NULL versus zero, retry preservation,
+  stale/foreign tokens and complete private state removal.
+- Independent review found JSONB numeric normalization was not covered by Python
+  JSON size/hash preflight. Three added tests **failed before the fix**: finite
+  `1e308` exponent expansion reached an unsafe constraint error, while loaded
+  `1e20` and negative zero caused false replay conflicts. Actual JSONB size is now
+  checked before INSERT/oversized value transfer, normalized values are bounded
+  again and hashed/stored. All three regressions passed, followed by the full
+  67-case progress run. NUL/non-finite JSON is also safely rejected.
+- **7 database/migration cases passed**: fresh/legacy install, checksums/repeat and
+  populated pre-0020/pre-0021/pre-0022 upgrades preserve RAG citation identity,
+  saved contexts, draft history and accepted edit replay. Both historical migration
+  enumerations include 0022; the six new tables start empty on upgrade.
+- Backend non-integration regression: **736 passed, 582 deselected, 7.60s**.
+  The existing Starlette/httpx deprecation warning remains.
+- Full PostgreSQL integration: **572 passed, 10 skipped, 736 deselected,
+  202.53s** with the same existing warning. The ten skips require separately
+  enabled real worker/object-store fixtures. Independent review found no remaining
+  blocker after the numeric correction. No frontend/browser/image rebuild result
+  is claimed for this slice.
+- Final whitespace check passed. README was unchanged.
+
+Checks use a new labelled disposable PostgreSQL container from the cached image,
+random loopback port and tmpfs data, with vector in public and isolated synthetic
+schemas. No owner `.env`, credentials, database, Compose setting, model installation
+or running application service was changed. No new dependency or model download.
+The labelled disposable container was stopped/automatically removed after tests;
+its tmpfs database was discarded. Existing application services stayed running.
+These tests simulate repository leases and failures; real worker/process loss,
+broker outage/redelivery and final draft publication remain step 3b work. Full
+Sprint 5, generation quality and the independent real-video Alpha 2 review remain
+open. README remains product documentation without these delivery details.
+
 ## Continuation
 
-Next: step 3 in `implementation-plan.md`, project-owned durable curriculum
-runs/attempts/outbox/checkpoints and per-call attribution, with the next additive
-migration (currently 0022). Build their scoped lifecycle, recovery/cancellation
-and deletion fences before connecting a model in step 4. Reuse accepted context/
-draft contracts and preserve historical receipt replay. Do not repurpose
-source-owned ingestion jobs with a synthetic source for multi-source curriculum.
+Next: step 3b in `implementation-plan.md`, real curriculum queue/worker and
+scheduler delivery/recovery, bounded stage continuation and atomic bound-draft
+publication under the existing run fence. Use the next additive migration
+(currently 0023) if additional persistence is needed; do not edit applied 0022.
+Exercise actual process loss/redelivery in isolated services before claiming that
+boundary delivered. Keep generation closed until its processor exists and bind
+the optional local model/LangGraph only in step 4. Preserve source/context scope,
+original actor, exact command replay and complete deletion; no synthetic source.
 
 Resolve the pending extension and official-document policy before enabling their
 dependent behavior. Preserve source-generation pins, no paid calls/downloads,

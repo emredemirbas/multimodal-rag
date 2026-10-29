@@ -1,7 +1,8 @@
 # Sprint 5 — learning objectives and assignment drafts
 
-Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts
-and saved contexts/versioned editable drafts implemented. This is the next selected scope after the
+Date: 2026-10-29. Status: explicitly authorized by the owner; internal contracts,
+saved contexts/versioned editable drafts and the internal durable-run foundation
+implemented. This is the next selected scope after the
 accepted RAG milestone, not an automatic sprint transition. The independent
 real-video quality/audiovisual gate for full Sprint 4/Alpha 2 stays open.
 
@@ -197,8 +198,61 @@ later; no generated-assignment UI or qualitative approval is implied.
 
 Existing `processing_jobs`, `outbox_events` and `usage_events` are source-owned;
 assignments can span sources. Do not invent a synthetic source or advance source
-index generations to host assignment work. Add dedicated project-owned run,
-attempt/outbox/checkpoint and per-model-call attribution tables with migrations.
+index generations to host assignment work.
+
+**3a — implemented:** migration 0022 adds dedicated project/context-owned
+`curriculum_runs`, `curriculum_run_attempts`, `curriculum_run_outbox`,
+`curriculum_run_commands`, `curriculum_run_checkpoints` and
+`curriculum_model_calls`. Internal `RunRepository` and `RunProgressRepository`
+provide the scoped lifecycle and progress boundary. They have no HTTP producer,
+broker/scheduler connection, model invocation or success/publication transition.
+
+Creation pins an existing immutable context and an explicit application workflow
+version. It atomically writes a pending run and its own outbox row; create replay
+does not enqueue another run. Pending/running/retrying/failed/cancelled are the
+implemented states. One claim wins per run, with a fresh token and monotonically
+increasing attempt number. Three automatic failures end in failure; a new explicit
+retry command from the original actor resets that budget while preserving accepted
+checkpoints. Cancel invalidates the current lease immediately. Cancel/retry keys
+replay their immutable accepted state even after a later retry/state change.
+
+Worker fences derive original actor/context from the stored run, never from a
+delivery. Lock membership -> project -> context -> run; never source after context.
+Use `clock_timestamp()` after lock waits, a 180-second lease and a five-second
+automatic retry delay. An expired heartbeat cannot renew its lease. Scoped recovery
+closes a lost attempt once; archive/revoked original membership terminally block
+work rather than leave a running orphan. Stale tokens/attempts and deleted context
+cannot read or save progress. These are internal safety constants, not learner
+time/difficulty defaults. Existing identity bootstrap policy remains unchanged.
+
+Private checkpoints have sequential immutable identities, workflow/stage identity,
+an accepted attempt and a content hash. Exact replay succeeds; changed content or
+out-of-order appends conflict. Bound payloads to 64 checkpoints, 300,000 compact
+UTF-8 bytes each and 327,680 actual JSONB bytes. Normalize JSONB numeric values
+before hashing/storing so exponent/negative-zero load/replay remains stable; reject
+exponent expansion, NUL and non-finite values safely without partial writes.
+Generic private graph state is not validated tutorial coverage or a published draft.
+
+Declare each local physical call before invocation with its UUID, purpose,
+model/digest/engine/prompt version and input counts. The start fingerprint identifies
+that metadata, not raw prompt bytes. Finish records actual duration/character/token
+counts; unknown counts remain null and actual zero remains zero. Accepted completion
+receipts cannot be edited. A cancelled/lost/failed attempt interrupts started calls
+without inventing usage or duration. A physical retry needs a new call ID; limit
+call records to 256 per run. This slice records synthetic call lifecycle in tests
+and invokes no model. There is no model selection/download default.
+
+Source/context/project deletion cascades all six tables, including private payloads,
+receipts and attribution for unused selected dependencies. Outbox state changes
+are atomic with lifecycle transitions. Logs contain scoped IDs/status/counts or
+stages, never checkpoint text, model payload, credentials or request keys.
+
+**3b — next:** connect the separate Celery curriculum queue/worker and scheduler
+outbox delivery/recovery, with a bounded application-owned stage executor. Add
+checkpoint continuation and atomic validator-bound draft publication under the
+same live lease, plus real worker loss/redelivery tests in isolated services.
+Keep the user-facing generation capability closed until its processor exists;
+repository lease simulations are not process recovery or working generation.
 
 Reuse Celery delivery, scheduler, scoped lease and orphan/retry patterns in a
 separate curriculum queue/worker. Accept source pins before inference; one bounded
@@ -284,11 +338,11 @@ sprint with extra evaluators/features or begin submissions/grading automatically
 
 ## Current continuation point
 
-Steps 1, 2a and 2b are implemented: strict contracts/binding, immutable saved
-contexts and versioned editable draft persistence/API. Actual results and limits are
+Steps 1, 2a, 2b and 3a are implemented: contracts/binding, saved contexts,
+versioned draft persistence/API and the internal durable-run foundation. Results and limits are
 in `validation-record.md`. README now
 contains product guidance; operator details are in `../local-development.md`.
-Next is step 3's project-owned durable curriculum runs and per-call attribution,
-while resolving any
+Next is step 3b's actual queue/worker delivery, continuation and fenced draft
+publication, while resolving any
 still-pending product policy before dependent generation/fetch behavior. Check
 the exact pushed commit's CI; no generated-assignment UI/workflow is claimed yet.

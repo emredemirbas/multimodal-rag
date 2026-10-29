@@ -71,9 +71,9 @@ def install_before(database_url, cutoff):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql"])
+@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql"])
 def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url, cutoff):
-    """Upgrade populated RAG/context databases, rather than only fresh schemas."""
+    """Upgrade populated RAG/context/draft databases, rather than only fresh schemas."""
     from app.curriculum.persistence import ContextCreate
     from app.curriculum.repository import ContextRepository
 
@@ -97,7 +97,17 @@ def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url
                  "available_minutes": 60, "allow_prerequisites": False, "allow_extensions": False,
                  "allow_external_documentation": False},
     )
-    existing = repository.create(principal.tenant_id, project.id, actor, body) if cutoff.startswith("0021") else None
+    existing = repository.create(principal.tenant_id, project.id, actor, body) if cutoff > "0020_curriculum_contexts.sql" else None
+    previous_draft = None
+    if cutoff == "0022_curriculum_runs.sql":
+        from app.curriculum.drafts import DraftRepository
+        from app.curriculum.persistence import DraftCreate, DraftReplace
+        from test_curriculum_drafts_integration import content_for
+        drafts = DraftRepository(store)
+        draft_body = DraftCreate(idempotency_key="pre-runs-draft", content=content_for(existing))
+        first_draft = drafts.create(principal.tenant_id, project.id, actor, existing.id, draft_body)
+        previous_draft = drafts.replace(principal.tenant_id, project.id, actor, first_draft.id, DraftReplace(
+            idempotency_key="pre-runs-edit", expected_revision=1, content=content_for(existing, title="Before runs upgrade")))
     store.run_migrations()
     store.run_migrations()
     after = service.ask(principal, project.id, "GET /health")
@@ -107,8 +117,15 @@ def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url
         assert saved == existing
     assert saved.tutorial_snapshots[0].segments[0].segment_id == after.citations[0].segment_id
     assert repository.read(principal.tenant_id, project.id, actor, saved.id) == saved
+    if previous_draft is not None:
+        assert drafts.read(principal.tenant_id, project.id, actor, previous_draft.id) == previous_draft
+        assert drafts.create(principal.tenant_id, project.id, actor, existing.id, draft_body) == first_draft
     with store._connect() as connection:
         for table in ("curriculum_drafts", "curriculum_draft_revisions", "curriculum_draft_commands"):
+            expected = (1 if table == "curriculum_drafts" else 2) if previous_draft is not None else 0
+            assert connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"] == expected
+        for table in ("curriculum_runs", "curriculum_run_attempts", "curriculum_run_outbox",
+                      "curriculum_run_commands", "curriculum_run_checkpoints", "curriculum_model_calls"):
             assert connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"] == 0
 
 
@@ -145,7 +162,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:

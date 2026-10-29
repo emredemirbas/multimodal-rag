@@ -17,6 +17,11 @@ optimistic edits, binding/effort/permission failures, atomic rollback and comple
 history cleanup. See `sprint5/implementation-plan.md`
 and its validation record. These do not constitute model-quality review or a
 delivered assignment generation/activation UI/workflow.
+The internal run foundation additionally tests original-actor membership, fresh
+lease clocks after real PostgreSQL lock waits, cancellation/recovery, immutable
+checkpoint/call replay, unknown versus zero usage and complete private-state
+deletion. These repository tests do not establish real worker/process recovery;
+actual queue delivery and process loss remain the next slice.
 
 ## Software test pyramid
 
