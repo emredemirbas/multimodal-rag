@@ -214,10 +214,26 @@ No Docker build, model request, application-data change or visibility change was
 needed. The starting application's exact CI (`133bbb3`, run `40918301650`) passed;
 the documentation/preparation commit has its own CI status.
 
-The owner requested an email-privacy **plan**, not immediate history rewriting.
-The plan and mapping are local-only in ignored `private/publication/`; personal
-author metadata still exists in old history. Keep the repository private until
-the selected privacy migration is approved and completed. No force push or
-repository replacement is authorized by the plan request alone. Future work must
-not add these private planning files or mappings to Git. The underlying Sprint 5
-native latency/semantic-abstention continuation above remains open.
+The owner subsequently approved completing the email-privacy migration. The
+original repository is retained as the private `multimodal-rag-private-history`
+archive; the original name now identifies an independent private repository for
+the clean history. All 58 pre-migration commits were verified against their
+rewritten counterparts: only personal email metadata, the obsolete kickoff file
+and one invalidated signature changed. The latest application tree, names, dates,
+messages and parent relationships were preserved. Clean application baseline:
+`f7c85c1`; clean preparation baseline: `0bb527a`.
+
+The active checkout uses the clean history with repository-local noreply email;
+working files, `.env`, user data and services were preserved. Only clean `main`
+is pushed normally, with no force push. The clean history and all 1,274 historical
+file blobs were rescanned; only the previously verified smoke-test false positives
+remain. Backup bundles, mappings, old editor refs and audit exports stay local
+under ignored `private/publication/` or in private Git metadata. Never merge/push
+the archived history or add private audit files to the public repository.
+
+Historical commit/CI references in earlier records refer to the private archive;
+check the new repository's current Actions run for its own result. The repository
+remains private until the owner changes visibility. This publication work does
+not close Sprint 5's native latency/semantic-abstention gate: the next development
+step remains addressing the recorded native failures before enabling generation,
+with the confirmed opt-in/per-document approval behavior where applicable.

@@ -1,6 +1,6 @@
 # Public repository review
 
-Date: 2026-11-08. Reviewed starting application commit: `133bbb3`.
+Date: 2026-11-08. Reviewed application baseline after privacy migration: `f7c85c1`.
 The repository remains private; visibility is an owner action, not part of this
 review. This checks repository publication hygiene, not production readiness or
 the unresolved native assignment-quality gate.
@@ -40,24 +40,42 @@ the unresolved native assignment-quality gate.
   MIT demonstration data, not private tutorials or user transcripts. Technical
   ADRs, tests, `AGENTS.md` and validation documents are useful public project
   material and are retained.
-- Removed the obsolete personal `CODEX_KICKOFF.md` from the current index while
-  preserving the local file. It contained a machine path and stale sprint
-  instructions. Ignoring/untracking does not erase its earlier Git versions.
+- Removed the obsolete personal `CODEX_KICKOFF.md` from the published index and
+  all published historical versions while preserving the ignored local file.
+  It contained a machine path and stale sprint instructions.
 - Added ignore patterns for key files, credential exports, local databases,
   backups, logs, model weights and private/local-data directories. Source files,
   migrations, `.env.example`, licenses and authored fixtures stay trackable.
 
 ## Commit-email privacy
 
-Existing history contains the owner's personal author/committer address. The
-owner requested a separate privacy plan; history was not rewritten and no force
-push was performed. The plan and email mapping are local-only under the ignored
-`private/publication/` directory, with private file permissions. New publication
-changes use the verified account's ID-based GitHub noreply address.
+After approving the privacy plan, the owner authorized its completion. A separate
+mirror was rewritten with official `git-filter-repo` 2.47.0, replacing the personal
+author/committer email with the verified account's GitHub noreply address and
+removing every historical version of the obsolete kickoff file. All 58 commits
+were compared with their originals: parent relationships, names, dates, messages
+and source trees were preserved except for the approved file removal. The latest
+source tree was identical. One old GitHub signature was removed because rewritten
+commits cannot retain its validity.
 
-**Before making the repository public:** complete the chosen email-privacy
-migration if the personal address must remain private. A `.mailmap`, ignore rule
-or new noreply commit alone does not remove old author metadata. The private plan
-distinguishes a clean repository migration from rewriting the existing remote,
-including retained old objects/cached views. No file-content secret was found by
-the checks above; this does not make the pending email-privacy step complete.
+The original repository was retained as the private
+`emredemirbas/multimodal-rag-private-history` archive. An independent, empty private
+repository was created at `emredemirbas/multimodal-rag` for a normal initial push
+of the clean `main` history. No force push or fork relationship was used. Only
+`main` is published; private backups, mappings, audit exports and editor refs are
+not transferred. The active checkout uses the clean history and a repository-local
+noreply email setting, without resetting working files or changing `.env`, data,
+Docker settings or running services.
+
+The clean history and all 1,274 reachable file blobs were scanned again with the
+checksum-verified Gitleaks release. The same two diff/four blob smoke-test false
+positives were confirmed; no additional finding appeared. Every reachable commit
+identity uses GitHub noreply metadata, and the personal email is absent from commit
+messages and file contents. Local private files were checked unchanged.
+
+Old commit hashes and CI references elsewhere in `docs/` describe the archived
+history. They do not establish the new repository's CI result; use its current
+GitHub Actions run. The private archive, verified local bundle and local reflogs
+still retain original metadata and must remain private. Do not push or merge old
+history back into this repository. Visibility remains an owner action; this review
+does not change the owner's GitHub account email-privacy settings.
