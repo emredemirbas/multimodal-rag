@@ -14,3 +14,32 @@ build/
 .coverage
 htmlcov/
 *.egg-info/
+
+# Local credentials and private exports
+.aws/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+# Local databases, backups, logs and downloaded model weights
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.sql.gz
+*.log
+*.gguf
+*.safetensors
+/data/
+/uploads/
+/backups/
+/local-models/
+/private/
+
+# Personal agent handoff; maintained product plans live in docs/
+/CODEX_KICKOFF.md

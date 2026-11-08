@@ -201,3 +201,23 @@ fact that data already received/copied by a user cannot be recalled.
 Before enabling Sprint 5 generation, address the recorded native failures and
 implement the confirmed opt-in/per-document approval behavior where applicable.
 See `07-open-decisions.md`; contracts alone do not complete the sprint.
+
+## Repository publication preparation — 2026-11-08
+
+The owner requested a public-repository presentation and sensitive-file review.
+Results are in [the publication review](security/publication-review.md): product
+README/metadata updated, obsolete local kickoff untracked without deleting its
+local copy, private/export ignore rules strengthened, and tracked content plus
+all reachable historical blobs scanned locally. No file-content credential was
+found; the scanner's smoke-test false positives were inspected, not suppressed.
+No Docker build, model request, application-data change or visibility change was
+needed. The starting application's exact CI (`133bbb3`, run `40918301650`) passed;
+the documentation/preparation commit has its own CI status.
+
+The owner requested an email-privacy **plan**, not immediate history rewriting.
+The plan and mapping are local-only in ignored `private/publication/`; personal
+author metadata still exists in old history. Keep the repository private until
+the selected privacy migration is approved and completed. No force push or
+repository replacement is authorized by the plan request alone. Future work must
+not add these private planning files or mappings to Git. The underlying Sprint 5
+native latency/semantic-abstention continuation above remains open.

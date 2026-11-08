@@ -1,5 +1,7 @@
 # Multimodal RAG
 
+[![CI](https://github.com/emredemirbas/multimodal-rag/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/emredemirbas/multimodal-rag/actions/workflows/ci.yml)
+
 A local workspace for turning programming tutorials into searchable material with
 inspectable evidence. Upload authorized transcripts, ask questions within a
 project, and follow answers back to timestamped source segments.
@@ -164,7 +166,8 @@ services, disposable smoke checks, local-model setup and API usage.
   been established. Video uploads do not provide original-media playback.
 - The Compose authentication adapter is intended for a private local user.
   The stack is not configured as a public hosted service.
-- Coding assignments, submissions and hardened code assessment remain planned.
+- Assignment generation is under development and is not available in the
+  workspace. Solution uploads and code assessment are not implemented.
 
 ## Documentation
 

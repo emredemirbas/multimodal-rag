@@ -4,7 +4,7 @@
 
 Read all files in `docs/`, starting with `01-product-brief.md` and `07-open-decisions.md`. Treat these documents as the product baseline. If a user instruction conflicts with them, follow the user and update the relevant document so the repository remains internally consistent.
 
-The repository currently contains a planning handoff, not a finished specification. Do not silently decide a blocking product question. Surface material assumptions in the plan.
+The repository has an implemented local RAG baseline and ongoing learning-platform work. Use `docs/09-delivery-status.md` and the current sprint documents to distinguish delivered behavior from plans. Do not silently decide a blocking product question. Surface material assumptions in the plan.
 
 ## README style
 
