@@ -60,16 +60,62 @@ def test_accepted_graph_progress_is_reused_and_final_revision_is_bound_once(grap
         assert step(graph_setup) == current
     calls = state_rows(ing, run, "curriculum_model_calls")
     assert len(calls) == 3 and all(row["status"] == "succeeded" and row["billed_usd"] == 0 for row in calls)
-    assert {row["prompt_version"] for row in calls} == {"tutorial-objectives-v3", "tutorial-goal-selection-v1", "tutorial-assignment-v1"}
+    assert {row["prompt_version"] for row in calls} == {"tutorial-objectives-v4", "tutorial-goal-selection-v1", "tutorial-assignment-v1"}
+    assert next(row for row in calls if row["purpose"] == "extract-objectives")["schema_version"] == "tutorial-objectives-json-v4"
     assert all(row["input_sha256"] is not None and row["output_tokens"] == 35 for row in calls)
     _, _, principal, project, actor = ing
     draft = DraftRepository(repo.store).read(principal.tenant_id, project.id, actor, current.result_draft_id, 1)
-    assert draft.assignment.draft.objectives[0].id == "g00_route"
+    assert draft.assignment.draft.objectives[0].id == "g00_goal0"
     assert draft.assignment.tutorial_evidence == context.tutorial_snapshots[0].segments
     assert draft.assignment.documentation_snapshots == []
     assert not state_rows(ing, run, "curriculum_run_outbox")
     assert len(state_rows(ing, run, "curriculum_run_results")) == 1
     assert "synthetic health" not in caplog.text and "Expose synthetic data" not in caplog.text
+
+
+@pytest.mark.parametrize("bad", ["omitted-slice", "contradictory-slice", "model-id"])
+def test_invalid_compact_response_cannot_commit_an_extraction_or_draft(graph_setup, bad):
+    ing, _, run, _, _, state = graph_setup
+    original = state["on_chat"]
+    def malformed(request):
+        original(request)
+        body = json.loads(request["messages"][1]["content"])
+        value = json.loads(state["content"])
+        if bad == "omitted-slice":
+            value = {"goals": [], "insufficient": []}
+        elif bad == "contradictory-slice":
+            value["insufficient"] = [{"slice_id": body["slices"][0]["id"], "reason": "Contradictory authored fixture."}]
+        else:
+            value["goals"][0]["id"] = "model_owned"
+        state["content"] = json.dumps(value)
+    state["on_chat"] = malformed
+    step(graph_setup)
+    result = step(graph_setup)
+    assert result.status == "failed" and result.failure_code == "invalid_output" and result.checkpoint_seq == 1
+    assert state["phases"] == ["extract"] and not state_rows(ing, run, "curriculum_run_results")
+    calls = state_rows(ing, run, "curriculum_model_calls")
+    # Successful HTTP/JSON delivery is distinct from accepting its interpretation.
+    assert len(calls) == 1 and calls[0]["status"] == "succeeded"
+
+
+def test_explicit_insufficiency_is_checkpointed_then_stops_without_selection(graph_setup):
+    ing, _, run, _, _, state = graph_setup
+    original = state["on_chat"]
+    def insufficient(request):
+        original(request)
+        body = json.loads(request["messages"][1]["content"])
+        state["content"] = json.dumps({"goals": [], "insufficient": [
+            {"slice_id": item["id"], "reason": "Authored insufficient-evidence response."} for item in body["slices"]]})
+    state["on_chat"] = insufficient
+    step(graph_setup)
+    assert step(graph_setup).checkpoint_seq == 2
+    result = step(graph_setup)
+    assert result.status == "failed" and result.failure_code == "invalid_output"
+    assert state["phases"] == ["extract"] and len(state_rows(ing, run, "curriculum_model_calls")) == 1
+    assert not state_rows(ing, run, "curriculum_run_results")
+    checkpoint = next(row for row in state_rows(ing, run, "curriculum_run_checkpoints") if row["stage"] == "curriculum.extracted")
+    accepted = checkpoint["payload"]["accepted"][0]["extraction"]
+    assert accepted["goals"] == [] and all(item["status"] == "insufficient_evidence" for item in accepted["coverage"])
 
 
 @pytest.mark.parametrize("repair", ["success", "invalid", "transport-invalid"])

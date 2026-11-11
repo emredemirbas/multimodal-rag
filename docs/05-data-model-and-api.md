@@ -269,7 +269,7 @@ database fence. Raw source/proposal text is private checkpoint data subject to
 context/source/project deletion, never usage/log data. These are structural checks,
 not semantic support or exercise-solvability verification.
 
-Extraction profile v3 sends the model only the requested language and lossless
+Compact extraction requests (introduced in profile v3) send only the requested language and lossless
 slice text with local IDs and unreviewed-origin labels. Original source/segment
 IDs, generations, processing versions, modality and character offsets remain in
 the authoritative context and batch map; model output cannot supply replacements.
@@ -277,6 +277,24 @@ The full context hash still fences replay even if different evidence produces an
 identical compact model request. Quote validation requires literal membership in
 the named slice and at most 80 UTF-8 bytes; the native schema's 80-character limit
 does not replace that byte check. Prompt/schema/recipe pins separate old progress.
+
+Profile v4 uses a separate model wire contract: `goals` contain descriptions and
+literal anchors; `insufficient` contains an explicit slice ID/reason for every
+unanchored slice. The model cannot provide goal IDs, coverage status or goal links.
+The application assigns `goal0`/`goal1` by response order and reconstructs the same
+canonical `BatchExtraction` checkpoint shape, with batch-ordered coverage. Reject
+missing/foreign/duplicate insufficiency, anchored/insufficient contradictions,
+duplicate anchors and identical goal rows; never infer insufficiency from omission.
+Two goals may share evidence, and a goal may anchor two slices.
+
+Mapping version `compact-extraction-map-v1`, wire schema and normalized schema are
+pinned in the recipe. Resume revalidates application-owned identities and coverage
+order as well as quote/source binding; old v3 progress is rejected before inference,
+not migrated or silently adapted. No database migration or public endpoint changes
+are needed. Successful HTTP/model-call attribution and accepted interpretation
+remain distinct: malformed wire JSON can have a successful physical-call receipt
+but cannot add a checkpoint or draft. These checks do not establish semantic
+support or enable generation.
 
 - `learning_objectives`
 - `objective_evidence`

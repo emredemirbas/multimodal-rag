@@ -22,9 +22,9 @@ from .local_provider import (
 from .model_calls import LeasedCurriculumCalls
 from .objectives import (
     EXTRACT_PROMPT, EXTRACT_SYSTEM, MAX_BATCHES, MAX_BATCH_SLICES, MAX_SELECTED_GOALS, MAX_SLICE_BYTES,
-    SELECT_PROMPT, SELECT_SYSTEM,
-    BatchExtraction, GlobalGoalId, GoalSelection, checked_context, context_digest, extract_spec,
-    global_goals, parse_value, plan_batches, select_spec, validate_extraction,
+    NORMALIZATION_VERSION, SELECT_PROMPT, SELECT_SYSTEM,
+    BatchExtraction, CompactExtraction, GlobalGoalId, GoalSelection, checked_context, context_digest, extract_spec,
+    global_goals, parse_extraction, parse_value, plan_batches, select_spec, validate_normalized_extraction,
 )
 from .run_contracts import MAX_CHECKPOINT_BYTES, CheckpointSave, CheckpointView, RunClaim, RunView
 
@@ -92,7 +92,8 @@ def recipe_digest():
         "request": REQUEST_VERSION, "options": OPTIONS, "slice_bytes": MAX_SLICE_BYTES,
         "batch_slices": MAX_BATCH_SLICES, "batches": MAX_BATCHES, "selected": MAX_SELECTED_GOALS,
         "repair_bytes": MAX_REPAIR_BYTES, "extract_system": EXTRACT_SYSTEM, "select_system": SELECT_SYSTEM,
-        "draft_system": DRAFT_SYSTEM, "extract_schema": BatchExtraction.model_json_schema(),
+        "draft_system": DRAFT_SYSTEM, "extract_schema": CompactExtraction.model_json_schema(),
+        "normalized_schema": BatchExtraction.model_json_schema(), "normalization": NORMALIZATION_VERSION,
         "select_schema": GoalSelection.model_json_schema(), "draft_schema": AssignmentContent.model_json_schema(),
         "extract_prompt": EXTRACT_PROMPT, "select_prompt": SELECT_PROMPT,
         "draft_prompt": DRAFT_PROMPT, "revise_prompt": REVISE_PROMPT})).hexdigest()
@@ -202,7 +203,7 @@ class TutorialAssignmentWorkflow:
             if (accepted.index != offset or accepted.input_sha256 != self._prepared(
                     extract_spec(batches[offset], stage.context.request.learner)).input_sha256):
                 raise ValueError("Changed extraction request")
-            validate_extraction(batches[offset], accepted.extraction)
+            validate_normalized_extraction(batches[offset], accepted.extraction)
             expected = _change(old, accepted=new.accepted, phase="select" if len(new.accepted) == len(batches) else "extract")
         elif old.phase == "select":
             if cp_stage != "curriculum.selected":
@@ -305,7 +306,7 @@ class TutorialAssignmentWorkflow:
         stage, batches, progress = state["stage"], state["batches"], state["progress"]
         if progress.phase == "extract":
             batch = batches[len(progress.accepted)]
-            extraction = validate_extraction(batch, parse_value(BatchExtraction, state["raw"]))
+            extraction = parse_extraction(batch, state["raw"])
             accepted = [*progress.accepted, AcceptedBatch(index=batch.index, input_sha256=state["request_sha256"], extraction=extraction)]
             new = _change(progress, accepted=accepted, phase="select" if len(accepted) == len(batches) else "extract")
         elif progress.phase == "select":

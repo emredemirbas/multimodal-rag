@@ -180,3 +180,77 @@ for the observed output/latency problem, not a claim it will solve semantic
 abstention. Do not continue tweaking the same prompt or raising deadlines until a
 favorable answer appears. Native quality remains required before generation is
 enabled; approved document capture and draft activation remain planned Sprint 5 work.
+
+## Predeclared compact wire pass — 2026-11-11
+
+Profile `tutorial-objectives-v4` / `tutorial-objectives-json-v4` changes the model
+response contract, not just prompt wording. The wire object is:
+
+```json
+{"goals":[{"description":"Define a GET route.","anchors":[{"slice_id":"s00000","quote":"literal source text"}]}],"insufficient":[{"slice_id":"s00001","reason":"No demonstrated technical action."}]}
+```
+
+The model emits no goal IDs, supported statuses or repeated coverage links.
+`goals` precedes `insufficient` in the serialized schema (including sorted JSON).
+The application assigns `goal0`, `goal1` in returned goal order. Every supplied
+slice needs anchors or one unique explicit insufficiency entry; an omission,
+foreign/duplicate insufficient ID, anchored/insufficient contradiction, repeated
+anchor or identical goal row is invalid. One goal can anchor two slices, two goals
+can share a slice, and multiple distinct anchors in a slice do not duplicate its
+coverage ID. Empty goals require explicit insufficiency for every supplied slice.
+
+Normalization `compact-extraction-map-v1` reconstructs the existing canonical
+`BatchExtraction` checkpoint with batch-ordered coverage, original slice/quote
+binding and application-owned identities. Replay checks those identities/order;
+the recipe pins wire schema, canonical schema and normalization version. Old v3
+responses/checkpoints are not auto-adapted. Bounds remain two goals/two anchors,
+80-byte literal quotes and 180-byte descriptions/reasons. Interpretation remains
+unreviewed; structural conversion cannot prove technical support or abstention.
+
+Before inference, retain the same three MIT samples, expected core skills,
+forbidden topics and explicit learner settings above. Perform **at most three
+physical extraction calls**, one per sample, with no retries or selection/draft
+generation. Inspect the actual compact response and normalized checkpoint; compare
+raw/canonical output byte lengths as serialization evidence only. A timeout,
+invalid response or incorrect goal ends that case; do not change the profile or
+repeat until favorable output. Recheck the same existing model/digest/engine;
+use unchanged provider decoding, 42/60-second deadlines and worker/lease limits.
+Reuse cached images and read-only installed weights in a separate disposable
+environment, preserving the owner's stopped stack and data. No download, image
+build, semantic judge, keyword filter, default registry/public generation or
+independent real-video approval is included.
+
+## Compact wire results — 2026-11-11
+
+Exactly three native calls used the unchanged installed digest/engine, decoding
+and deadlines. No retry, selection or draft generation was attempted. Exact wire
+JSON, receipt metadata and interpretation are in
+[native-extraction-v4-results.json](native-extraction-v4-results.json).
+
+| Case | Actual result | Review |
+|---|---|---|
+| English typed list | `provider_timeout` at 42,042ms; token usage unknown | No returned/accepted extraction; expected core skills cannot be reviewed |
+| Turkish health route | Response in 40,509ms, 503 input / 204 output tokens; rejected `invalid_output` | Added quote characters are not literal source substrings. `s00000` is both anchored and insufficient, is repeated in insufficient, and `s00001` is missing. Uploaded text is incorrectly described as ASR/OCR. Import/app setup does not cover the expected GET/constant-dictionary behavior |
+| Insufficient title card | Response in 24,118ms, 311 input / 143 output tokens; rejected `invalid_output` | A literal short quote still anchors a nontechnical absence-of-content meta-goal. The same slice is also insufficient. Safe contradiction rejection is **not successful semantic abstention** |
+
+All cases retained only the initialization checkpoint: zero accepted extraction,
+selection or generation and zero drafts. Successful TR/negative physical-call
+receipts establish HTTP/JSON completion, not acceptance of the interpretation.
+The converter rejected the native contradictions without repairing quotes,
+dropping reasons or choosing whichever branch would allow publication.
+
+The **native review still fails**. Authored protocol fixtures establish a smaller
+wire representation than the equivalent normalized checkpoint. No native response
+was valid enough to normalize, so no native wire/canonical size or latency gain
+is claimed. Original source hashes, null unknown usage and the zero-spend receipts
+are retained; all test data, schemas, queue keys, containers and network were
+removed. Existing container/running state, image IDs and volume names stayed
+identical; installed weights were read-only and no image/weight was built/downloaded.
+
+This completes the bounded compact-wire software change, not native goal/draft
+quality. Stop the prompt/profile retry sequence here. The next independent
+implementation is the already planned Step 5 learner-approved official-document
+capture; it must not enable generation or imply that these native failures are
+resolved. Native latency, literal quote fidelity, core-skill extraction and
+semantic abstention remain explicit gates before user-facing generation, with
+full generated-draft review still required. No later sprint or new evaluator opens.

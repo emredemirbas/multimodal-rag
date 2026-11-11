@@ -114,8 +114,8 @@ def test_quote_cap_is_eighty_utf8_bytes_in_the_actual_extraction_parser(context,
 def test_native_schema_uses_the_new_bounded_quote_profile(context):
     session = Session(context)
     spec = extract_spec(plan_batches(session.context)[0], session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v3"
-    assert spec.schema_version == "tutorial-objectives-json-v3"
+    assert spec.prompt_version == "tutorial-objectives-v4"
+    assert spec.schema_version == "tutorial-objectives-json-v4"
     assert spec.output_schema["$defs"]["GoalAnchor"]["properties"]["quote"]["maxLength"] == 80
 
 

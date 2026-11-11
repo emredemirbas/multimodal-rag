@@ -8,14 +8,16 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-Latest bounded continuation: compact extraction profile v3 is implemented and
-software regressions passed (857 backend unit cases and 17 isolated graph/worker
-cases). The three-call native review still failed: English missed core goals,
-Turkish timed out, and insufficient text was called supported. See
-`sprint5/native-output-review.md`; public generation stays closed. Next implement
-the compact extraction wire contract described in the Sprint 5 plan, preserving
-explicit insufficient coverage and all evidence/recipe/deletion fences. Do not
-extend prompt-only retry loops or deadlines on the basis of these observations.
+Latest bounded continuation: v4 compact model responses are normalized into
+application-owned goal IDs and complete canonical coverage, with strict replay
+fences. Software regressions passed (903 backend unit cases and 21 isolated
+graph/worker cases). The fixed native pass still failed: English timed out;
+Turkish and insufficient responses were rejected for invalid/contradictory
+evidence. No extraction or draft was accepted. See `sprint5/native-output-review.md`;
+public generation stays closed. The wire change is complete; stop prompt/profile
+iterations here. Next is the existing Step 5 learner-approved official-document
+capture, preserving scoped approval, bounded allowlisted fetching, provenance
+and deletion. That independent work does not resolve the native quality gate.
 
 The repository is now public, verified on GitHub on 2026-11-11. Existing `cc1da53`
 [CI run 42501823081](https://github.com/emredemirbas/multimodal-rag/actions/runs/42501823081)

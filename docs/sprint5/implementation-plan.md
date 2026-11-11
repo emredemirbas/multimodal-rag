@@ -334,11 +334,22 @@ Split source text losslessly at Unicode character boundaries into <=1,800-byte
 prompt slices, preserving original evidence IDs and exact character offsets.
 At most four slices/batch and 20 batches; refuse larger contexts before inference,
 without truncating or silently selecting sources. Extraction returns <=2 goals
-per batch with exact quotes of <=80 UTF-8 bytes and a model-reported
-supported/insufficient status for every slice. Profile v3 sends only the explicit
+per batch with exact quotes of <=80 UTF-8 bytes and explicit anchored/insufficient
+interpretations for every slice. Compact requests send only the explicit
 language and each slice's local ID, origin and complete text; authoritative IDs,
 versions and offsets remain pinned application state. These are unreviewed
 interpretations, not semantic quality scores.
+
+Profile v4 separates model output from stored state. The compact model object has
+`goals` (description/anchors, no IDs) before `insufficient` (slice ID/reason).
+Mapping `compact-extraction-map-v1` assigns `goal0`/`goal1` in goal order and
+reconstructs complete batch-ordered canonical coverage. The insufficient ID set
+must exactly equal unanchored IDs, without duplicates/foreign IDs/contradictions;
+empty goals need explicit reasons for every slice. Existing canonical byte/quote/
+scope checks still apply, and duplicate goals/anchors are rejected. Wire schema,
+canonical schema and mapping version are recipe-pinned; replay also checks the
+application-owned IDs and coverage order. No v3 fallback or checkpoint migration.
+
 Select <=4 of the <=40 extracted goals for a small draft; retain unselected goals
 as explicit omissions from that assignment. Bounds are technical limits, not
 hidden learner effort/difficulty defaults.
@@ -447,17 +458,18 @@ bounded objective/coverage extraction, selection, generation and one revision.
 Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
 The small predeclared native review is recorded in `native-output-review.md`.
-Compact extraction profile v3 now removes irrelevant model-facing metadata and
-limits literal quotes to 80 UTF-8 bytes; full context identity and binding remain.
-The fixed three-call native follow-up still failed: English completed within the
-deadline but omitted the expected core skills, Turkish timed out, and insufficient
-text still became a supported goal. No supported native draft quality is claimed.
-Next implement a compact extraction wire contract with goals before duplicated
-coverage bookkeeping and application-owned identities/coverage reconstruction,
-retaining explicit insufficient slices and every source/quote/recipe fence. Declare
-the mapping and bounded native pass first; do not repeat prompt tweaks, increase
-limits blindly or enable generation on these results. The existing lease/call/
-checkpoint fences remain mandatory.
+Compact requests and the v4 wire contract are implemented: the application owns
+goal IDs/coverage reconstruction and replay validates the normalization recipe.
+The predeclared v4 native pass still failed: English timed out, Turkish returned
+nonliteral/contradictory evidence, and insufficient content produced a meta-goal
+plus contradictory insufficiency. Strict validation accepted no extraction/draft.
+No supported native draft quality or representative latency improvement is claimed.
+The bounded wire correction is complete; stop prompt/profile iterations here.
+Next implement the already planned Step 5 learner-approved official-document
+capture as an independent slice, with scoped approval, allowlisted/bounded fetching
+and immutable provenance/deletion tested using local HTTP fixtures. This does not
+resolve the native latency/quote/core-skill/abstention gate or enable generation.
+Preserve the existing lease/call/checkpoint fences; do not increase limits blindly.
 No downloads or default/public enablement. The owner confirmed tutorial-only by
 default, optional external topics and approval for each official document; implement
 approved capture in step 5 before their runtime behavior, then the planned draft

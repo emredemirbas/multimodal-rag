@@ -307,6 +307,10 @@ def test_actual_graph_resumes_after_sigkill_without_repeating_accepted_extractio
             for table in ("curriculum_drafts", "curriculum_draft_revisions", "curriculum_run_results"):
                 assert connection.execute(f"SELECT count(*) AS n FROM {table} WHERE tenant_id=%s AND project_id=%s", scope[:2]).fetchone()["n"] == 1
             assert connection.execute("SELECT count(*) AS n FROM curriculum_model_calls WHERE tenant_id=%s AND project_id=%s AND run_id=%s", scope).fetchone()["n"] == 3
+            payload = connection.execute("SELECT payload FROM curriculum_run_checkpoints WHERE tenant_id=%s AND project_id=%s AND run_id=%s AND stage='curriculum.extracted'", scope).fetchone()["payload"]
+            accepted = payload["accepted"][0]["extraction"]
+            assert accepted["goals"][0]["id"] == "goal0" and "insufficient" not in accepted
+            assert accepted["coverage"][0]["goal_ids"] == ["goal0"]
     finally:
         for worker in workers:
             if worker.poll() is None:

@@ -1,0 +1,233 @@
+{
+  "date": "2026-11-11",
+  "scope": "extraction-only; authored MIT text without a recording",
+  "identity": {
+    "provider": "ollama-local",
+    "model": "qwen3:4b",
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "engine": "0.40.3"
+  },
+  "options": {
+    "temperature": 0,
+    "num_ctx": 16384,
+    "num_predict": 2048,
+    "num_thread": 4
+  },
+  "call_seconds": 60,
+  "inference_seconds": 42,
+  "recipe_sha256": "b0363c1d62a24aa752d388b154891af1fab0212dfc582d03edbaf99efcf1d7ca",
+  "normalization_version": "compact-extraction-map-v1",
+  "declared_max_physical_calls": 3,
+  "cases": [
+    {
+      "case": "typed-list-en.vtt",
+      "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 45,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-v4",
+      "schema_version": "tutorial-objectives-json-v4",
+      "input_bytes": 2013,
+      "input_sha256": "8e8d2e27e7dc32f58eeae33492f991021e8cbf7903baffefeed76d4b9ff82d9d",
+      "status": "retrying",
+      "failure_code": "provider_timeout",
+      "checkpoint_seq": 1,
+      "calls": [
+        {
+          "failure_code": "provider_timeout",
+          "retryable": true,
+          "elapsed_ms": 42042
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "accepted_extractions": [],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v4",
+          "schema_version": "tutorial-objectives-json-v4",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "8e8d2e27e7dc32f58eeae33492f991021e8cbf7903baffefeed76d4b9ff82d9d",
+          "status": "failed",
+          "input_tokens": null,
+          "output_tokens": null,
+          "output_characters": null,
+          "duration_ms": 42042,
+          "billed_usd": "0.000000",
+          "failure_code": "provider_timeout"
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Provider timeout; no native response/extraction to review."
+      },
+      "wire_content_bytes": null,
+      "wire_minified_bytes": null,
+      "normalized_minified_bytes": null
+    },
+    {
+      "case": "health-route-tr.vtt",
+      "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "tr",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-v4",
+      "schema_version": "tutorial-objectives-json-v4",
+      "input_bytes": 1969,
+      "input_sha256": "13677f2aa974b5d108e1a4d88046b72773fbd8e75fd4a3bfd16efd4827704cad",
+      "status": "failed",
+      "failure_code": "invalid_output",
+      "checkpoint_seq": 1,
+      "calls": [
+        {
+          "done": true,
+          "done_reason": "stop",
+          "prompt_eval_count": 503,
+          "eval_count": 204,
+          "total_duration": 40507013623,
+          "load_duration": 7077327647,
+          "prompt_eval_duration": 15078412000,
+          "eval_duration": 18345289000,
+          "has_thinking": false,
+          "has_tool_calls": false,
+          "output": "{\n  \"goals\": [\n    {\n      \"anchors\": [\n        {\n          \"quote\": \"\\\"from fastapi import FastAPI\\\"\",\n          \"slice_id\": \"s00000\"\n        },\n        {\n          \"quote\": \"\\\"app = FastAPI()\\\"\",\n          \"slice_id\": \"s00000\"\n        }\n      ],\n      \"description\": \"FastAPI kütüphanesini içeri aktarın ve uygulamayı oluşturun\"\n    }\n  ],\n  \"insufficient\": [\n    {\n      \"reason\": \"Unreviewed ASR/OCR: 'from fastapi import FastAPI' may have been misinterpreted as code\",\n      \"slice_id\": \"s00000\"\n    },\n    {\n      \"reason\": \"Unreviewed ASR/OCR: 'app = FastAPI()' may have been misinterpreted as code\",\n      \"slice_id\": \"s00000\"\n    }\n  ]\n}",
+          "elapsed_ms": 40509
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "accepted_extractions": [],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v4",
+          "schema_version": "tutorial-objectives-json-v4",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "13677f2aa974b5d108e1a4d88046b72773fbd8e75fd4a3bfd16efd4827704cad",
+          "status": "succeeded",
+          "input_tokens": 503,
+          "output_tokens": 204,
+          "output_characters": 646,
+          "duration_ms": 40509,
+          "billed_usd": "0.000000",
+          "failure_code": null
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Nonliteral added quote characters, duplicated/overlapping insufficient s00000, missing s00001; invented ASR/OCR uncertainty for uploaded text; expected GET/dictionary skills omitted."
+      },
+      "wire_content_bytes": 652,
+      "wire_minified_bytes": 468,
+      "normalized_minified_bytes": null
+    },
+    {
+      "case": "insufficient-en.vtt",
+      "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 1,
+      "prompt_version": "tutorial-objectives-v4",
+      "schema_version": "tutorial-objectives-json-v4",
+      "input_bytes": 1417,
+      "input_sha256": "6f2baccd4846ddfe7fcc8ebb0c977160840cc84057074d52427afa80bb877632",
+      "status": "failed",
+      "failure_code": "invalid_output",
+      "checkpoint_seq": 1,
+      "calls": [
+        {
+          "done": true,
+          "done_reason": "stop",
+          "prompt_eval_count": 311,
+          "eval_count": 143,
+          "total_duration": 24116112861,
+          "load_duration": 5565369530,
+          "prompt_eval_duration": 7357238000,
+          "eval_duration": 11189064000,
+          "has_thinking": false,
+          "has_tool_calls": false,
+          "output": "{\n  \"goals\": [\n    {\n      \"anchors\": [\n        {\n          \"quote\": \"This is an authored title card for a recording that is not included. There is no\",\n          \"slice_id\": \"s00000\"\n        }\n      ],\n      \"description\": \"This is an authored title card for a recording that is not included. There is no programming demonstration, code, explanation or instruction in this text. The placeholder ends here\"\n    }\n  ],\n  \"insufficient\": [\n    {\n      \"reason\": \"No technical learning objective can be supported by this title card.\",\n      \"slice_id\": \"s00000\"\n    }\n  ]\n}",
+          "elapsed_ms": 24118
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "accepted_extractions": [],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v4",
+          "schema_version": "tutorial-objectives-json-v4",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "6f2baccd4846ddfe7fcc8ebb0c977160840cc84057074d52427afa80bb877632",
+          "status": "succeeded",
+          "input_tokens": 311,
+          "output_tokens": 143,
+          "output_characters": 570,
+          "duration_ms": 24118,
+          "billed_usd": "0.000000",
+          "failure_code": null
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Absence-of-instruction meta-goal with contradictory anchored+insufficient slice; safe structural rejection, not successful semantic abstention."
+      },
+      "wire_content_bytes": 570,
+      "wire_minified_bytes": 454,
+      "normalized_minified_bytes": null
+    }
+  ],
+  "total_physical_calls": 3,
+  "remaining_artifact_objects": 0,
+  "test_schema_removed": true,
+  "overall_review_passed": false,
+  "selection_or_generation_called": false,
+  "default_registry_or_public_generation_enabled": false,
+  "model_weights_mounted_read_only": true,
+  "new_image_or_model_downloads": false,
+  "serialization_comparison": "No accepted native normalization; wire-to-normalized size reduction is established by authored protocol fixtures only."
+}

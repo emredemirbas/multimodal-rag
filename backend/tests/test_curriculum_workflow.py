@@ -12,7 +12,7 @@ import pytest
 from app.curriculum.execution import StageFailure, StageInput, StageLeaseLost
 from app.curriculum.local_provider import JsonModelResponse, LocalCurriculumProvider, _json_bytes
 from app.curriculum.objectives import (
-    BatchExtraction, MAX_BATCHES, MAX_SLICE_BYTES, checked_context, context_digest,
+    BatchExtraction, CompactExtraction, MAX_BATCHES, MAX_SLICE_BYTES, checked_context, context_digest,
     extract_spec, parse_value, plan_batches, validate_extraction,
 )
 from app.curriculum.persistence import ContextView
@@ -23,16 +23,25 @@ from test_curriculum_contracts import context, visual_context
 from test_curriculum_local_provider import identity
 
 
+def authored_canonical_extraction(body):
+    """Old canonical checkpoint shape, independent of the new model protocol."""
+    item = body["slices"][0]
+    return {"goals": [{"id": "route", "description": "Define an API route.",
+                        "anchors": [{"slice_id": item["id"], "quote": item["text"][:30]}]}],
+            "coverage": [{"slice_id": value["id"], "status": "supported" if index == 0 else "insufficient_evidence",
+                          "goal_ids": ["route"] if index == 0 else [],
+                          "reason": None if index == 0 else "No additional goal in this authored reply."}
+                         for index, value in enumerate(body["slices"])]}
+
+
 def authored_reply(body):
     """Synthetic protocol peer, not a second implementation or model substitute."""
     if body["stage"] == "extract":
         item = body["slices"][0]
-        return {"goals": [{"id": "route", "description": "Define an API route.",
+        return {"goals": [{"description": "Define an API route.",
                             "anchors": [{"slice_id": item["id"], "quote": item["text"][:30]}]}],
-                "coverage": [{"slice_id": value["id"], "status": "supported" if index == 0 else "insufficient_evidence",
-                              "goal_ids": ["route"] if index == 0 else [],
-                              "reason": None if index == 0 else "No additional goal in this authored reply."}
-                             for index, value in enumerate(body["slices"])]}
+                "insufficient": [{"slice_id": value["id"], "reason": "No additional goal in this authored reply."}
+                                 for value in body["slices"][1:]]}
     if body["stage"] == "select":
         return {"goal_ids": [body["goals"][0]["id"]]}
     objectives = body["objectives"]
@@ -169,7 +178,7 @@ def test_asr_interpretation_is_labelled_without_replacing_published_generation(s
 def test_extraction_rejects_invented_quotes_ids_and_incomplete_coverage(session, change):
     batch = plan_batches(session.context)[0]
     body = {"stage": "extract", "slices": [item.model_dump(mode="json") for item in batch.slices]}
-    result = authored_reply(body)
+    result = authored_canonical_extraction(body)
     if change == "quote": result["goals"][0]["anchors"][0]["quote"] = "Unseen PRIVATE content"
     if change == "slice": result["goals"][0]["anchors"][0]["slice_id"] = "s99999"
     if change == "coverage-missing": result["coverage"] = []
@@ -181,22 +190,20 @@ def test_extraction_rejects_invented_quotes_ids_and_incomplete_coverage(session,
         validate_extraction(batch, parse_value(BatchExtraction, json.dumps(result)))
 
 
-def test_native_schema_only_offers_supplied_slice_ids_and_coherent_status_fields(session):
+def test_native_schema_only_offers_supplied_slice_ids_without_model_coverage(session):
     session.context.tutorial_snapshots[0].segments[0].text = "route " * 700
     batch = plan_batches(session.context)[0]
     spec = extract_spec(batch, session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v3" and spec.schema_version == "tutorial-objectives-json-v3"
+    assert spec.prompt_version == "tutorial-objectives-v4" and spec.schema_version == "tutorial-objectives-json-v4"
     definitions = spec.output_schema["$defs"]
     expected = [item.id for item in batch.slices]
     assert len(expected) > 1
-    for name in ("GoalAnchor", "SupportedCoverage", "InsufficientCoverage"):
+    for name in ("GoalAnchor", "InsufficientSlice"):
         assert definitions[name]["properties"]["slice_id"]["enum"] == expected
-    supported = definitions["SupportedCoverage"]["properties"]
-    insufficient = definitions["InsufficientCoverage"]["properties"]
-    assert supported["reason"]["type"] == "null" and supported["goal_ids"]["minItems"] == 1
-    assert insufficient["reason"]["type"] == "string" and insufficient["goal_ids"]["maxItems"] == 0
+    assert set(definitions["ProposedGoal"]["properties"]) == {"description", "anchors"}
+    assert set(definitions["InsufficientSlice"]["properties"]) == {"slice_id", "reason"}
     # Dynamic schema construction must not contaminate another source batch.
-    assert "enum" not in BatchExtraction.model_json_schema()["$defs"]["GoalAnchor"]["properties"]["slice_id"]
+    assert "enum" not in CompactExtraction.model_json_schema()["$defs"]["GoalAnchor"]["properties"]["slice_id"]
 
 
 @pytest.mark.parametrize("status,ids,reason", [
@@ -216,9 +223,9 @@ def test_graph_extracts_selects_and_generates_with_exact_bound_evidence(session)
     content = session.finish()
     assert [item["stage"] for item in session.calls.requests] == ["extract", "select", "generate"]
     assert [item.stage for item in session.checkpoints] == ["curriculum.initialized", "curriculum.extracted", "curriculum.selected"]
-    assert content.objectives[0].id == "g00_route"
+    assert content.objectives[0].id == "g00_goal0"
     assert content.objectives[0].tutorial_segment_ids == [session.context.tutorial_snapshots[0].segments[0].segment_id]
-    assert session.checkpoints[-1].payload["selected_ids"] == ["g00_route"]
+    assert session.checkpoints[-1].payload["selected_ids"] == ["g00_goal0"]
     assert session.checkpoints[1].payload["accepted"][0]["extraction"]["coverage"][0]["status"] == "supported"
 
 
@@ -230,7 +237,7 @@ def test_all_slices_are_extracted_once_and_omissions_remain_in_progress(session)
     assert len(batches) > 1
     assert [item["batch"] for item in session.calls.requests if item["stage"] == "extract"] == list(range(len(batches)))
     progress = session.checkpoints[-1].payload
-    assert len(progress["accepted"]) == len(batches) and progress["selected_ids"] == ["g00_route"]
+    assert len(progress["accepted"]) == len(batches) and progress["selected_ids"] == ["g00_goal0"]
     assert len(content.objectives) == 1
     assert sum(len(item["extraction"]["coverage"]) for item in progress["accepted"]) == sum(len(item.slices) for item in batches)
 
@@ -254,7 +261,7 @@ def test_maximum_plan_with_revision_still_has_finite_checkpoint_and_call_bounds(
 @pytest.mark.parametrize("field", ["description", "quote", "reason"])
 def test_extraction_text_caps_are_utf8_bytes(session, field):
     batch = plan_batches(session.context)[0]
-    value = authored_reply({"stage": "extract", "slices": [item.model_dump(mode="json") for item in batch.slices]})
+    value = authored_canonical_extraction({"stage": "extract", "slices": [item.model_dump(mode="json") for item in batch.slices]})
     if field == "description": value["goals"][0][field] = "ş" * 91
     if field == "quote": value["goals"][0]["anchors"][0][field] = "ş" * 121
     if field == "reason":
@@ -292,11 +299,11 @@ def test_unusable_outputs_stop_without_guessing_or_extra_revisions(session, mode
     def reply(body):
         stage = body["stage"]
         if stage == "extract" and mode == "no-goals":
-            return {"goals": [], "coverage": [{"slice_id": item["id"], "status": "insufficient_evidence",
-                "goal_ids": [], "reason": "No usable goal."} for item in body["slices"]]}
-        if stage == "extract" and mode == "bad-extract": return {"goals": [], "coverage": []}
+            return {"goals": [], "insufficient": [{"slice_id": item["id"], "reason": "No usable goal."}
+                                                     for item in body["slices"]]}
+        if stage == "extract" and mode == "bad-extract": return {"goals": [], "insufficient": []}
         if stage == "select" and mode == "unknown-selection": return {"goal_ids": ["g19_unknown"]}
-        if stage == "select" and mode == "duplicate-selection": return {"goal_ids": ["g00_route", "g00_route"]}
+        if stage == "select" and mode == "duplicate-selection": return {"goal_ids": ["g00_goal0", "g00_goal0"]}
         if stage in {"generate", "revise"} and mode == "bad-revision": return {"title": "PRIVATE invalid"}
         if stage == "generate" and mode == "oversize-repair": return {"raw": "x" * 6001}
         return authored_reply(body)

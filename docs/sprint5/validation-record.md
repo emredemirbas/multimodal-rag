@@ -782,15 +782,74 @@ Existing owner services stayed stopped. No new image was built/downloaded, weigh
 were read-only, and no `.env`, credential, owner data or Docker setting changed.
 README is unchanged; no frontend test/build or default enablement was needed.
 
+## Compact model wire and application-owned normalization — 2026-11-11
+
+Starting checkout/origin was clean at `b0230ee`. Its exact
+[CI run 43056602011](https://github.com/emredemirbas/multimodal-rag/actions/runs/43056602011)
+had successful backend, integration and frontend jobs; the image job was still
+running at the checks in this continuation. No full success is assumed.
+
+Implemented v4's dedicated `CompactExtraction` model wire: goals have only
+description/anchors, and each unanchored slice needs an explicit insufficient
+ID/reason. Native schema presents goals before insufficiency even under the
+provider's sorted JSON. The application assigns `goal0`/`goal1` and reconstructs
+the existing batch-ordered `BatchExtraction` checkpoint. Missing/foreign/duplicate
+insufficiency, anchored/insufficient contradictions, duplicate anchors and exact
+duplicate goals (including reversed anchor order) fail without repair or fallback.
+Distinct goals may share evidence; one goal may span two slices.
+
+Recipe pins wire schema, normalized schema and `compact-extraction-map-v1`.
+Replay revalidates application-owned IDs and coverage order; old v3 progress and
+old wire responses cannot silently adopt v4. Complete source/context pins, literal
+quotes, UTF-8 bounds, scoped call receipts, live actor/lease/deletion fences and
+one-call-per-delivery behavior remain. No schema migration, provider/queue timeout,
+worker registration, HTTP capability, frontend or README change was needed.
+
+Actual checks:
+
+- **903 backend non-integration tests passed, 17.49s**; **684 deselected**.
+  The new 46-case wire suite covers strict partitions, shared/multiple anchors,
+  empty goals, duplicate/nonstandard JSON, foreign/model-owned fields, repeated
+  goals, quote/description/reason byte boundaries, post-parse mutation, repeated
+  source text with distinct Unicode spans, canonical-ID/order tampering and
+  v3/mapping-version replay fences. A focused final run after the serialized-schema
+  assertion also passed **46 tests, 1.43s**.
+- **21 PostgreSQL/HTTP/real Celery process cases passed, 20.01s**. Four added cases
+  prove invalid compact responses cannot commit extraction/draft, and explicit
+  empty goals persist canonical insufficiency then stop before selection. Existing
+  receipt metadata, retries, scoped authorization/deletion/lease races and SIGKILL/
+  duplicate recovery pass. The recovered graph retains application goal IDs and
+  canonical coverage. HTTP/model delivery success is distinct from stage acceptance.
+- The declared **three native extraction calls** used unchanged installed
+  `qwen3:4b`/full digest/Ollama pins and 42/60-second limits. English timed out at
+  42.042s; Turkish returned at 40.509s with nonliteral quotes and contradictory/
+  duplicated insufficiency; the negative at 24.118s still made a meta-goal and
+  contradicted it with insufficiency. **The native review failed.** All retained
+  only initialization checkpoints; no extraction checkpoint or draft was accepted,
+  and selection/generation was not attempted. Exact public-sample
+  output/usage and manual interpretation are in `native-extraction-v4-results.json`
+  and `native-output-review.md`. Rejection is not correct semantic abstention.
+
+The tests used isolated schemas, random Redis prefixes/queues and owned processes
+with cached disposable PostgreSQL/Redis/model containers on an internal network.
+Temporary loopback relays exposed only test endpoints; weights were mounted
+read-only. Source/context/run/artifact cleanup and schema/key cleanup ended empty;
+all test containers/network/relays were removed. Owner container/running state,
+image IDs and volume names were identical before/after. Existing owner services
+stayed stopped. No image build/download, model install, `.env`, credential, data
+or Docker setting change occurred. The default registry remains empty; neither
+software tests nor this failed native pass enable user-facing generation.
+
 ## Continuation
 
-Next is a compact extraction wire contract, reducing repeated model-emitted
-identities/coverage bookkeeping while preserving explicit insufficiency and
-application-owned exact source/quote binding. The v3 native failures above remain
-open. Declare the mapping/version boundary and one fixed native pass before any
-inference; preserve the original actor, call/checkpoint/lease fences and deletion.
-Do not iterate prompt wording until favorable output, weaken validation, add
-sample-specific keyword filters, raise deadlines or enable public generation.
+The bounded compact-wire change is complete. Stop the prompt/profile iteration
+sequence here. Next implement the existing Step 5 learner-approved official-document
+capture independently: explicit scoped per-document approval, allowlisted bounded
+HTTP capture, immutable URL/retrieval/version/hash/excerpt provenance and complete
+project deletion, using local HTTP fixtures. No unapproved live fetch follows.
+The v4 native latency, quote fidelity, core-skill and semantic-abstention failures
+remain open gates before generation, with full generated-draft review still needed.
+Do not weaken validation, add sample-specific filters or raise deadlines blindly.
 
 Product choices are now confirmed: tutorial-only default, optional external topics,
 explicit selection/approval for each official document. Implement approval/capture
