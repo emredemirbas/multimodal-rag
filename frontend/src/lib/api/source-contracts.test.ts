@@ -18,6 +18,15 @@ describe("source contracts", () => {
     expect(() => parseSourceList({ items: [{ ...source, id: "../../other" }] })).toThrow();
     expect(() => parseSourceList({ items: [{ ...source, job: { ...source.job, progress_percent: 101 } }] })).toThrow();
   });
+  it("preserves the published processing version without guessing from a running generation", () => {
+    const parsed = parseSourceList({ items: [{ ...source, generation: 3, active_generation: 2, processing_version: "transcript-v1:g2" }] });
+    expect(parsed[0]).toMatchObject({ generation: 3, active_generation: 2, processing_version: "transcript-v1:g2" });
+    expect(parseSourceList({ items: parsed })[0].processing_version).toBe("transcript-v1:g2");
+    expect(parseSourceList({ items: [source] })[0].processing_version).toBeUndefined();
+    for (const version of [null, true, 2, " ", "x".repeat(201), "bad\0version"]) {
+      expect(() => parseSourceList({ items: [{ ...source, processing_version: version }] })).toThrow();
+    }
+  });
   it("validates ordered item identity, bounds and nullable transcript relationships", () => {
     const item = { id: source.id, playlist_source_id: source.job.id, generation: 1, position: 0,
       video_id: "abcdefghijk", title: "Lesson", transcript_source_id: null };

@@ -50,8 +50,18 @@ a:hover {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
+}
+
+.documentation-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.documentation-hash {
+  overflow-wrap: anywhere;
 }
 
 button,

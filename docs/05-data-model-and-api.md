@@ -200,8 +200,17 @@ revocation or expiry discards late results. Source/context/project deletion
 removes text and receipts; reprocessing preserves prior evidence. Logs contain
 IDs, fixed status codes, counts and timing, never fetched text or URLs.
 
-These APIs have private/no-store responses and require PostgreSQL. Approval UI,
-draft document binding and dependent external-topic generation are not enabled.
+These APIs have private/no-store responses and require PostgreSQL. The web learner
+flow at `/projects/{id}/learning` and its bookmarked `/learning/contexts/{id}` page
+uses server-only BFF routes under `/api/projects/{id}/curriculum`, preserving the
+backend's explicit approval/capture boundary. Strict, same-origin bounded JSON
+and tenant/project/context/document receipt checks protect the server credential;
+captured policy/text/excerpt hashes are verified before delivery. Context reads
+send only preferences/source pins/labels to the browser, without copied tutorial
+text. An eight-second ordinary timeout stays unchanged; capture alone has a
+25-second window. The UI fences late reads after deletion/scope changes and keeps
+unchanged uncertain command bodies/keys. No browser storage keeps project text.
+Draft document binding and dependent external-topic generation are not enabled.
 The graph still rejects external flags before inference; public generation and
 activation remain unavailable. See the Sprint 5 implementation/validation records.
 

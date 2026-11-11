@@ -929,15 +929,102 @@ runtime, user generation/activation or native model-quality approval is claimed.
 The strict fixed-page parser may need a reviewed update if that official page
 changes. Linux resource/signal support is required.
 
+## Step 5b — learner selection and approved-document workspace (2026-11-11)
+
+Clean `main` at `c237b1ee45dd7e5cf21f0d7c207bae568b9e684d` matched origin before
+implementation. Its [CI run 43063655617](https://github.com/emredemirbas/multimodal-rag/actions/runs/43063655617)
+was still running initially, then finished with frontend/backend unit success,
+backend integration failure and images skipped. The integration result was
+731 passed, 10 skipped and one failure: the older visual-checkpoint migration
+inventory test expected versions only through 0024. Appended 0025 to that explicit
+expectation without weakening old-content/citation/checksum preservation checks.
+The failed test and populated upgrade/RAG regressions now pass locally (11 cases).
+This correction does not change product code or any applied migration.
+
+Implemented the already planned learner workflow:
+
+- Project navigation opens `/projects/{id}/learning`. Published nonempty text
+  sources expose their actual `active_generation` and processing version, including
+  textual video evidence; unfinished job generations are not used. Learners select
+  1–20 sources and explicit experience, difficulty, language and effort. External
+  topic/document preferences start unchecked. A saved context's bookmarked URL
+  restores its immutable choices without adding context listing or browser storage.
+- Server-only BFF routes cover context create/read/delete and catalog/document
+  approval/list/read/capture/delete. They authorize the authoritative tenant/project,
+  reject malformed IDs, cap JSON at 16 KiB with a read deadline and reject duplicate
+  decoded keys, non-finite values, extra/server fields and cross-origin writes.
+  Private/no-store/nosniff/CORP responses return fixed safe errors. Ordinary eight-
+  second upstream timeouts remain; capture alone uses a bounded 25-second window.
+  DELETE requires a real 204 rather than accepting a JSON-null success.
+- Context receipts validate preferences, source pins and copied evidence scope, then
+  expose only the lean source/preferences projection. Catalog policies and retained
+  document/text/excerpt hashes are checked before browser delivery. Approval replay
+  accepts the original pinned policy even if the current catalog changed; completed
+  capture replay must preserve its prior snapshot and raw provenance exactly.
+- Per-page selection and unchecked retrieve-and-retain consent save approval only.
+  Separate capture, status-read, explicit retry and deletion controls preserve that
+  distinction. Unknown version, canonical URL, retrieval date, full MIT notice,
+  attribution, stable excerpt anchors and hashes are inspectable. Text is rendered
+  literally through React, without HTML interpretation or automatic asset loads.
+- An uncertain context body/key remains frozen if the source inventory advances or
+  removes its source. Uncertain approval also retains its original policy/body/key
+  across catalog refreshes; explicit form edits start a different request. Known
+  capture failures require an intentional new attempt, while uncertain delivery
+  replays the same command. No capture runs on mount, refresh, status read or opt-in.
+- Keyed scope components, abort cleanup, context epochs, per-document revisions and
+  removal tombstones fence late responses. Context/source/project disappearance
+  clears cached material. Confirming deletion hides retained text immediately;
+  uncertain deletes reconcile with GET before restoring any copy. Archive blocks
+  new work while reads/deletion remain available. A capture POST 404 alone does
+  not prove deletion: another member may read an approval but cannot capture it.
+  Explicit GET status confirms actual absence without hiding a readable copy.
+
+Final validation:
+
+- **356 frontend tests passed** (50 files), including 30 new contract/BFF cases,
+  27 new component cases, five page cases, two timeout/deletion-transport cases and
+  one published-version parser case. Tests cover scope/receipt/hash tampering,
+  malformed/duplicate JSON and origins, explicit opt-in/no automatic capture,
+  immutable/uncertain request replay, expiry/failure recovery, deletion/scope races,
+  stale lists, source-generation changes and StrictMode cleanup.
+- **Lint, typecheck, lint compatibility and local production build passed** with
+  installed dependencies. No new package, backend product change, migration or
+  local Docker image build/download was needed for the UI.
+- **11 isolated PostgreSQL migration/RAG tests passed** after the CI inventory fix,
+  including the exact failing test. One existing Starlette/httpx deprecation
+  warning remains; no runtime failure was suppressed.
+- Browser walkthrough used a dedicated loopback Next server and authored in-memory
+  API fixture. Source/preferences -> saved URL -> page selection/explicit consent
+  -> approval -> separate capture -> literal text/provenance -> refresh and bookmark
+  reload all worked. Fixture instrumentation recorded zero captures before the
+  button and exactly one afterward; refresh/reload added none. Synthetic `<script>`
+  text stayed literal. This is a UI boundary check, not live document/model quality
+  or a full real-stack acceptance claim. Screenshot retained locally outside Git.
+- Synthetic server-only bearer tokens were absent from production browser JavaScript.
+  `git diff --check` passed and changed Markdown links resolve.
+
+The fixture and Next servers were stopped and temporary files cleaned. Migration
+checks used a cached tmpfs PostgreSQL container with its own loopback port; it was
+removed after tests. Owner container IDs/states, image IDs and volume names matched
+before/after. Owner `.env`, credentials, services and real data were unchanged;
+no model, paid API or live official page was contacted. Next's automatically
+created development instruction file was removed; generated type declarations
+returned to their tracked production form.
+
+The README adds only the actual product capability. Internal delivery/test/CI
+records stay in docs. Assignment generation, document-backed drafts and activation
+remain unavailable; no native-model or independent real-video quality gate closes.
+
 ## Continuation
 
-Next implement Step 5b's learner-facing source/preferences/context selection and
-explicit per-document selection/consent, capture and retained-text inspection/
-deletion using the existing backend APIs. Preserve uncertain-delivery keys and
-cover accessible loading/empty/error/success and stale-context behavior. Document
-binding/external-topic generation remain disabled pending their own grounding
-implementation. The v4 native latency/quote/core-skill/semantic-abstention failures
-and full generated-draft review remain open; stop prompt/profile retries here.
-Keep the default registry/public generation closed, do not weaken checks or raise
-limits blindly, and do not begin Sprint 6/7 or close the independent real-video
-gate. Verify the exact new commit's hosted CI after push; running is not success.
+Continue existing Step 5 by binding explicitly selected captured documents into
+the draft boundary under the same context/tenant/project. Preserve tutorial versus
+external requirement labels, stable excerpt hashes/IDs and source processing pins.
+Do not fetch as part of binding. Test individual document removal and complete
+source/context/project deletion of dependent copied drafts/receipts before exposing
+that path. Then continue planned learner draft review/activation in Step 6.
+Keep the empty default registry/public generation closed: native latency, literal
+quotes, core-skill/semantic abstention and full generated-draft review remain open.
+No new prompt retry loop, relaxed checks, paid calls/downloads, grading/tutoring or
+Alpha 2 closure follows. Verify this new commit's exact hosted CI; running is not
+success and the prior commit's failed run is not a passing baseline.

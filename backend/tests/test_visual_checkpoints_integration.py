@@ -395,7 +395,7 @@ def test_additive_migration_preserves_published_pre_checkpoint_data_and_checksum
         assert {key: preserved[key] for key in previous} == previous
         after = connection.execute('SELECT version,sha256 FROM schema_migrations ORDER BY version').fetchall()
         assert after[:len(before)] == before
-        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql', '0016_retained_ocr_index.sql', '0017_video_workflows.sql', '0018_visual_selection_manifest.sql', '0019_local_frame_descriptions.sql', '0020_curriculum_contexts.sql', '0021_curriculum_drafts.sql', '0022_curriculum_runs.sql', '0023_curriculum_delivery.sql', '0024_curriculum_request_identity.sql']
+        assert [row['version'] for row in after[len(before):]] == ['0013_visual_checkpoints.sql', '0014_video_lifecycle.sql', '0015_retained_visual_gallery.sql', '0016_retained_ocr_index.sql', '0017_video_workflows.sql', '0018_visual_selection_manifest.sql', '0019_local_frame_descriptions.sql', '0020_curriculum_contexts.sql', '0021_curriculum_drafts.sql', '0022_curriculum_runs.sql', '0023_curriculum_delivery.sql', '0024_curriculum_request_identity.sql', '0025_curriculum_documentation.sql']
         assert connection.execute('SELECT count(*) AS n FROM video_workflows').fetchone()['n'] == 0
         assert connection.execute('SELECT count(*) AS n FROM visual_runs WHERE tenant_id=%s AND project_id=%s',
                                    (principal.tenant_id, project.id)).fetchone()['n'] == 0

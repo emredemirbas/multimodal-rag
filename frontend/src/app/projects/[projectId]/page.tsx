@@ -122,6 +122,12 @@ export default async function ProjectPage({ params, searchParams }: ProjectPageP
       </header>
 
       <div className="detail-grid">
+        <section className="panel panel--wide" aria-labelledby="learning-context-heading">
+          <p className="eyebrow">Learning preparation</p>
+          <h2 id="learning-context-heading">Choose material and official documentation</h2>
+          <p>Save your source selection and learning preferences, then explicitly approve any official document you want to retain.</p>
+          <Link className="button button--secondary" href={`/projects/${project.id}/learning`}>Prepare learning material</Link>
+        </section>
         <ProjectEvidenceWorkspace projectId={project.id} initialSources={sources} initialPlaylistItems={playlistItems}
           initialConversations={conversations} initialHistory={history} archived={project.status === "archived"}
           chatError={chatError} sourceError={sourceError} answerMode={answerMode} retrievalMode={retrievalMode}

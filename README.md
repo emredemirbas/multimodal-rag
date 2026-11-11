@@ -20,6 +20,8 @@ add speech transcription, selected video frames, OCR and image descriptions.
   inspect stable citations tied to a processing generation and timestamp.
 - **Transcript browsing:** read published segments chronologically without making
   a model request.
+- **Learning preparation:** save source versions and preferences, then explicitly
+  approve and retain the catalogued FastAPI documentation page with its provenance.
 - **Playlist organization:** import official YouTube metadata and associate your
   own authorized transcripts with individual lessons.
 - **Recoverable processing:** durable jobs, checkpointed indexing and atomic

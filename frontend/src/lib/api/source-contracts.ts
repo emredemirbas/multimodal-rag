@@ -18,6 +18,7 @@ export interface SourceItem {
   status: string;
   generation: number;
   active_generation: number | null;
+  processing_version?: string;
   segment_count: number;
   frame_count?: number;
   provider: string;
@@ -105,6 +106,7 @@ export function parseSourceList(value: unknown): SourceItem[] {
     return {
       id: identifier(source.id), filename: string(source.filename), status: string(source.status),
       generation: integer(source.generation), active_generation: source.active_generation === null ? null : integer(source.active_generation),
+      ...(source.processing_version === undefined ? {} : { processing_version: processingVersion(source.processing_version) }),
       segment_count: integer(source.segment_count), provider: string(source.provider), job,
       ...(source.frame_count === undefined ? {} : { frame_count: integer(source.frame_count) }),
       failure_code: source.failure_code === null ? null : string(source.failure_code),
@@ -117,6 +119,12 @@ export function parseSourceList(value: unknown): SourceItem[] {
       ...(source.video_retention === undefined ? {} : { video_retention: videoRetention }),
     };
   });
+}
+
+function processingVersion(value: unknown): string {
+  const version = string(value);
+  if (!version.trim() || version.length > 200 || version.includes("\0")) throw new Error("Invalid processing version");
+  return version;
 }
 
 export function parsePlaylistItems(value: unknown): PlaylistItem[] {

@@ -444,10 +444,43 @@ Operational routes: `/health/live`, `/health/ready`, `/health` (compatibility),
 The deprecated `POST .../sources/transcripts` compatibility endpoint is limited
 to development/test hash mode; ordinary ingestion uses queued uploads.
 
+### Prepare learning material
+
+Open **Prepare learning material** in a project. Select 1–20 sources with published
+text and explicitly choose experience, difficulty, language and available effort.
+Source versions stay fixed in the saved selection even if processing runs again.
+Prerequisites, extensions and official documentation are unchecked by default;
+these preferences do not start generation or retrieve any page.
+
+Save the selection and bookmark its page to return later. There is no context
+list yet; an unsaved form is not recovered after a reload. If delivery is uncertain,
+**Check context delivery** repeats the original selection unchanged, even if the
+source inventory refreshed. Editing the form starts a different selection.
+
+For a selection that permits official documentation, choose the English FastAPI
+First Steps catalog page, review its MIT attribution/unknown-version policy and
+check the explicit retrieval/retention consent. **Save document approval** stores
+permission only. **Capture document** separately retrieves the page. Opening the
+page, changing preferences, checking status or refreshing approvals never captures.
+
+Retained text is literal text, with server retrieval time, canonical URL, explicitly
+unknown version, stable excerpt links, hashes and full MIT notice. Use **Check
+capture delivery** for an uncertain attempt; **Retry capture** explicitly starts
+a new attempt after a fixed failure. The original approving member must capture.
+Archived projects permit reading/deleting saved copies but require restoration
+for new approval/capture. Deletion confirmation hides retained text immediately;
+if delivery is uncertain, check the deletion result before showing a copy again.
+Deleting a selected source also removes its saved context and documents.
+
+Assignment generation, document-to-draft binding and activation are still unavailable.
+No project text is stored in browser local/session storage; recovery uses the saved
+page's URL and authoritative server state.
+
 ### Official documentation API
 
 The backend supports a saved context's explicit per-document consent and separate
-capture operation. There is no learner screen or document-to-draft binding yet.
+capture operation. The learner screen uses this same boundary; document-to-draft
+binding is not enabled yet.
 Use the authenticated OpenAPI reference for the precise request schemas, and
 the [data/API contract](05-data-model-and-api.md#curriculum) for routes and replay
 behavior. Requires PostgreSQL migration 0025; in-memory mode returns 503.

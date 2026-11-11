@@ -75,10 +75,17 @@ export async function requestJson(
   path: string,
   init: Omit<RequestInit, "cache" | "credentials"> = {},
   onHeaders?: (headers: Headers) => void,
+  options: { timeoutMs?: 8_000 | 25_000; expectedStatus?: 204 } = {},
 ): Promise<unknown> {
+  // Documentation capture has a 12-second child deadline. Keep ordinary calls
+  // at eight seconds; only trusted server callers may choose the bounded window.
+  const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
+  if (timeoutMs !== 8_000 && timeoutMs !== 25_000) {
+    throw new ApiError({ status: 503, code: "invalid_request_timeout" });
+  }
   const { baseUrl, token } = configuration();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
   headers.set("Authorization", `Bearer ${token}`);
@@ -98,6 +105,9 @@ export async function requestJson(
 
     if (!response.ok) {
       throw await apiErrorFromResponse(response);
+    }
+    if (options.expectedStatus !== undefined && response.status !== options.expectedStatus) {
+      throw new ApiError({ status: 502, code: "invalid_api_response" });
     }
     onHeaders?.(response.headers);
     if (response.status === 204) {

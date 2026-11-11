@@ -436,6 +436,24 @@ or unapproved live fetches. UI must make any required document approval explicit
 
 ### 6. Learner workspace, draft review and activation
 
+Step 5b implements the existing capture boundary's learner workflow first:
+`/projects/{id}/learning` selects published source generations and explicit
+preferences; its saved-context URL is the recovery/bookmark entry point (there is
+no context-list API). The version pinned is `active_generation` with its published
+processing version, including textual video evidence; a newer unfinished job is
+not selected. Reading the saved context exposes a bounded source/preferences
+projection, without forwarding all copied tutorial text into browser state.
+Source/document preferences default off; selecting a catalog entry and explicit
+retrieve-and-retain consent save approval only. A separate button captures, while
+read/list/status refresh never fetches the official page. Retained text, unknown
+version, attribution/license and stable excerpts remain inspectable/deletable.
+Uncertain mutations retain their unchanged request key; physical retries require
+explicit intent. Context/document deletion and scope changes fence late responses.
+No local browser storage retains project text. A server-only BFF validates body
+limits, same-origin writes and scoped receipts; capture alone gets a bounded
+25-second upstream window for the backend's 12-second operation. The first UI
+does not enable generation, document binding, draft editing or activation.
+
 Add source selection and explicit learner preferences, coverage inspection,
 generation progress/cancel/retry, draft editing, validation errors and requirement
 labels with stable tutorial/document links. Provide loading/empty/error/success
@@ -489,11 +507,19 @@ Synthetic HTTP and isolated PostgreSQL/API tests cover limits, authorization,
 races and complete deletion. No live lesson capture or approval UI is claimed.
 This does not resolve the native latency/quote/core-skill/abstention gate.
 
-Next is Step 5b's learner-facing source/preferences/context selection and explicit
-per-document selection/consent, capture and retained-text inspection/deletion.
-Use the existing backend boundary and preserve command keys for uncertain
-responses; include accessible loading/empty/error/success and stale-context states.
-Document binding into drafts/external-topic runtime remains disabled until its
-separate grounding path is implemented and tested. Preserve all existing lease/
-call/checkpoint fences and the empty default registry. No downloads, paid calls,
-public generation/activation, grading/tutoring or automatic later-sprint work.
+Step 5b implements learner source/preferences/context selection and explicit
+per-document consent, approval/capture and retained-text inspection/deletion.
+The project link, bookmarked saved URL, bounded scoped BFF and uncertain-delivery/
+delete fences are in place; fixture browser checks and frontend validation are
+recorded in `validation-record.md`. No live document or model was called.
+
+Next finish the existing Step 5 trusted document-to-draft binding path: accept only
+explicitly selected captured snapshots belonging to the same saved context/project,
+retain separate requirement labels and stable excerpt provenance, and ensure
+individual document/source/context/project removal clears dependent copied draft
+material/receipts. Bind existing snapshots without fetching. Preserve draft revision,
+command replay and source-version semantics; do not silently enable true external
+flags in the model graph. Learner draft review/activation remains Step 6. Preserve
+all existing lease/call/checkpoint fences and the empty default registry. No
+model downloads, paid calls, public generation, grading/tutoring or automatic
+later-sprint work follows from the document UI.
