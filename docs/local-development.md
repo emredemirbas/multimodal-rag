@@ -470,17 +470,20 @@ a new attempt after a fixed failure. The original approving member must capture.
 Archived projects permit reading/deleting saved copies but require restoration
 for new approval/capture. Deletion confirmation hides retained text immediately;
 if delivery is uncertain, check the deletion result before showing a copy again.
-Deleting a selected source also removes its saved context and documents.
+Deleting a selected source also removes its saved context and documents. Deleting
+a document also deletes any draft that selected it in any revision, including the
+entire revision history and replay receipts; the confirmation explains this effect.
 
-Assignment generation, document-to-draft binding and activation are still unavailable.
+The draft API supports explicit document binding; draft editing in the learner
+workspace, assignment generation and activation are still unavailable.
 No project text is stored in browser local/session storage; recovery uses the saved
 page's URL and authoritative server state.
 
 ### Official documentation API
 
 The backend supports a saved context's explicit per-document consent and separate
-capture operation. The learner screen uses this same boundary; document-to-draft
-binding is not enabled yet.
+capture operation. The learner screen uses this same boundary; the separate draft
+API can bind selected captured IDs after migration 0026.
 Use the authenticated OpenAPI reference for the precise request schemas, and
 the [data/API contract](05-data-model-and-api.md#curriculum) for routes and replay
 behavior. Requires PostgreSQL migration 0025; in-memory mode returns 503.
@@ -513,6 +516,29 @@ may require a reviewed catalog/parser update. Linux is required for child resour
 limits. Text remains untrusted and is never rendered as HTML or executed. This
 does not enable external-topic generation or certify the local model's quality.
 Automated validation uses authored local fixtures and no live documentation fetch.
+
+### Draft document binding API
+
+Existing draft create/replace endpoints accept optional `documentation_ids`
+(default `[]`, up to 20 unique IDs). Use captured documents belonging to the same
+saved context, with the context's explicit documentation/prerequisite/extension
+permissions as appropriate. Requirements cite their stable excerpt IDs; metadata,
+text, timestamps or URLs supplied by a client cannot create authoritative evidence.
+Binding performs no retrieval or model call. Only cited projections are returned;
+the saved selection is included as `documentation_ids` for replacement/recovery.
+
+The selection replaces the previous revision's selection in full. Its canonical
+order makes a reordered retry identical; changing the selection changes the request
+identity. Old omitted/empty selections keep their existing replay behavior. Reading
+an old revision uses its original captured text and retained approval policy,
+while its catalog ID/URL must still be allowed by the application.
+Any historically selected document is a dependency, even if uncited or later
+dropped. Deleting it removes the complete logical draft/history/receipts and result
+pointer; unrelated drafts remain. Create a separate draft without that document
+when independent retention is needed.
+
+This API is a structural binding boundary. It does not certify semantic evidence,
+enable model generation, activate an assignment or introduce submission/grading.
 
 ## Testing
 

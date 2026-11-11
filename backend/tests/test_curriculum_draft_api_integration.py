@@ -77,7 +77,8 @@ async def test_draft_http_create_edit_and_history_bind_only_cited_evidence(conte
     context = await create_context(client, state)
     body = draft_body(context)
     first = await create_draft(client, state, context, body)
-    assert set(first) == {"id", "tenant_id", "project_id", "context_id", "revision", "created_at", "assignment"}
+    assert set(first) == {"id", "tenant_id", "project_id", "context_id", "revision", "created_at", "assignment", "documentation_ids"}
+    assert first["documentation_ids"] == []
     assert first["tenant_id"] == "tenant-a"
     assert first["project_id"] == str(state["project"].id)
     assert first["context_id"] == context["id"] and first["revision"] == 1

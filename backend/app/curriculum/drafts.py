@@ -1,9 +1,11 @@
-"""Version editable draft content against immutable, authorized tutorial contexts."""
+"""Version editable drafts against saved tutorial and explicitly selected document evidence."""
 
 import hashlib
 import json
 import logging
-from uuid import UUID, uuid4
+import re
+from urllib.parse import urlsplit
+from uuid import UUID, uuid4, uuid5
 
 from psycopg.types.json import Jsonb
 from pydantic import ValidationError
@@ -11,7 +13,9 @@ from pydantic import ValidationError
 from ..postgres import PostgresStore
 from ..sources.contracts import SourceError
 from ..store import ProjectNotFoundError
-from .contracts import AssignmentContent, AssignmentDraft
+from .contracts import AssignmentContent, AssignmentDraft, DocumentationSnapshot
+from .documentation import CatalogPolicy
+from .documentation_fetch import MAX_RAW_BYTES, MAX_TEXT_BYTES, catalog_documents
 from .persistence import (
     MAX_DRAFT_STORAGE_BYTES,
     DraftCreate,
@@ -23,6 +27,9 @@ from .validation import CurriculumValidationError, bind_assignment
 
 
 LOGGER = logging.getLogger("tutorial_workspace")
+# Binding policy grants no network capability. Retain exact reviewed URLs rather
+# than deriving allowed hosts from database policy or model-supplied metadata.
+_DOCUMENT_URLS = {item.id: item.url for item in catalog_documents()}
 
 
 class DraftRepository:
@@ -65,9 +72,13 @@ class DraftRepository:
             raise cls._invalid() from None
 
     @staticmethod
-    def _hash(operation, target, expected_revision, payload):
+    def _hash(operation, target, expected_revision, payload, documentation_ids=None):
         value = {"operation": operation, "target": str(target),
                  "expected_revision": expected_revision, "content": payload}
+        # Preserve all historical empty-selection command hashes, including callers
+        # using the current repository against a populated pre-0026 upgrade schema.
+        if documentation_ids:
+            value["documentation_ids"] = sorted(map(str, documentation_ids))
         return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
     @staticmethod
@@ -85,25 +96,104 @@ class DraftRepository:
         return ContextRepository._view(row)
 
     @classmethod
-    def _bind(cls, tenant, project, context, content):
+    def _bind(cls, tenant, project, context, content, documentation_snapshots=None):
         try:
             draft = AssignmentDraft(tenant_id=tenant, project_id=project, **content.model_dump())
-            # Approved capture is independent; draft document binding remains disabled.
-            return bind_assignment(context.request, draft, context.tutorial_snapshots, [])
+            documents = documentation_snapshots if documentation_snapshots is not None else []
+            hosts = frozenset(urlsplit(value).hostname for value in _DOCUMENT_URLS.values())
+            return bind_assignment(context.request, draft, context.tutorial_snapshots, documents,
+                                   allowed_document_hosts=hosts)
         except (CurriculumValidationError, ValidationError, ValueError, TypeError, AttributeError, RecursionError):
             raise cls._invalid() from None
+
+    @classmethod
+    def _documents(cls, connection, tenant, project, context, documentation_ids):
+        """Read only explicitly selected, captured copies under deletion fences.
+
+        The caller already holds the immutable context. Approval and snapshot
+        locks precede draft/revision/FK locks, matching direct document deletion.
+        This method performs no fetch and does not consult live page contents.
+        """
+        if not documentation_ids:
+            return []
+        if context.request.learner.allow_external_documentation is not True:
+            raise cls._invalid()
+        snapshots = []
+        for document_id in sorted(documentation_ids, key=str):
+            row = connection.execute(
+                """SELECT * FROM curriculum_document_approvals
+                   WHERE tenant_id=%s AND project_id=%s AND context_id=%s AND id=%s FOR KEY SHARE""",
+                (tenant, project, context.id, document_id),
+            ).fetchone()
+            if row is None:
+                raise ProjectNotFoundError("curriculum documentation not found")
+            saved = connection.execute(
+                """SELECT * FROM curriculum_document_snapshots
+                   WHERE tenant_id=%s AND project_id=%s AND document_id=%s FOR KEY SHARE""",
+                (tenant, project, document_id),
+            ).fetchone()
+            try:
+                if saved is None:
+                    raise ValueError()
+                policy = CatalogPolicy.model_validate(row["policy"], strict=True)
+                policy_values = policy.model_dump(exclude={"fingerprint"})
+                digest = hashlib.sha256(json.dumps(policy_values, sort_keys=True,
+                                                  separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+                if (policy.fingerprint != digest or policy.url != _DOCUMENT_URLS.get(policy.id)
+                        or any(not isinstance(value, str) or not value.strip() or "\x00" in value
+                               for value in policy_values.values())
+                        or row["consent"] != "retrieve_and_retain"
+                        or not isinstance(row["approved_by"], UUID)
+                        or row["approved_at"].tzinfo is None or row["approved_at"].utcoffset() is None
+                        or type(saved["raw_bytes"]) is not int or not 1 <= saved["raw_bytes"] <= MAX_RAW_BYTES
+                        or type(saved["raw_sha256"]) is not str
+                        or re.fullmatch(r"[a-f0-9]{64}", saved["raw_sha256"]) is None):
+                    raise ValueError()
+                snapshot = DocumentationSnapshot.model_validate_json(json.dumps(saved["snapshot"]), strict=True)
+                text = "".join(excerpt.text for excerpt in snapshot.excerpts)
+                encoded = text.encode("utf-8")
+                if (snapshot.id != document_id or (snapshot.tenant_id, snapshot.project_id) != (tenant, project)
+                        or snapshot.url != policy.url or snapshot.detected_version is not None
+                        or snapshot.retrieved_at < row["approved_at"] or not text.strip() or "\x00" in text
+                        or len(encoded) > MAX_TEXT_BYTES
+                        or hashlib.sha256(encoded).hexdigest() != snapshot.content_sha256):
+                    raise ValueError()
+                # Capture splits losslessly at 8,000 characters and owns each
+                # UUID5. Rechecking defeats altered IDs or reordered fragments.
+                for index, excerpt in enumerate(snapshot.excerpts):
+                    if (excerpt.text != text[index * 8000:(index + 1) * 8000]
+                            or excerpt.id != uuid5(document_id, f"excerpt:{index}:{excerpt.content_sha256}")):
+                        raise ValueError()
+                snapshots.append(snapshot)
+            except (ValidationError, ValueError, TypeError, AttributeError, KeyError, RecursionError, UnicodeError):
+                raise cls._invalid() from None
+        return snapshots
 
     @classmethod
     def _view(cls, connection, tenant, project, row, *, context=None):
         if context is None:
             context = cls._context(connection, tenant, project, row["context_id"])
         try:
+            documentation_ids = [UUID(str(value)) for value in row.get("documentation_ids", [])]
+            if (len(documentation_ids) > 20 or len(set(documentation_ids)) != len(documentation_ids)
+                    or documentation_ids != sorted(documentation_ids, key=str)):
+                raise ValueError()
+            documents = cls._documents(connection, tenant, project, context, documentation_ids)
+            if documentation_ids:
+                references = connection.execute(
+                    """SELECT document_id FROM curriculum_draft_documents
+                       WHERE tenant_id=%s AND project_id=%s AND context_id=%s AND draft_id=%s AND revision=%s
+                       ORDER BY document_id""",
+                    (tenant, project, row["context_id"], row["draft_id"], row["revision"]),
+                ).fetchall()
+                if [item["document_id"] for item in references] != documentation_ids:
+                    raise ValueError()
             content = AssignmentContent.model_validate_json(json.dumps(row["content"]))
-            assignment = cls._bind(tenant, project, context, content)
+            assignment = cls._bind(tenant, project, context, content, documents)
             return DraftRevisionView(
                 id=row["draft_id"], tenant_id=tenant, project_id=project,
                 context_id=row["context_id"], revision=row["revision"],
-                created_at=row["created_at"], assignment=assignment,
+                created_at=row["created_at"], assignment=assignment, documentation_ids=documentation_ids,
             )
         except (ValidationError, ValueError, TypeError, AttributeError, RecursionError):
             raise cls._invalid() from None
@@ -132,13 +222,28 @@ class DraftRepository:
 
     @classmethod
     def _append(cls, connection, tenant, project, actor, draft_id, context_id, revision,
-                content, key, operation, digest, context):
-        row = connection.execute(
-            """INSERT INTO curriculum_draft_revisions
-               (tenant_id,project_id,draft_id,revision,actor_user_id,content)
-               VALUES (%s,%s,%s,%s,%s,%s) RETURNING *""",
-            (tenant, project, draft_id, revision, actor, Jsonb(content)),
-        ).fetchone()
+                content, key, operation, digest, context, documentation_ids=None):
+        if documentation_ids:
+            row = connection.execute(
+                """INSERT INTO curriculum_draft_revisions
+                   (tenant_id,project_id,draft_id,revision,actor_user_id,content,documentation_ids)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+                (tenant, project, draft_id, revision, actor, Jsonb(content), Jsonb(list(map(str, documentation_ids)))),
+            ).fetchone()
+            for document_id in documentation_ids:
+                connection.execute(
+                    """INSERT INTO curriculum_draft_documents
+                       (tenant_id,project_id,context_id,draft_id,revision,document_id)
+                       VALUES (%s,%s,%s,%s,%s,%s)""",
+                    (tenant, project, context_id, draft_id, revision, document_id),
+                )
+        else:
+            row = connection.execute(
+                """INSERT INTO curriculum_draft_revisions
+                   (tenant_id,project_id,draft_id,revision,actor_user_id,content)
+                   VALUES (%s,%s,%s,%s,%s,%s) RETURNING *""",
+                (tenant, project, draft_id, revision, actor, Jsonb(content)),
+            ).fetchone()
         connection.execute(
             """INSERT INTO curriculum_draft_commands
                (tenant_id,project_id,idempotency_key,operation,request_sha256,draft_id,revision,actor_user_id)
@@ -154,12 +259,13 @@ class DraftRepository:
                                 "project_id": str(view.project_id), "draft_id": str(view.id),
                                 "context_id": str(view.context_id), "revision": view.revision,
                                 "objective_count": len(view.assignment.draft.objectives),
-                                "requirement_count": len(view.assignment.draft.requirements)}))
+                                "requirement_count": len(view.assignment.draft.requirements),
+                                "documentation_count": len(view.documentation_ids)}))
 
     def create(self, tenant: str, project: UUID, actor: UUID, context_id: UUID, body: DraftCreate) -> DraftRevisionView:
         body = self._body(DraftCreate, body)
         payload = self._payload(body.content)
-        digest = self._hash("create", context_id, None, payload)
+        digest = self._hash("create", context_id, None, payload, body.documentation_ids)
         with self.store._connect() as connection:
             state = ContextRepository._scope(connection, tenant, project, actor, write=True)
             replay = self._replay(connection, tenant, project, body.idempotency_key, digest)
@@ -167,7 +273,8 @@ class DraftRepository:
                 return replay
             self._active(state)
             context = self._context(connection, tenant, project, context_id)
-            self._bind(tenant, project, context, body.content)
+            documents = self._documents(connection, tenant, project, context, body.documentation_ids)
+            self._bind(tenant, project, context, body.content, documents)
             draft_id = uuid4()
             connection.execute(
                 """INSERT INTO curriculum_drafts
@@ -176,7 +283,7 @@ class DraftRepository:
                 (tenant, project, draft_id, context_id, actor),
             )
             result = self._append(connection, tenant, project, actor, draft_id, context_id, 1,
-                                  payload, body.idempotency_key, "create", digest, context)
+                                  payload, body.idempotency_key, "create", digest, context, body.documentation_ids)
         self._log("curriculum_draft_created", result)
         return result
 
@@ -184,7 +291,7 @@ class DraftRepository:
                 body: DraftReplace) -> DraftRevisionView:
         body = self._body(DraftReplace, body)
         payload = self._payload(body.content)
-        digest = self._hash("replace", draft_id, body.expected_revision, payload)
+        digest = self._hash("replace", draft_id, body.expected_revision, payload, body.documentation_ids)
         with self.store._connect() as connection:
             state = ContextRepository._scope(connection, tenant, project, actor, write=True)
             replay = self._replay(connection, tenant, project, body.idempotency_key, digest)
@@ -200,10 +307,23 @@ class DraftRepository:
             context = self._context(connection, tenant, project, row["context_id"])
             if row["current_revision"] != body.expected_revision:
                 raise SourceError("draft_revision_conflict", "Read the latest assignment draft before editing it.", 409)
-            self._bind(tenant, project, context, body.content)
+            documents = self._documents(connection, tenant, project, context, body.documentation_ids)
+            # A direct delete of any historical document can remove this whole
+            # draft even when the replacement drops that document. Lock/recheck
+            # the head only after all new document fences, before revision FKs.
+            current = connection.execute(
+                "SELECT * FROM curriculum_drafts WHERE tenant_id=%s AND project_id=%s AND id=%s FOR UPDATE",
+                (tenant, project, draft_id),
+            ).fetchone()
+            if current is None:
+                raise ProjectNotFoundError("curriculum draft not found")
+            if (current["context_id"] != context.id
+                    or current["current_revision"] != body.expected_revision):
+                raise SourceError("draft_revision_conflict", "Read the latest assignment draft before editing it.", 409)
+            self._bind(tenant, project, context, body.content, documents)
             revision = body.expected_revision + 1
             result = self._append(connection, tenant, project, actor, draft_id, row["context_id"], revision,
-                                  payload, body.idempotency_key, "replace", digest, context)
+                                  payload, body.idempotency_key, "replace", digest, context, body.documentation_ids)
             connection.execute(
                 """UPDATE curriculum_drafts SET current_revision=%s
                    WHERE tenant_id=%s AND project_id=%s AND id=%s""",

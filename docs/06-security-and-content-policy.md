@@ -101,7 +101,15 @@ stored text/excerpts stay untrusted. Failure replay never silently refetches.
 Current membership/context/policy/token/clock checks fence all adoption, and
 source/context/project deletion removes approvals, text and receipts. This child
 executes application-owned parsing only; it is not an untrusted-code sandbox.
-See the Sprint 5 plan for precise resource caps and outstanding UI/binding work.
+The 0026 draft boundary accepts only explicitly selected, captured copies in the
+same saved context/project. It rechecks retained consent/policy, application-owned
+exact URL and content/excerpt identities without fetching. Per-revision dependencies
+remove an entire logical draft/history and receipts/result pointers if any selected
+document is deleted, including older or uncited selections. Deletion confirmation
+states that effect. Scoped context -> document -> draft locks and a final head
+recheck prevent direct deletion from racing an orphan revision into storage.
+The graph's external flags and public generation remain closed. See the Sprint 5
+plan for precise resource caps and outstanding draft review/activation work.
 
 ### Malicious uploaded files
 

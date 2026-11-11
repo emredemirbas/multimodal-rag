@@ -39,12 +39,14 @@ validation counts, CI run identities and handoff instructions belong in `docs/`.
 - Owner confirmed 2026-10-29: tutorial-only by default, with prerequisite/extension
   material available only after explicit learner opt-in. Keep requirement labels
   and tutorial/document evidence separate. The current internal path still rejects
-  true flags until approved documentation capture is implemented.
+  true flags until trusted generation integration and its quality gates are met;
+  independent capture and manual draft binding do not open the graph.
 - Owner confirmed 2026-10-29: learner selection/approval for each official document
   before retrieval; external-topic opt-in does not authorize automatic fetching.
   Keep the application allowlist as an additional restriction. The current binding
-  interface accepts only already-authorized trusted documentation snapshots;
-  no fetcher or approved-domain default is enabled yet.
+  interface accepts only already-authorized trusted documentation snapshots.
+  Step 5a provides separate explicit capture; Step 5c loads selected stored copies
+  without fetching and derives the allowed URL from the application catalog.
 - Draft updates use optimistic version checks. Activation produces a pinned
   version; corrections can start a new editable draft, preserving the old version.
   This satisfies ADR 0010's eventual post-submission immutability without adding
@@ -189,9 +191,9 @@ contain IDs/revisions/counts, not content or request keys.
 
 Only client-supplied draft content is persisted here. Structural binding is not
 semantic support, feasibility, quality approval, activation or deterministic code
-assessment. No generation/docs provider is called. External/document requirements
-cannot be bound without trusted snapshots that step 5 has not delivered; saved
-permission flags alone do not authorize document fetching or enable this capability.
+assessment. No generation/docs provider is called. Step 5c now binds explicitly
+selected captured documents to these APIs; saved permission flags alone still do
+not authorize document fetching or create authoritative evidence.
 
 Database/API tests cover migration upgrade/repeat, foreign scopes, concurrent
 replay, archive, retained generations, managed provenance, resource overflow,
@@ -312,8 +314,8 @@ generation processor in this slice. **4b (implemented internally):** application
 prompts, objective/coverage batching and finite LangGraph transitions/checkpoint
 continuation. Native supported-draft quality still needs review. The owner has
 confirmed optional external topics with per-document approval; Step 5a now supplies
-the independent capture API. External-topic generation and document binding remain
-disabled.
+the independent capture API and Step 5c provides manual draft binding.
+External-topic generation remains disabled.
 
 `LocalCurriculumProvider` implements the application-owned JSON interface;
 `LeasedCurriculumCalls` connects it to the existing scoped call ledger. Migration
@@ -404,6 +406,26 @@ exactly once. See the [official workflow guide](https://docs.langchain.com/oss/p
 and [graph replay guidance](https://github.com/langchain-ai/docs/blob/main/src/oss/langgraph/graph-api.mdx).
 
 ### 5. Official documentation snapshots
+
+Step 5c binds only explicitly selected captured document IDs into existing
+create/replace draft APIs. The selection defaults to empty, is unique/bounded to
+20 and belongs to the same immutable context/tenant/project. Each revision retains
+its own selection; content can cite only those snapshots' stable excerpts.
+Binding performs no fetch or inference and does not enable the model graph's
+external flags. Historical empty-document command hashes and tutorial-only
+generated publication remain compatible. The response exposes the saved document
+selection for replacement/recovery; no client-supplied provenance is accepted.
+
+Selected documents are dependencies even if a revision does not cite every one.
+Deleting any document selected by any historical revision removes that entire
+logical draft, all revisions/command receipts and its result pointer; a newer
+revision dropping the document does not leave older copied material behind.
+Unrelated drafts remain. Direct approval/snapshot deletion and source/context/
+project cascades must enforce the same rule. The learner's deletion confirmation
+must explain the draft-history effect. Scope/locking, atomic failure, immutable
+replay, old-schema upgrades and historical dependency cleanup need integration
+coverage, now recorded in `validation-record.md`. Draft discovery/review/edit UI
+is the next bounded part of Step 6; activation remains a separate planned slice.
 
 Step 5a is a bounded backend-only slice: an authenticated project member explicitly
 selects and approves the fixed English FastAPI First Steps catalog entry for one
@@ -504,7 +526,8 @@ Step 5a now implements the scoped approval/capture/read/list/delete backend in
 migration 0025: exact policy-bound consent, fixed MIT FastAPI catalog, bounded
 supervised HTTP capture, immutable provenance and explicit command recovery.
 Synthetic HTTP and isolated PostgreSQL/API tests cover limits, authorization,
-races and complete deletion. No live lesson capture or approval UI is claimed.
+races and complete deletion. No live lesson capture is claimed; Step 5b supplies
+the learner approval UI independently.
 This does not resolve the native latency/quote/core-skill/abstention gate.
 
 Step 5b implements learner source/preferences/context selection and explicit
@@ -513,13 +536,17 @@ The project link, bookmarked saved URL, bounded scoped BFF and uncertain-deliver
 delete fences are in place; fixture browser checks and frontend validation are
 recorded in `validation-record.md`. No live document or model was called.
 
-Next finish the existing Step 5 trusted document-to-draft binding path: accept only
-explicitly selected captured snapshots belonging to the same saved context/project,
-retain separate requirement labels and stable excerpt provenance, and ensure
-individual document/source/context/project removal clears dependent copied draft
-material/receipts. Bind existing snapshots without fetching. Preserve draft revision,
-command replay and source-version semantics; do not silently enable true external
-flags in the model graph. Learner draft review/activation remains Step 6. Preserve
-all existing lease/call/checkpoint fences and the empty default registry. No
-model downloads, paid calls, public generation, grading/tutoring or automatic
-later-sprint work follows from the document UI.
+Step 5c implements explicit captured-document selection in draft create/replace,
+immutable revision dependency records and removal of whole draft histories when
+any selected document disappears. Provenance/policy validation, scope, replay,
+legacy upgrade and concurrent deletion checks passed with synthetic fixtures.
+There is no retrieval or inference at this boundary.
+
+Next implement the bounded draft discovery/read/edit UI portion of Step 6 within
+Sprint 5. Inspect existing discovery support first and add only the scoped query
+needed to reach retained drafts. Reuse versioned APIs, explicit document selection,
+stable evidence, revision conflicts, uncertain-command replay and deletion fences.
+Activation follows as a separate planned slice; generated content is not needed
+to populate this UI. Preserve all existing lease/call/checkpoint fences and the
+empty default registry. No model downloads, paid calls, public generation,
+grading/tutoring or automatic later-sprint work follows.

@@ -34,14 +34,15 @@ The owner confirmed both product choices on 2026-10-29:
 
 These choices are now confirmed. Step 5a implements approved capture APIs; Step 5b
 adds source/preferences selection and per-page approval/capture/read/delete UI.
-An application allowlist remains mandatory. Document binding into assignment
-drafts and dependent runtime behavior remain unimplemented.
+An application allowlist remains mandatory. Step 5c binds explicitly selected
+captured documents into draft APIs; dependent model runtime and draft UI remain.
 The schema/binding, saved-context and editable-draft slices require explicit
 policy/preferences and fetch nothing. Persisting a permission does not enable
 generation or document access; dependent behavior waits for approved capture.
-Draft content can bind only to tutorial evidence already captured in its context;
+Draft content binds only to tutorial evidence already captured in its context and
+explicitly selected, same-context captured documentation;
 trusted external-document capture is now a separate 0025 boundary, and its learner
-UI is available without enabling document binding in this persistence slice.
+UI is available; 0026 adds the separate scoped draft-document dependency boundary.
 The internal LangGraph component accepts only contexts whose three external-topic/
 document permissions are explicitly false; any true flag fails before inference.
 This internal path remains separate from approved document capture and does not
@@ -318,7 +319,7 @@ the owner's later RAG portfolio v1 choice above now governs the first release.
 |---|---|---|
 | Assignment difficulty | User-selected, with estimated 2–4 hour default | Proposed |
 | External-topic scope | Tutorial-only default; learner may opt into prerequisites/extensions | Confirmed, 2026-10-29 |
-| External documentation | Allowlisted official documents, each selected/approved by the learner before retrieval | Confirmed, 2026-10-29; Step 5a backend/5b learner UI implemented, draft binding remains |
+| External documentation | Allowlisted official documents, each selected/approved by the learner before retrieval | Confirmed, 2026-10-29; Step 5a backend/5b learner UI/5c draft API binding implemented; model runtime remains closed |
 | Documentation versioning | Record URL, retrieval date, detected version, and content hash | Implemented for Step 5a: immutable text/raw hashes and stable excerpts; unversioned FastAPI page explicitly unknown |
 | Requirement labels | Covered, prerequisite, extension | Proposed |
 | Assignment publication | Editable draft requiring user approval | Confirmed for MVP, 2026-09-21 |

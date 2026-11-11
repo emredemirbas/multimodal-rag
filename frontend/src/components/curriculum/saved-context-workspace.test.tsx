@@ -130,6 +130,7 @@ describe("saved documentation deletion fences", () => {
     vi.stubGlobal("fetch", fetch); render(show([documentFixture()]));
     act(() => { fireEvent.click(screen.getByRole("button", { name: "Refresh saved approvals" })); fireEvent.click(screen.getByRole("button", { name: "Capture document" })); });
     fireEvent.click(screen.getByRole("button", { name: "Delete document" }));
+    expect(screen.getByRole("group", { name: "Confirm document deletion" })).toHaveTextContent("including its revision history");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Confirm document deletion" })); });
     await act(async () => { pending.resolve(json(documentFixture(true))); listing.resolve(json([documentFixture(true)])); });
     expect(screen.queryByRole("article")).toBeNull(); expect(screen.queryByRole("link", { name: "Excerpt 1" })).toBeNull();

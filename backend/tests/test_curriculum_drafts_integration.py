@@ -364,8 +364,8 @@ def test_capture_fence_waits_for_direct_dependency_delete_without_lock_inversion
     original = repository._bind
     connection_name = "draft-delete-fence-" + uuid4().hex
 
-    def pause(tenant, scoped_project, saved, content):
-        result = original(tenant, scoped_project, saved, content)
+    def pause(tenant, scoped_project, saved, content, documentation_snapshots=None):
+        result = original(tenant, scoped_project, saved, content, documentation_snapshots)
         captured.set()
         assert release.wait(10)
         return result
@@ -407,8 +407,8 @@ def test_membership_revocation_waits_for_commit_then_denies_repository_replay(in
     original = repository._bind
     connection_name = "draft-membership-fence-" + uuid4().hex
 
-    def pause(tenant, scoped_project, saved, content):
-        result = original(tenant, scoped_project, saved, content)
+    def pause(tenant, scoped_project, saved, content, documentation_snapshots=None):
+        result = original(tenant, scoped_project, saved, content, documentation_snapshots)
         captured.set()
         assert release.wait(10)
         return result

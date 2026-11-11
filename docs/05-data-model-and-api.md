@@ -210,7 +210,8 @@ send only preferences/source pins/labels to the browser, without copied tutorial
 text. An eight-second ordinary timeout stays unchanged; capture alone has a
 25-second window. The UI fences late reads after deletion/scope changes and keeps
 unchanged uncertain command bodies/keys. No browser storage keeps project text.
-Draft document binding and dependent external-topic generation are not enabled.
+The draft API can bind explicitly selected captured document IDs (0026 below);
+the learner draft editor and dependent external-topic generation are not enabled.
 The graph still rejects external flags before inference; public generation and
 activation remain unavailable. See the Sprint 5 implementation/validation records.
 
@@ -250,11 +251,13 @@ project deletion cascades the entire revision and command history.
 
 Draft endpoints under the same curriculum prefix:
 
-- `POST /contexts/{context_id}/drafts`: create from `{idempotency_key, content}`.
+- `POST /contexts/{context_id}/drafts`: create from
+  `{idempotency_key, content, documentation_ids?: []}`.
 - `GET /drafts/{draft_id}` and `GET /drafts/{draft_id}/revisions/{revision}`:
   latest or exact saved revision.
 - `PUT /drafts/{draft_id}`: append a full replacement using
-  `{idempotency_key, expected_revision, content}`; stale expected revision is 409.
+  `{idempotency_key, expected_revision, content, documentation_ids?: []}`;
+  stale expected revision is 409. The document selection is replaced in full too.
 - `DELETE /drafts/{draft_id}`: delete all draft revisions and receipts, returning 204.
 
 Content excludes client-provided scope/evidence metadata. Each write rebinds it
@@ -264,6 +267,39 @@ Replay returns the original accepted revision after later edits or archive; the
 response contains no changing latest-head metadata. New writes to archived
 projects fail, while reads/replay/delete remain available. See the Sprint 5 plan
 for strict JSON/resource bounds and validation limits.
+
+Migration `0026_curriculum_draft_documents.sql` adds a bounded `documentation_ids`
+selection to each immutable draft revision and scoped `curriculum_draft_documents`
+dependencies. The optional request selection defaults to empty, accepts at most
+20 unique IDs and is canonically sorted; revision responses expose the saved list.
+Changing selection changes the command fingerprint. Reordering has set semantics;
+omitted/empty selections retain the exact historical hash and replay behavior.
+Populated pre-0026 schemas remain upgradeable with old tutorial-only receipts.
+
+Selected approvals and captured snapshots must belong to that draft's saved
+context/tenant/project. Pending or corrupt copies cannot bind. The repository
+rechecks consent, retained policy fingerprint and exact application-owned catalog
+URL, aware approval/retrieval times, full content/excerpt hashes, stable capture
+UUIDs and raw byte/hash bounds. Retained policy is authoritative; later catalog
+metadata changes that preserve the approved catalog ID/URL do not rewrite old
+captured evidence or force a live fetch. Removing/changing that ID/URL fails closed.
+Binding is
+entirely local and returns only cited excerpts with original provenance. Tutorial,
+prerequisite and extension labels and explicit learner permissions still apply.
+The full MIT policy/attribution stays in the selected document approval, readable
+by snapshot/document ID. Structural binding is not semantic quality approval.
+
+All selected documents are revision dependencies, including uncited selections.
+Deleting an approval or its snapshot deletes every logical draft that selected it
+in any historical revision, with all revisions/command receipts and generated
+result pointers. A later revision dropping that document does not exempt the old
+history. Unrelated drafts remain. Source/context/project cascades remove the same
+derived material. Composite FKs enforce matching context and scope, not merely
+matching document IDs. Context and selected-document locks precede draft locks;
+replacement rechecks the locked head after those locks so direct deletion winning
+a race returns a missing draft rather than an orphan revision. The learner delete
+confirmation explains this history effect. No network/model call or processor
+enablement is part of this boundary.
 
 Generated objectives/coverage extraction and model workflows were outside the
 0020/0021 persistence boundary; the internal workflow is described below. Public

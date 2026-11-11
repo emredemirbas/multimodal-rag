@@ -50,6 +50,14 @@ class ContextView(Boundary):
 class DraftCreate(Boundary):
     idempotency_key: str = Field(strict=True, min_length=8, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")
     content: AssignmentContent
+    documentation_ids: list[UUID] = Field(default_factory=list, max_length=20)
+
+    @field_validator("documentation_ids")
+    @classmethod
+    def unique_documentation(cls, value):
+        if len(set(value)) != len(value):
+            raise ValueError("Duplicate selected documentation")
+        return sorted(value, key=str)
 
     @field_validator("content", mode="before")
     @classmethod
@@ -73,3 +81,4 @@ class DraftRevisionView(Boundary):
     revision: int = Field(ge=1)
     created_at: datetime
     assignment: BoundAssignment
+    documentation_ids: list[UUID] = Field(default_factory=list, max_length=20)

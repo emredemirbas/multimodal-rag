@@ -1015,16 +1015,89 @@ The README adds only the actual product capability. Internal delivery/test/CI
 records stay in docs. Assignment generation, document-backed drafts and activation
 remain unavailable; no native-model or independent real-video quality gate closes.
 
+## Step 5c — captured documents in immutable draft revisions (2026-11-11)
+
+Clean `main` at `5a4db8c4a7d240a6e9ec1328a5c7c63437793aed` matched origin before
+implementation and was fetched/checked again before commit. Its
+[CI run 43066621806](https://github.com/emredemirbas/multimodal-rag/actions/runs/43066621806)
+completed successfully in all four jobs: frontend, backend-tests,
+backend-integration and images. The preceding failed run had the stale 0025
+migration inventory described above. The notification image alone does not
+identify its run; the exact current baseline is verified separately. This slice
+needs its own hosted result.
+
+Implemented the already planned trusted draft-document boundary:
+
+- Existing draft create/replace accepts optional `documentation_ids` (empty by
+  default, at most 20 unique IDs, canonical order). Each revision returns its saved
+  selection. Nonempty selections participate in command identity; historical
+  omitted/empty hashes and populated pre-0026 upgrades remain compatible.
+- Only explicitly selected captured documents from the same immutable saved
+  context/tenant/project can bind. Retained consent/policy fingerprint, current
+  application-owned catalog ID/URL permission, aware approval/retrieval times,
+  full text/excerpt hashes, lossless chunk recipe, stable UUID5s and raw hash/size
+  bounds are checked. Retained metadata survives catalog metadata changes that
+  preserve its allowed ID/URL. Binding never fetches or invokes inference.
+- Requirements retain tutorial/prerequisite/extension labels and explicit learner
+  permissions. Only cited excerpt projections are returned with original stable
+  provenance; the full approval's license/attribution remains readable separately.
+  A URL or client-supplied provenance cannot create evidence. Structural binding
+  does not certify semantic support or assignment quality.
+- Migration 0026 records every selected document as an immutable revision
+  dependency, including unused selections. Approval or snapshot deletion removes
+  the complete logical draft, all revisions/command receipts and its generated
+  result pointer if any revision selected it. Dropping that document in a newer
+  revision does not retain old copied material; unrelated drafts remain.
+  Source/context/project cascades preserve complete deletion. Learner document and
+  context deletion confirmations explain the draft/history effect.
+- Context and sorted document fences precede draft locks. A final locked head
+  check handles deletion of an older document while replacement drops it, without
+  an orphan FK write or deadlock. Independent review found this race before final
+  validation; both winning transaction orders are now tested.
+
+Final validation:
+
+- **1,024 backend non-integration tests passed.**
+- **58 new isolated PostgreSQL/API tests passed**, covering canonical selection,
+  authoritative excerpt provenance, policy/hash tampering, missing/pending/foreign
+  documents, scoped authorization, archive/replay/history, unchanged empty hashes,
+  atomic failure, logs without content, direct approval/snapshot deletion, historical
+  and unused dependencies, and real synthetic publication/result cleanup.
+  Concurrent create/read/replace/delete and both drop-last-document race orders pass.
+- **182 existing PostgreSQL regressions passed** across migrations, visual-checkpoint
+  upgrade, contexts/drafts, document APIs, delivery/execution and workflow. The first
+  run passed 179 and failed three concurrency fixtures whose monkeypatched helper
+  still accepted four arguments after `_bind` gained an optional fifth argument.
+  Updating only those helper signatures and rerunning all three passed; assertions
+  and lock/deletion expectations were preserved. All explicit migration inventories
+  now include 0026, avoiding the earlier CI inventory omission.
+- **19 saved-context frontend tests and lint passed**, including the existing
+  document-delete race test's assertion that confirmation mentions revision history.
+  No frontend runtime/type dependency or product README change was required.
+- Independent code/document review found no remaining blocker. `git diff --check`
+  and changed Markdown link checks passed before commit.
+
+Validation used synthetic in-memory document text, a separate temporary Python
+environment and one cached tmpfs-backed PostgreSQL container with its own random
+loopback port. Remaining test schemas were zero; the owned container was removed.
+Owner container IDs/states, image IDs and volume names matched the before/after
+inventory exactly. No local image build/download, model, paid API, live lesson
+fetch, owner `.env`/credentials/service change or real-data deletion was involved.
+
+Limits: this is the draft API boundary, not the learner draft editor or an enabled
+generator. No native model quality, independent real-video quality, activation,
+submission or grading gate closes. The graph still rejects all true external flags.
+
 ## Continuation
 
-Continue existing Step 5 by binding explicitly selected captured documents into
-the draft boundary under the same context/tenant/project. Preserve tutorial versus
-external requirement labels, stable excerpt hashes/IDs and source processing pins.
-Do not fetch as part of binding. Test individual document removal and complete
-source/context/project deletion of dependent copied drafts/receipts before exposing
-that path. Then continue planned learner draft review/activation in Step 6.
+Continue planned Step 6 **within Sprint 5** with bounded draft discovery/read/edit
+UI. First inspect discovery support and add only the scoped query needed to reach
+saved drafts. Reuse existing versioned APIs and explicit document selection;
+preserve evidence labels, revision conflicts, uncertain-command replay and deletion
+fences. Activation remains a separate planned slice. Do not generate content just
+to populate the UI, or treat this as starting Sprint 6 submissions/grading.
 Keep the empty default registry/public generation closed: native latency, literal
 quotes, core-skill/semantic abstention and full generated-draft review remain open.
 No new prompt retry loop, relaxed checks, paid calls/downloads, grading/tutoring or
 Alpha 2 closure follows. Verify this new commit's exact hosted CI; running is not
-success and the prior commit's failed run is not a passing baseline.
+success and a prior passing commit does not prove this slice's hosted result.
