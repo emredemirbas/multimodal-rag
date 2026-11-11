@@ -21,6 +21,8 @@ from .persistence import (
     DraftCreate,
     DraftReplace,
     DraftRevisionView,
+    DraftList,
+    DraftSummary,
 )
 from .repository import ContextRepository
 from .validation import CurriculumValidationError, bind_assignment
@@ -349,6 +351,27 @@ class DraftRepository:
             if row is None:
                 raise ProjectNotFoundError("curriculum draft revision not found")
             return self._view(connection, tenant, project, row)
+
+    def list_for_context(self, tenant: str, project: UUID, actor: UUID, context_id: UUID,
+                         *, after: UUID | None = None, limit: int = 20) -> DraftList:
+        if type(limit) is not int or not 1 <= limit <= 50 or (after is not None and not isinstance(after, UUID)):
+            raise self._invalid()
+        with self.store._connect() as connection:
+            ContextRepository._scope(connection, tenant, project, actor, write=False)
+            self._context(connection, tenant, project, context_id)
+            rows = connection.execute(
+                """SELECT d.id,d.tenant_id,d.project_id,d.context_id,r.revision,
+                          r.content->>'title' AS title,r.created_at
+                   FROM curriculum_drafts d JOIN curriculum_draft_revisions r
+                     ON r.tenant_id=d.tenant_id AND r.project_id=d.project_id
+                     AND r.draft_id=d.id AND r.revision=d.current_revision
+                   WHERE d.tenant_id=%s AND d.project_id=%s AND d.context_id=%s
+                     AND (%s::uuid IS NULL OR d.id>%s::uuid)
+                   ORDER BY d.id LIMIT %s""",
+                (tenant, project, context_id, after, after, limit + 1),
+            ).fetchall()
+            return DraftList(items=[DraftSummary(**row) for row in rows[:limit]],
+                             next_after=rows[limit - 1]["id"] if len(rows) > limit else None)
 
     def delete(self, tenant: str, project: UUID, actor: UUID, draft_id: UUID) -> None:
         with self.store._connect() as connection:

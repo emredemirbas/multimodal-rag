@@ -211,7 +211,8 @@ text. An eight-second ordinary timeout stays unchanged; capture alone has a
 25-second window. The UI fences late reads after deletion/scope changes and keeps
 unchanged uncertain command bodies/keys. No browser storage keeps project text.
 The draft API can bind explicitly selected captured document IDs (0026 below);
-the learner draft editor and dependent external-topic generation are not enabled.
+the learner can inspect and edit existing draft wording in Step 6a.
+Dependent external-topic generation remains disabled.
 The graph still rejects external flags before inference; public generation and
 activation remain unavailable. See the Sprint 5 implementation/validation records.
 
@@ -253,6 +254,13 @@ Draft endpoints under the same curriculum prefix:
 
 - `POST /contexts/{context_id}/drafts`: create from
   `{idempotency_key, content, documentation_ids?: []}`.
+- `GET /contexts/{context_id}/drafts?after={uuid}&limit={1..50}`: current-head
+  summaries (`id`, scope/context, revision, title, revision time), default 20.
+  UUID ascending keyset order is independent of edits; `next_after` is the last
+  returned ID when another page exists. A deleted cursor still advances normally.
+  Missing contexts are 404, including source/context deletion; archived reads remain
+  available. Membership, project and context fences apply. The existing 0026 scoped
+  context identity index supports the query; no schema change is needed.
 - `GET /drafts/{draft_id}` and `GET /drafts/{draft_id}/revisions/{revision}`:
   latest or exact saved revision.
 - `PUT /drafts/{draft_id}`: append a full replacement using
@@ -267,6 +275,19 @@ Replay returns the original accepted revision after later edits or archive; the
 response contains no changing latest-head metadata. New writes to archived
 projects fail, while reads/replay/delete remain available. See the Sprint 5 plan
 for strict JSON/resource bounds and validation limits.
+
+The learner follows saved context -> saved draft list -> bookmarked draft review.
+The editor replaces narrative text and effort while preserving structural links,
+requirement labels, source pins and explicit document selection. It shows tutorial
+and separate documentation evidence, criterion relationships and progressively
+revealed hints. Exact revision history is read only. Conflicts keep unsaved text
+until explicit discard/reload; uncertain saves freeze the original body/key for
+replay and confirm a live head before adoption. Deletion hides text immediately;
+unconfirmed deletion can be checked/repeated. Focus/refresh rechecks dependencies.
+Server-only routes reauthorize project scope, validate strict bounded original JSON,
+compare tutorial projections with the saved context and document projections with
+selected captured copies, and verify replacement receipts against submitted content.
+No generation, activation or browser text persistence is enabled.
 
 Migration `0026_curriculum_draft_documents.sql` adds a bounded `documentation_ids`
 selection to each immutable draft revision and scoped `curriculum_draft_documents`

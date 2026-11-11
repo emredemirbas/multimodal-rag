@@ -1,6 +1,6 @@
 # Delivery status and finish lines
 
-Date: 2026-11-11. Current authorized work: **Sprint 5**, in staged implementation.
+Date: 2026-11-12. Current authorized work: **Sprint 5**, in staged implementation.
 The owner explicitly requested this new scope after the RAG milestone.
 **RAG portfolio v1 is complete** within its selected local transcript RAG scope.
 Accepted application baseline: `3c2bff5`; local acceptance and all four hosted CI
@@ -8,7 +8,21 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-Latest bounded continuation: Step 5c binds explicitly selected captured documents
+Latest bounded continuation: Step 6a adds saved-context draft discovery and
+bookmarked draft review/edit pages. Context-scoped UUID keyset pagination exposes
+only current summary metadata. Existing narrative fields and effort can be edited
+as a new revision; structural IDs, requirement labels, evidence links and document
+selection remain fixed. Progressive hints, original tutorial timestamps/source
+versions and separately labelled document excerpts are inspectable. Scoped BFF
+checks compare evidence with the immutable context and retained documents. Conflict,
+uncertain same-key replay, history, archive and deletion states are covered.
+Generation and activation remain unavailable; an empty list never invents content.
+
+The preceding `4a0b26ae7e75f26e6846b673a5c5263c7d9ac207` baseline's
+[CI run 43084368286](https://github.com/emredemirbas/multimodal-rag/actions/runs/43084368286)
+was verified as completed/success. This Step 6a commit requires its own result.
+
+Step 5c binds explicitly selected captured documents
 to existing draft create/replace APIs under the same context/tenant/project.
 Each immutable revision retains its selection and stable excerpt provenance;
 omitted/empty selections preserve legacy command hashes. Migration 0026 records
@@ -26,7 +40,7 @@ Approval and capture are separate explicit actions; retained text, unknown versi
 MIT attribution and excerpt provenance are inspectable. Server-only BFF scope/body/
 hash checks and browser request/deletion fences preserve uncertain delivery and
 prevent late responses restoring removed material. No live document was fetched
-in validation. Draft discovery/review/edit UI remains the next bounded work.
+in validation. Draft discovery/review/edit UI is now implemented in Step 6a; activation remains.
 
 The preceding capture commit `c237b1e`'s
 [CI run 43063655617](https://github.com/emredemirbas/multimodal-rag/actions/runs/43063655617)
@@ -72,7 +86,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication, pinned local JSON/call attribution, document capture and revision binding (0020–0026), and internal bounded LangGraph implemented. Small native review failed on latency/semantic abstention; generation stays closed. Per-document approval/capture learner UI exists; draft discovery/review/edit UI and activation remain |
+| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication, pinned local JSON/call attribution, document capture and revision binding (0020–0026), and internal bounded LangGraph implemented. Small native review failed on latency/semantic abstention; generation stays closed. Per-document approval/capture learner UI exists; draft review/edit UI implemented in Step 6a; activation remains |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -139,7 +153,8 @@ schema/prompt v2 strengthens decoding but does not establish quality; see
 `sprint5/native-output-review.md`. Official-document approval/capture APIs and their
 learner UI now exist independently. Explicit captured-document selection is bound
 and retained in draft revisions, with complete dependent-history deletion.
-Draft discovery/review/edit UI and activation remain. Submissions and grading remain later.
+Saved-draft discovery, evidence review and narrative editing are implemented in Step 6a.
+Explicit activation remains; submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
 fake source for multi-source assignments. New persistent curriculum work needs
@@ -150,12 +165,11 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: verify Git/CI and read the current Sprint 5 plan/validation record.
-Continue planned Step 6 **within Sprint 5** with bounded draft discovery/read/edit
-UI, using the existing versioned APIs and explicit saved document selection.
-First inspect the existing retrieval/list boundary; add only the scoped discovery
-needed to reach saved drafts. Preserve revision conflicts, uncertain command replay,
-deletion fences, requirement labels and stable evidence. Activation remains a
-separate planned slice; do not create generated drafts to populate the UI.
+Continue the existing Step 6 with explicit activation of a reviewed draft revision
+(Step 6b): first record the bounded version/API/UI contract, then implement pinned
+assignment versions, idempotent activation, optimistic revision checks and scoped
+dependency deletion. Reuse the existing provenance and command patterns. Do not
+introduce submissions, grading, deadlines or a new generation/prompt iteration.
 Keep the default graph registry/
 public generation closed: the native latency/quote/core-skill/abstention and full
 generated-draft review gates remain open. Do not start another prompt retry loop,
@@ -278,5 +292,4 @@ subsequently made the active repository public (verified 2026-11-11); the archiv
 remains private. Publication did not close Sprint 5's native latency/semantic-
 abstention gate. The current continuation above supersedes the earlier prompt
 follow-up: bounded model iterations stopped after v4; per-document capture now
-has its independent backend, learner UI and draft-binding boundaries; draft review
-is next and generation remains closed.
+has its independent backend, learner UI and draft-binding boundaries; draft review/edit is implemented and activation is next; generation remains closed.

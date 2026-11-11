@@ -62,7 +62,7 @@ from .chat.contracts import Conversation, ConversationCreate, ConversationList, 
 from .chat.repository import ChatRepository
 from .chat.delivery import deliver
 from .curriculum.http import CurriculumHttpMiddleware
-from .curriculum.persistence import ContextCreate, ContextView, DraftCreate, DraftReplace, DraftRevisionView
+from .curriculum.persistence import ContextCreate, ContextView, DraftCreate, DraftReplace, DraftRevisionView, DraftList
 from .curriculum.repository import ContextRepository
 from .curriculum.drafts import DraftRepository
 from .curriculum.documentation import CatalogPolicy, DocumentApprove, DocumentCapture, DocumentRepository, DocumentView
@@ -617,6 +617,12 @@ def create_app(
     @app.post("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/drafts", response_model=DraftRevisionView, status_code=201)
     def create_curriculum_draft(project_id: UUID, context_id: UUID, body: DraftCreate, request: Request, principal: CurrentPrincipal):
         return curriculum_drafts(request).create(principal.tenant_id, project_id, actor(request, principal), context_id, body)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/drafts", response_model=DraftList)
+    def list_curriculum_drafts(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal,
+                               after: UUID | None = Query(default=None), limit: int = Query(default=20, ge=1, le=50)):
+        return curriculum_drafts(request).list_for_context(
+            principal.tenant_id, project_id, actor(request, principal), context_id, after=after, limit=limit)
 
     @app.get("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}", response_model=DraftRevisionView)
     def read_curriculum_draft(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal):

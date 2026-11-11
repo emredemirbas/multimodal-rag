@@ -35,7 +35,8 @@ The owner confirmed both product choices on 2026-10-29:
 These choices are now confirmed. Step 5a implements approved capture APIs; Step 5b
 adds source/preferences selection and per-page approval/capture/read/delete UI.
 An application allowlist remains mandatory. Step 5c binds explicitly selected
-captured documents into draft APIs; dependent model runtime and draft UI remain.
+captured documents into draft APIs; Step 6a adds discovery/review and narrative
+editing of saved drafts. Activation and dependent model runtime remain closed.
 The schema/binding, saved-context and editable-draft slices require explicit
 policy/preferences and fetch nothing. Persisting a permission does not enable
 generation or document access; dependent behavior waits for approved capture.

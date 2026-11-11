@@ -1088,14 +1088,106 @@ Limits: this is the draft API boundary, not the learner draft editor or an enabl
 generator. No native model quality, independent real-video quality, activation,
 submission or grading gate closes. The graph still rejects all true external flags.
 
+## Step 6a — discover, review and edit saved drafts (2026-11-12)
+
+Started with clean `main` at `4a0b26ae7e75f26e6846b673a5c5263c7d9ac207`, matching
+origin after fetch. Its exact
+[CI run 43084368286](https://github.com/emredemirbas/multimodal-rag/actions/runs/43084368286)
+was verified completed/success. The jobs-detail endpoint returned transient 502s;
+the overall run result was read directly, not inferred from an older commit.
+This slice still requires its own actual hosted result.
+
+Delivered the bounded review/edit portion of the existing learner workspace plan:
+
+- `GET /contexts/{id}/drafts` exposes only current head summaries under membership,
+  tenant/project and saved-context fences. Ascending UUID keyset pagination defaults
+  to 20, caps at 50, and remains usable after edits or deletion of the cursor draft.
+  Unknown/removed contexts are 404, distinct from an empty list. Archive permits
+  reads. The existing 0026 context identity index supports discovery; no migration
+  or source-owned job repurposing was needed.
+- Saved selection -> draft list -> bookmarked review page shows objectives,
+  separately labelled tutorial/prerequisite/extension requirements, criterion and
+  rubric relationships, constraints/deliverables and progressive hints. Original
+  tutorial text/timestamps/source versions and separate document excerpts remain
+  inspectable; document URL/retrieval time/unknown version and approval/license
+  navigation are retained. Source text renders literally, including synthetic HTML.
+- Ordinary forms edit existing narrative fields and effort, retaining structural
+  IDs, labels, links and explicit selected documents. A save appends a revision.
+  Conflict preserves local text and requires explicit discard/reload. Uncertain
+  delivery freezes the original body/key for replay, checks the live head before
+  adoption and does not silently overwrite a newer revision. History is read only
+  and does not erase unsaved edits. Returning from history restores the correct
+  current-revision status; this was corrected during browser review.
+- Server-only BFF readers reauthorize authoritative project scope and compare
+  tutorial projections to the immutable saved context, including text, and selected
+  document projections to verified captured copies, including uncited selections.
+  Replacement receipts must match content/selection/expected revision. Draft writes
+  alone get the existing 272,384-byte wire bound; ordinary context/document commands
+  retain 16,384. Original JSON duplicate/depth/UTF-8 checks and same-origin/private
+  responses apply. Logs omit content/keys; browser bundles contain no bearer token.
+- Refresh/focus rechecks the current head/dependencies. Removal clears copied
+  text. Draft deletion immediately hides text, fences late requests and supports
+  explicit status reconciliation/repeat after uncertain delivery. Archive blocks
+  new edits while read/delete remain. Loading, empty, error and success states,
+  labels, native field bounds and keyboard-accessible controls use existing styles.
+
+Final validation:
+
+- **399 frontend tests passed** in 54 files (43 new contract/BFF/page/component
+  cases). Scope/pin/text tampering, criterion/reference completeness, retained
+  documentation projections, bounded original JSON, canonical command receipts,
+  empty discovery, pagination, save/replay/conflict/history/archive, dependency loss,
+  late save after deletion and StrictMode scope changes are covered. The 14 editor/
+  list cases were rerun after changing the discovery deletion assertion to focus
+  refresh; all passed.
+- **Lint, typecheck, lint compatibility and production build passed.** No new
+  dependency, package/model download or local Docker image build was needed. The first build in the restricted
+  execution sandbox could not parse a TypeScript child-process response; the normal
+  local build succeeded without source/configuration workarounds. An initial
+  non-integration run stalled under those restrictions and was interrupted; it is
+  not counted as a passing run.
+- **1,024 backend non-integration tests passed** in the separate Python 3.12 test
+  environment using cached dependencies. The first environment setup chose Python
+  3.14 and could not resolve cached wheels offline; explicitly selecting installed
+  Python 3.12 resolved this without downloading packages or changing owner tooling.
+- **10 new discovery PostgreSQL/API cases passed**, plus **33 existing draft and
+  document API cases**. The first 43-case run passed 42; its membership test assumed
+  HTTP would retain a directly revoked development membership. The existing local
+  identity adapter bootstraps membership per request. The test now asserts revoked
+  membership at the repository boundary, matching prior authorization tests; all
+  ten discovery cases passed on rerun. Product authorization was not relaxed.
+- Browser walkthrough used the **production frontend and real FastAPI/PostgreSQL**
+  with a separate authored synthetic source, explicit synthetic document approval/
+  capture and an API-authored draft. List -> review -> change title -> save revision
+  2 -> inspect revision 1 read only -> reload revision 2 worked. Tutorial/external
+  labels and literal `<script>` text remained separate/inert. Deleting only this
+  test document through the test API removed both draft revisions and discovery
+  entry; refreshing the open editor cleared its text. This is software workflow
+  evidence, not model generation, live-document compatibility or real-video quality.
+  A screenshot is retained locally outside Git.
+- `git diff --check` and changed Markdown links passed before commit. README adds
+  only the delivered product capability and its generation/activation limitation.
+
+Both owned loopback servers were stopped. The separate browser schema was dropped;
+remaining test schemas were zero, and the cached tmpfs PostgreSQL container was
+removed. Owner container IDs/states, image IDs and volume names matched before and
+after exactly. Existing services stayed stopped; `.env`, credentials, real data and
+Docker settings were unchanged. No paid service, live document fetch, model call or
+automatic model download occurred. The temporary test environment/files were removed.
+
+Limits: no public draft creation/generation or activation control is added. Empty
+contexts stay empty until a draft is authored through the existing API. This editor
+changes wording/effort, not structural item creation/removal or evidence rewiring.
+Native latency/semantic abstention and independent real-video review remain open.
+
 ## Continuation
 
-Continue planned Step 6 **within Sprint 5** with bounded draft discovery/read/edit
-UI. First inspect discovery support and add only the scoped query needed to reach
-saved drafts. Reuse existing versioned APIs and explicit document selection;
-preserve evidence labels, revision conflicts, uncertain-command replay and deletion
-fences. Activation remains a separate planned slice. Do not generate content just
-to populate the UI, or treat this as starting Sprint 6 submissions/grading.
+Continue Step 6 **within Sprint 5** with explicit activation of a reviewed draft
+revision (Step 6b). Record its bounded assignment-version/API/UI contract first,
+then preserve idempotent activation, optimistic revision checks, immutable source/
+document provenance and complete dependency deletion. Reuse existing command and
+scope patterns; do not introduce submissions, grading, deadlines or another prompt
+iteration. Activation remains separate from the closed generation registry.
 Keep the empty default registry/public generation closed: native latency, literal
 quotes, core-skill/semantic abstention and full generated-draft review remain open.
 No new prompt retry loop, relaxed checks, paid calls/downloads, grading/tutoring or

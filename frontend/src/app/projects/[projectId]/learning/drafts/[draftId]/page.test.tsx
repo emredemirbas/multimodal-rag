@@ -1,0 +1,25 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import DraftPage from "./page";
+import DraftsPage from "../../contexts/[contextId]/drafts/page";
+import { getProject } from "@/lib/api/client";
+import { getDraft, listDrafts } from "@/lib/api/drafts";
+import { ApiError } from "@/lib/api/errors";
+import { draftFixture, draftId } from "@/components/curriculum/draft-fixtures";
+import { context, projectId, documentId } from "@/components/curriculum/test-fixtures";
+vi.mock("@/lib/api/client", () => ({ getProject: vi.fn() }));
+vi.mock("@/lib/api/drafts", () => ({ getDraft: vi.fn(), listDrafts: vi.fn() }));
+vi.mock("next/navigation", () => ({ notFound: () => { throw new Error('not-found'); } }));
+vi.mock("@/components/curriculum/draft-editor", () => ({ DraftEditor: ({archived}:{archived:boolean}) => <p>Draft editor {archived ? 'archived' : 'active'}</p> }));
+vi.mock("@/components/curriculum/draft-list", () => ({ DraftListWorkspace: () => <p>Scoped saved drafts</p> }));
+const project = { id:projectId, tenant_id:context.tenant_id,title:'Synthetic',status:'active' as const,created_at:context.created_at,updated_at:context.created_at,archived_at:null };
+const detail = (id=draftId) => DraftPage({params:Promise.resolve({projectId,draftId:id})});
+const list = (id=context.id) => DraftsPage({params:Promise.resolve({projectId,contextId:id})});
+beforeEach(() => { vi.resetAllMocks(); vi.mocked(getProject).mockResolvedValue(project); vi.mocked(getDraft).mockResolvedValue({result:draftFixture(),context}); vi.mocked(listDrafts).mockResolvedValue({items:[],next_after:null}); });
+describe('scoped saved draft pages', () => {
+  it('rejects malformed targets before authenticated reads', async () => { await expect(detail('../private')).rejects.toThrow('not-found'); await expect(list('../private')).rejects.toThrow('not-found'); expect(getProject).not.toHaveBeenCalled(); });
+  it('uses authoritative tenant scope and links back to the exact saved context', async () => { render(await detail()); expect(getDraft).toHaveBeenCalledWith({tenant_id:context.tenant_id,project_id:projectId},draftId); expect(screen.getByRole('link',{name:'Saved selection'})).toHaveAttribute('href',`/projects/${projectId}/learning/contexts/${context.id}`); expect(screen.getByText('Draft editor active')).toBeVisible(); });
+  it('loads an empty saved selection list without inventing drafts', async () => { render(await list()); expect(listDrafts).toHaveBeenCalledWith({tenant_id:context.tenant_id,project_id:projectId},context.id); expect(screen.getByText('Scoped saved drafts')).toBeVisible(); });
+  it('refuses foreign projects and keeps private failures out of rendered errors', async () => { vi.mocked(getProject).mockResolvedValue({...project,id:documentId}); render(await detail()); expect(getDraft).not.toHaveBeenCalled(); expect(screen.getByRole('alert')).toBeVisible(); });
+  it('treats dependency loss as missing and other failures as recoverable without partial text', async () => { vi.mocked(getDraft).mockRejectedValue(new ApiError({status:404})); await expect(detail()).rejects.toThrow('not-found'); vi.mocked(getDraft).mockRejectedValue(new ApiError({status:503,message:'PRIVATE DRAFT TEXT'})); render(await detail()); expect(screen.queryByText(/PRIVATE DRAFT TEXT/)).toBeNull(); expect(screen.queryByText('Draft editor active')).toBeNull(); expect(screen.getByRole('link',{name:'Retry'})).toHaveAttribute('href',`/projects/${projectId}/learning/drafts/${draftId}`); });
+});

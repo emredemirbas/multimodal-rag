@@ -108,8 +108,15 @@ remove an entire logical draft/history and receipts/result pointers if any selec
 document is deleted, including older or uncited selections. Deletion confirmation
 states that effect. Scoped context -> document -> draft locks and a final head
 recheck prevent direct deletion from racing an orphan revision into storage.
-The graph's external flags and public generation remain closed. See the Sprint 5
-plan for precise resource caps and outstanding draft review/activation work.
+The draft review BFF reauthorizes scope, checks copied tutorial text against the
+immutable context and selected document excerpts against retained captures, and
+matches replacement receipts to the submitted content and revision. Strict bounded
+original JSON and same-origin writes apply; browser text stays literal and is not
+persisted in local/session storage. Conflict handling never silently overwrites a
+newer revision; uncertain saves keep their original command and body. Explicit
+deletion hides text pending reconciliation and fences late responses. The graph's
+external flags and public generation remain closed. See the Sprint 5 plan for
+precise resource caps and outstanding activation work.
 
 ### Malicious uploaded files
 

@@ -474,8 +474,17 @@ Deleting a selected source also removes its saved context and documents. Deletin
 a document also deletes any draft that selected it in any revision, including the
 entire revision history and replay receipts; the confirmation explains this effect.
 
-The draft API supports explicit document binding; draft editing in the learner
-workspace, assignment generation and activation are still unavailable.
+Follow **Review saved assignment drafts** from a saved selection to see its current
+drafts. Open one to inspect labelled requirements, original evidence, criteria and
+progressive hints; edit wording and effort to save a new revision. Structural links
+and selected documents stay fixed in this editor. History is read only. A conflict
+requires explicit discard/reload, while an uncertain save repeats its unchanged
+body/key. Refresh/focus rechecks dependencies; unconfirmed deletion hides text until
+checked. Bookmark the draft URL to recover the authoritative saved version.
+
+Assignment generation and activation remain unavailable. Lists can be empty: this
+UI does not manufacture sample/generated drafts. Existing drafts authored through
+the draft API are reviewable; no public creation/generation control is added.
 No project text is stored in browser local/session storage; recovery uses the saved
 page's URL and authoritative server state.
 

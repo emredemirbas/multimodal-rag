@@ -82,3 +82,18 @@ class DraftRevisionView(Boundary):
     created_at: datetime
     assignment: BoundAssignment
     documentation_ids: list[UUID] = Field(default_factory=list, max_length=20)
+
+
+class DraftSummary(Boundary):
+    id: UUID
+    tenant_id: str
+    project_id: UUID
+    context_id: UUID
+    revision: int = Field(ge=1)
+    title: str = Field(min_length=1, max_length=200, pattern=r"\S")
+    created_at: datetime
+
+
+class DraftList(Boundary):
+    items: list[DraftSummary] = Field(max_length=50)
+    next_after: UUID | None

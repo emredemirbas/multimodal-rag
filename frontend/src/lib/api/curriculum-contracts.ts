@@ -188,3 +188,8 @@ export async function verifyDocumentIntegrity(item: DocumentView): Promise<Docum
   }
   return item;
 }
+
+// Shared strict value checks for the adjacent draft boundary.
+export { fields as learningFields, text as learningText, identifier as learningId,
+  integer as learningInteger, date as learningDate, list as learningList,
+  unique as learningUnique, scope as learningScope, digest as learningDigest };

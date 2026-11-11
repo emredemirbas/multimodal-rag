@@ -15,6 +15,9 @@ import {
 
 const PRIVATE_HEADERS = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" };
 const MESSAGES: Record<string, string> = {
+  curriculum_draft_not_found: "This assignment draft is no longer available. A selected source, context or document may have been deleted.",
+  invalid_curriculum_draft: "Check the draft fields, effort and evidence references. Nothing was saved.",
+  draft_revision_conflict: "A newer draft revision exists. Review the latest revision before editing again.",
   curriculum_context_not_found: "The saved learning context is no longer available. It may have been deleted with a selected source.",
   documentation_not_found: "This document approval is no longer available.",
   project_not_found: "The project is no longer available.",
@@ -40,7 +43,7 @@ const MESSAGES: Record<string, string> = {
   upstream_unavailable: "The local API could not be reached. Keep the unchanged command key when retrying uncertain delivery.",
   invalid_api_response: "The local API returned a response that could not be verified. Refresh before retrying an uncertain write.",
 };
-export function curriculumProxyError(error: unknown, missingCode?: "curriculum_context_not_found" | "documentation_not_found" | "project_not_found"): NextResponse {
+export function curriculumProxyError(error: unknown, missingCode?: "curriculum_draft_not_found" | "curriculum_context_not_found" | "documentation_not_found" | "project_not_found"): NextResponse {
   const status = error instanceof ApiError && error.status >= 400 && error.status <= 599 ? error.status : 502;
   const code = error instanceof ApiError && Object.hasOwn(MESSAGES, error.code) ? error.code : status === 404 && missingCode ? missingCode : "request_failed";
   const message = MESSAGES[code] ?? (status === 401 || status === 403 ? "Your session could not be verified. Refresh and try again." : "The learning request could not be completed. Refresh and try again.");
@@ -87,7 +90,7 @@ export function parseUniqueJson(input: string): unknown {
   JSON.parse(input);
   const result = value(0); whitespace(); if (offset !== input.length) throw new TypeError("Invalid JSON suffix"); return result;
 }
-export async function curriculumRequestBody(request: Request): Promise<unknown> {
+export async function curriculumRequestBody(request: Request, limit: 16_384 | 272_384 = 16_384): Promise<unknown> {
   requireSameOrigin(request);
   if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? "")) throw new ApiError({ status: 415 });
   const reader = request.body?.getReader(); if (!reader) throw new ApiError({ status: 422, code: "invalid_curriculum_command" });
@@ -95,7 +98,7 @@ export async function curriculumRequestBody(request: Request): Promise<unknown> 
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; void reader.cancel(); }, 8_000);
   try {
-    while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.byteLength; if (bytes > 16_384) throw new ApiError({ status: 413, code: "invalid_curriculum_command" }); content += decoder.decode(chunk.value, { stream: true }); }
+    while (true) { const chunk = await reader.read(); if (chunk.done) break; bytes += chunk.value.byteLength; if (bytes > limit) throw new ApiError({ status: 413, code: "invalid_curriculum_command" }); content += decoder.decode(chunk.value, { stream: true }); }
     if (timedOut) throw new ApiError({ status: 408, code: "invalid_curriculum_command" });
     content += decoder.decode(); return parseUniqueJson(content);
   } catch (error) { if (error instanceof ApiError) throw error; throw new ApiError({ status: 422, code: "invalid_curriculum_command" }); }

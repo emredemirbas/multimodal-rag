@@ -458,6 +458,24 @@ or unapproved live fetches. UI must make any required document approval explicit
 
 ### 6. Learner workspace, draft review and activation
 
+Step 6a implements the bounded saved-draft review/edit slice (2026-11-12). Add context-scoped draft
+summaries with UUID keyset pagination (20 per page, maximum 50), using the existing
+0026 scoped context index; no schema change or generator is needed. A saved context
+links to its drafts, and each draft has a bookmarked review URL. Show labelled
+requirements, objectives, criteria, rubric, progressively disclosed hints and
+pinned tutorial/document evidence. Edit existing narrative fields and effort in
+ordinary forms, preserving structural IDs, labels, links and document selection.
+This first editor does not add/remove structural items or silently rewire evidence.
+New valid revisions use optimistic concurrency and unchanged-key replay for uncertain
+delivery. A newer head requires explicit discard/reload; never automatically merge
+or overwrite it. Refresh/focus rechecks dependencies; confirmed removal clears
+copied text, while explicit draft deletion hides it pending confirmation. BFF
+validation checks scope, saved-context pins, evidence links and immutable receipts;
+same-origin writes retain the existing draft wire limit. No browser persistence,
+automatic fetch/model call, generation control or activation is added. Validate
+discovery isolation/paging, edit/replay/conflict/deletion races and accessible states
+with synthetic DB/API/UI fixtures, then continue activation separately.
+
 Step 5b implements the existing capture boundary's learner workflow first:
 `/projects/{id}/learning` selects published source generations and explicit
 preferences; its saved-context URL is the recovery/bookmark entry point (there is
@@ -542,11 +560,17 @@ any selected document disappears. Provenance/policy validation, scope, replay,
 legacy upgrade and concurrent deletion checks passed with synthetic fixtures.
 There is no retrieval or inference at this boundary.
 
-Next implement the bounded draft discovery/read/edit UI portion of Step 6 within
-Sprint 5. Inspect existing discovery support first and add only the scoped query
-needed to reach retained drafts. Reuse versioned APIs, explicit document selection,
-stable evidence, revision conflicts, uncertain-command replay and deletion fences.
-Activation follows as a separate planned slice; generated content is not needed
-to populate this UI. Preserve all existing lease/call/checkpoint fences and the
-empty default registry. No model downloads, paid calls, public generation,
-grading/tutoring or automatic later-sprint work follows.
+Step 6a now implements context-scoped summary discovery, bookmarked draft review,
+read-only history, progressive hints and narrative/effort editing with unchanged
+structural IDs, labels, evidence links and selected documents. The scoped BFF
+compares retained tutorial text with its immutable context and document projections
+with their selected captured copies. Conflict, uncertain same-key replay, archive,
+focus refresh and deletion fences are tested; no content is generated for this UI.
+
+Next implement explicit activation of the reviewed revision as Step 6b within
+Sprint 5. Record the bounded assignment-version/API/UI contract first, preserving
+idempotence, optimistic revision checks, pinned evidence and complete dependency
+deletion. Keep activation separate from generation and from later submissions.
+Preserve existing lease/call/checkpoint fences and the empty default registry.
+No model downloads, paid calls, public generation, grading/tutoring or automatic
+later-sprint work follows.

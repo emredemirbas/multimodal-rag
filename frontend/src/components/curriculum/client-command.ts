@@ -21,6 +21,9 @@ export async function learningRequest(path: string, method = "GET", body?: unkno
 export function learningError(error: unknown): string {
   if (!(error instanceof LearningRequestError)) return "Delivery could not be confirmed. Check delivery before starting a different request.";
   const messages: Record<string, string> = {
+    invalid_curriculum_draft: "The draft was not accepted. Check its fields, effort and evidence references.",
+    draft_revision_conflict: "A newer draft revision exists. Keep your edits or explicitly discard them to load the latest revision.",
+    curriculum_draft_not_found: "The assignment draft is no longer available. A selected source, context or document may have been removed.",
     project_archived: "This project is archived. Restore it before saving or capturing new material.",
     curriculum_source_unavailable: "A selected source changed or has no published text. Refresh the page and choose its current published version.",
     curriculum_evidence_too_large: "The selected text exceeds the saved context limit. Choose fewer sources.",
