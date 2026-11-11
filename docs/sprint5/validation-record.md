@@ -735,14 +735,62 @@ IDs were identical before/after; `.env`, credentials, application data, Docker
 configuration and model installations were unchanged. Only explicit local
 inference and inventory reached the pre-existing model service.
 
+## Compact extraction profile v3 — 2026-11-11
+
+Starting checkout was clean at `cc1da53`; its exact
+[CI run 42501823081](https://github.com/emredemirbas/multimodal-rag/actions/runs/42501823081)
+completed successfully in all four jobs. GitHub now reports the active repository
+as public; the original email-bearing archive stays separate/private.
+
+Implemented a bounded extraction change, with no provider/queue/lease limits or
+database schema changes. Model messages contain explicit language plus local
+slice ID/origin/lossless text; authoritative source/segment/generation/version/
+offsets remain in context and batch maps. Exact context and recipe hashes prevent
+different evidence or old v2 progress from adopting the compact request. The
+shorter v3 prompt distinguishes demonstrated technical actions from absence/
+announcements/limitations. Quote membership remains literal; quote validation is
+now at most 80 UTF-8 bytes with an additional native 80-character ceiling.
+
+Checks:
+
+- **857 backend non-integration cases passed**, including 14 new resource/binding/
+  replay regressions. Coverage includes all four origin labels, literal malicious
+  text, correct segment/Unicode span when two sources repeat a quote, 80/81-byte
+  ASCII/Turkish/emoji boundaries, identical model requests with different context
+  identities, v2-recipe rejection, existing quote/status/coverage checks, transport
+  timeout/late output and bounded recovery. An initial sandboxed HTTP-test run
+  could not open sockets; the complete run with local-socket permission passed.
+- **17 isolated PostgreSQL/HTTP/real Celery process cases passed, 19.22s**:
+  exact v3 call receipts, detached checkpoints, one result, bounded revision,
+  retry, scope denial, lease/cancellation/archive/revocation/deletion races and
+  SIGKILL/duplicate-delivery recovery. Their model replies are authored fixtures.
+- The predeclared **three actual local extraction calls** used unchanged installed
+  `qwen3:4b`/digest/Ollama pins and 42/60-second limits. English was structurally
+  accepted at 37.599s but missed the expected GET/list skills; Turkish timed out
+  at 42.042s; the negative example at 29.197s still produced a supported meta-goal.
+  **The native review failed.** Full output/usage and manual interpretation are in
+  `native-extraction-v3-results.json` and `native-output-review.md`. No selection,
+  generation or retry was attempted; zero drafts is not successful abstention.
+
+The test environment used separate schemas, Redis prefixes/queues, owned worker
+processes and cached disposable PostgreSQL/Redis/model containers on an internal
+network. Temporary loopback relays exposed only those endpoints to the test
+processes. Source/context/run cleanup and artifact deletion were exercised; schema
+and Redis counts ended at zero. Test containers/network/relays were removed; owner
+container IDs/running state, image IDs and volume names were identical before/after.
+Existing owner services stayed stopped. No new image was built/downloaded, weights
+were read-only, and no `.env`, credential, owner data or Docker setting changed.
+README is unchanged; no frontend test/build or default enablement was needed.
+
 ## Continuation
 
-Next is a bounded fix of step 4b's demonstrated local latency and semantic
-false-positive objectives. Start with `native-output-review.md` and exact outputs;
-declare changed profile/prompt budgets and fixed positive/insufficient expectations
-before inference. Preserve source IDs, quotes, original actor, call/checkpoint/
-lease fences and complete deletion. Do not retry until favorable output, weaken
-validation, add sample-specific keyword filters or enable public generation.
+Next is a compact extraction wire contract, reducing repeated model-emitted
+identities/coverage bookkeeping while preserving explicit insufficiency and
+application-owned exact source/quote binding. The v3 native failures above remain
+open. Declare the mapping/version boundary and one fixed native pass before any
+inference; preserve the original actor, call/checkpoint/lease fences and deletion.
+Do not iterate prompt wording until favorable output, weaken validation, add
+sample-specific keyword filters, raise deadlines or enable public generation.
 
 Product choices are now confirmed: tutorial-only default, optional external topics,
 explicit selection/approval for each official document. Implement approval/capture

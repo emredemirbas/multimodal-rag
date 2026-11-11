@@ -60,7 +60,7 @@ def test_accepted_graph_progress_is_reused_and_final_revision_is_bound_once(grap
         assert step(graph_setup) == current
     calls = state_rows(ing, run, "curriculum_model_calls")
     assert len(calls) == 3 and all(row["status"] == "succeeded" and row["billed_usd"] == 0 for row in calls)
-    assert {row["prompt_version"] for row in calls} == {"tutorial-objectives-v2", "tutorial-goal-selection-v1", "tutorial-assignment-v1"}
+    assert {row["prompt_version"] for row in calls} == {"tutorial-objectives-v3", "tutorial-goal-selection-v1", "tutorial-assignment-v1"}
     assert all(row["input_sha256"] is not None and row["output_tokens"] == 35 for row in calls)
     _, _, principal, project, actor = ing
     draft = DraftRepository(repo.store).read(principal.tenant_id, project.id, actor, current.result_draft_id, 1)

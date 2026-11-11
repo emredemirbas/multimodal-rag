@@ -1,0 +1,313 @@
+{
+  "date": "2026-11-11",
+  "scope": "extraction-only; authored MIT text without a recording",
+  "identity": {
+    "provider": "ollama-local",
+    "model": "qwen3:4b",
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "engine": "0.40.3"
+  },
+  "options": {
+    "temperature": 0,
+    "num_ctx": 16384,
+    "num_predict": 2048,
+    "num_thread": 4
+  },
+  "call_seconds": 60,
+  "inference_seconds": 42,
+  "recipe_sha256": "a744f11e53dc3e5b226bbe5618dc82fb7b14901ab5c72a87c7e5d0db1629bf81",
+  "declared_max_physical_calls": 3,
+  "cases": [
+    {
+      "case": "typed-list-en.vtt",
+      "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 45,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-v3",
+      "schema_version": "tutorial-objectives-json-v3",
+      "old_input_bytes": 2770,
+      "input_bytes": 1914,
+      "input_sha256": "599ae8745719e99d58d76e72953997820ce4cb2796641a6c82b6aa5ddc3a8576",
+      "status": "pending",
+      "failure_code": null,
+      "checkpoint_seq": 2,
+      "calls": [
+        {
+          "elapsed_ms": 37599,
+          "done": true,
+          "done_reason": "stop",
+          "prompt_eval_count": 428,
+          "eval_count": 261,
+          "total_duration": 37597758008,
+          "load_duration": 7429513767,
+          "prompt_eval_duration": 8977054000,
+          "eval_duration": 21185279000,
+          "has_thinking": false,
+          "has_tool_calls": false,
+          "output": "{\n  \"coverage\": [\n    {\n      \"goal_ids\": [\n        \"g00001\"\n      ],\n      \"reason\": null,\n      \"slice_id\": \"s00000\",\n      \"status\": \"supported\"\n    },\n    {\n      \"goal_ids\": [\n        \"g00002\"\n      ],\n      \"reason\": null,\n      \"slice_id\": \"s00001\",\n      \"status\": \"supported\"\n    }\n  ],\n  \"goals\": [\n    {\n      \"anchors\": [\n        {\n          \"quote\": \"Create app = FastAPI().\",\n          \"slice_id\": \"s00000\"\n        }\n      ],\n      \"description\": \"Create FastAPI application instance\",\n      \"id\": \"g00001\"\n    },\n    {\n      \"anchors\": [\n        {\n          \"quote\": \"Keep the example in one Python file with from fastapi import FastAPI.\",\n          \"slice_id\": \"s00001\"\n        }\n      ],\n      \"description\": \"Keep example in single Python file using FastAPI import\",\n      \"id\": \"g00002\"\n    }\n  ]\n}"
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized",
+        "curriculum.extracted"
+      ],
+      "accepted_extractions": [
+        {
+          "index": 0,
+          "extraction": {
+            "goals": [
+              {
+                "id": "g00001",
+                "anchors": [
+                  {
+                    "quote": "Create app = FastAPI().",
+                    "slice_id": "s00000"
+                  }
+                ],
+                "description": "Create FastAPI application instance"
+              },
+              {
+                "id": "g00002",
+                "anchors": [
+                  {
+                    "quote": "Keep the example in one Python file with from fastapi import FastAPI.",
+                    "slice_id": "s00001"
+                  }
+                ],
+                "description": "Keep example in single Python file using FastAPI import"
+              }
+            ],
+            "coverage": [
+              {
+                "reason": null,
+                "status": "supported",
+                "goal_ids": [
+                  "g00001"
+                ],
+                "slice_id": "s00000"
+              },
+              {
+                "reason": null,
+                "status": "supported",
+                "goal_ids": [
+                  "g00002"
+                ],
+                "slice_id": "s00001"
+              }
+            ]
+          },
+          "input_sha256": "599ae8745719e99d58d76e72953997820ce4cb2796641a6c82b6aa5ddc3a8576"
+        }
+      ],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v3",
+          "schema_version": "tutorial-objectives-json-v3",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "599ae8745719e99d58d76e72953997820ce4cb2796641a6c82b6aa5ddc3a8576",
+          "status": "succeeded",
+          "input_tokens": 428,
+          "output_tokens": 261,
+          "output_characters": 817,
+          "duration_ms": 37599,
+          "billed_usd": "0.000000",
+          "failure_code": null
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "literal_quotes": true,
+        "observed_supported_content": [
+          "Create the FastAPI app instance",
+          "Keep import/example in one file"
+        ],
+        "missing_expected_objectives": [
+          "Define a FastAPI GET route",
+          "Return a string list using response_model=list[str]"
+        ],
+        "verdict": "Grounded but misses expected core skills; not supported-draft quality approval."
+      }
+    },
+    {
+      "case": "health-route-tr.vtt",
+      "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "tr",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-v3",
+      "schema_version": "tutorial-objectives-json-v3",
+      "old_input_bytes": 2726,
+      "input_bytes": 1870,
+      "input_sha256": "2f19a4b440570625b5b82143c6b83501e78ea7dd41e9fbd11a2cfd24501f262d",
+      "status": "retrying",
+      "failure_code": "provider_timeout",
+      "checkpoint_seq": 1,
+      "calls": [
+        {
+          "elapsed_ms": 42042,
+          "failure_code": "provider_timeout",
+          "retryable": true
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "accepted_extractions": [],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v3",
+          "schema_version": "tutorial-objectives-json-v3",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "2f19a4b440570625b5b82143c6b83501e78ea7dd41e9fbd11a2cfd24501f262d",
+          "status": "failed",
+          "input_tokens": null,
+          "output_tokens": null,
+          "output_characters": null,
+          "duration_ms": 42042,
+          "billed_usd": "0.000000",
+          "failure_code": "provider_timeout"
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Provider timeout; no accepted extraction or language/goal-quality review possible."
+      }
+    },
+    {
+      "case": "insufficient-en.vtt",
+      "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 1,
+      "prompt_version": "tutorial-objectives-v3",
+      "schema_version": "tutorial-objectives-json-v3",
+      "old_input_bytes": 1970,
+      "input_bytes": 1318,
+      "input_sha256": "284be076bd6bf2b4b4bbf268a875a1d8e1454919d92c09b2d937ce059f347ec2",
+      "status": "pending",
+      "failure_code": null,
+      "checkpoint_seq": 2,
+      "calls": [
+        {
+          "elapsed_ms": 29197,
+          "done": true,
+          "done_reason": "stop",
+          "prompt_eval_count": 298,
+          "eval_count": 173,
+          "total_duration": 29195531741,
+          "load_duration": 6060136261,
+          "prompt_eval_duration": 7485968000,
+          "eval_duration": 15643590000,
+          "has_thinking": false,
+          "has_tool_calls": false,
+          "output": "{\n  \"coverage\": [\n    {\n      \"goal_ids\": [\n        \"s00000\"\n      ],\n      \"reason\": null,\n      \"slice_id\": \"s00000\",\n      \"status\": \"supported\"\n    }\n  ],\n  \"goals\": [\n    {\n      \"anchors\": [\n        {\n          \"quote\": \"This is an authored title card for a recording that is not included. There is no\",\n          \"slice_id\": \"s00000\"\n        }\n      ],\n      \"description\": \"This is an authored title card for a recording that is not included. There is no programming demonstration, code, explanation or instruction in this text. The placeholder ends here\",\n      \"id\": \"s00000\"\n    }\n  ]\n}"
+        }
+      ],
+      "accepted_stages": [
+        "curriculum.initialized",
+        "curriculum.extracted"
+      ],
+      "accepted_extractions": [
+        {
+          "index": 0,
+          "extraction": {
+            "goals": [
+              {
+                "id": "s00000",
+                "anchors": [
+                  {
+                    "quote": "This is an authored title card for a recording that is not included. There is no",
+                    "slice_id": "s00000"
+                  }
+                ],
+                "description": "This is an authored title card for a recording that is not included. There is no programming demonstration, code, explanation or instruction in this text. The placeholder ends here"
+              }
+            ],
+            "coverage": [
+              {
+                "reason": null,
+                "status": "supported",
+                "goal_ids": [
+                  "s00000"
+                ],
+                "slice_id": "s00000"
+              }
+            ]
+          },
+          "input_sha256": "284be076bd6bf2b4b4bbf268a875a1d8e1454919d92c09b2d937ce059f347ec2"
+        }
+      ],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-v3",
+          "schema_version": "tutorial-objectives-json-v3",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "284be076bd6bf2b4b4bbf268a875a1d8e1454919d92c09b2d937ce059f347ec2",
+          "status": "succeeded",
+          "input_tokens": 298,
+          "output_tokens": 173,
+          "output_characters": 597,
+          "duration_ms": 29197,
+          "billed_usd": "0.000000",
+          "failure_code": null
+        }
+      ],
+      "draft_count": 0,
+      "remaining_contexts": 0,
+      "remaining_runs": 0,
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "literal_quotes": true,
+        "verdict": "False-positive supported coverage for an absence-of-instruction statement, not semantic abstention."
+      }
+    }
+  ],
+  "total_physical_calls": 3,
+  "remaining_artifact_objects": 0,
+  "test_schema_removed": true,
+  "overall_review_passed": false,
+  "selection_or_generation_called": false,
+  "default_registry_or_public_generation_enabled": false,
+  "model_weights_mounted_read_only": true,
+  "new_image_or_model_downloads": false
+}

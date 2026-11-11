@@ -233,7 +233,8 @@ redis
 minio
 ```
 
-The sandbox runner belongs in a separate hardened environment. Model APIs are external initially.
+The sandbox runner belongs in a separate hardened environment. Optional model
+APIs run in local isolated services under the selected free local scope (ADR 0015).
 
 Production should build immutable images for the frontend, API, workers, and scheduler. Prefer managed PostgreSQL, Redis, and object storage. A managed container platform is sufficient for beta; Kubernetes is not required.
 

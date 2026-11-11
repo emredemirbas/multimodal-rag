@@ -103,3 +103,80 @@ fixed positive/insufficient set. Do not raise deadlines blindly, weaken quote
 checks, add a title-card keyword filter or repeat runs until a favorable result.
 Per-document approval is now an owner-confirmed product decision; its capture/UI
 implementation remains later in the existing Sprint 5 plan.
+
+## Predeclared compact extraction pass — 2026-11-11
+
+This follow-up tests extraction only, using the same two positive and one
+insufficient MIT samples and the expectations above. It does not rerun full draft
+generation or replace the failed end-to-end review. At most **three physical
+inference requests**, one per sample, with no retry after timeout, invalid output
+or semantic failure. Stop after extraction and inspect its actual goals, quotes
+and complete coverage; do not select or generate an exercise in this pass.
+
+Candidate `tutorial-objectives-v3` / `tutorial-objectives-json-v3` sends only the
+explicit output language and each slice's local ID, origin label and lossless
+text. Source/segment IDs, generations, processing versions and character offsets
+stay authoritative application state, still pinned by the full context digest.
+The shorter prompt defines goals as demonstrated technical actions and explicitly
+separates absence/announcements/limitations from goals. Quote length is tightened
+from 240 to 80 UTF-8 bytes in application validation, with a matching native
+character ceiling; the stricter byte check remains necessary for multibyte text.
+Two goals/two anchors, every-slice coverage and exact quote membership remain.
+
+Keep the same installed `qwen3:4b`, freshly verified full digest and engine pin,
+non-thinking JSON decoding, `keep_alive=0`, four inference threads, 16,384 context,
+2,048 output tokens, 42-second inference/60-second call deadline and all existing
+worker/lease/checkpoint limits. Do not download/build an image or weights, extend
+deadlines, add a semantic judge or filter sample-specific words. The owner's
+services are stopped; preserve them and mount existing weights read-only into a
+disposable model container using the cached image. Use isolated PostgreSQL,
+ordinary source/context processing and leased-call/checkpoint acceptance. Record
+native timings, returned JSON, usage and strict/semantic failures separately.
+
+Passing extraction here requires actual supported technical goals and valid
+original quotes for both positive cases within the unchanged deadline, and empty
+goals/explicit insufficient coverage for the negative case. A shorter malformed
+answer or rejection of an overlong false-positive quote is not correct semantic
+abstention. No result opens public generation or certifies supported draft quality,
+solvability, overall Sprint 5 or the independent real-video review.
+
+## Compact extraction results — 2026-11-11
+
+Fresh inventory verified the same installed digest
+`359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7`
+and Ollama 0.40.3. Exactly three physical calls were made, with no retries,
+selection or generation. Actual JSON, request/recipe hashes, nullable usage,
+receipts and cleanup are in
+[native-extraction-v3-results.json](native-extraction-v3-results.json).
+
+| Case | Actual extraction result | Manual review against the fixed expectations |
+|---|---|---|
+| English typed list | Structurally accepted in 37,599ms; 428 input / 261 output tokens | Literal quotes support creating the app instance and keeping the import/example in one file. Both expected core skills—GET route and typed string-list response—are omitted. This is not the expected assignment coverage |
+| Turkish health route | `provider_timeout` at 42,042ms; no accepted extraction; token usage unknown | Supported-goal and Turkish-output quality remain unreviewed |
+| Insufficient title card | Structurally accepted in 29,197ms; 298 input / 173 output tokens | Still **failed semantic abstention**: a description of absent instruction becomes a `supported` goal despite a valid short literal quote |
+
+The compact input is 1,914/1,870/1,318 UTF-8 bytes versus
+2,770/2,726/1,970 for the v2 messages reconstructed from the same authoritative
+contexts. This is a serialization reduction, not a representative latency result
+or quality improvement. The first bounded English success does not resolve the
+Turkish deadline failure or the semantic failures. The negative goal's ID matching
+its slice ID is legal under the contract; its meaning is the failure.
+
+The extraction review **still does not pass**. No draft was attempted/published,
+and the negative example was deliberately not advanced to selection; do not claim
+it would have safely abstained later. The ordinary worker registry remains empty.
+All test contexts/runs/artifacts and disposable schemas were removed. Existing
+owner containers stayed stopped; image IDs and volume names were identical after
+cleanup. Model weights were mounted read-only in a disposable cached-image
+container, with an internal-only network and temporary loopback relays. No image
+build/download, weight installation or owner-stack configuration change occurred.
+
+Next take one bounded application-level step to reduce duplicated model output:
+a compact extraction wire contract with goals emitted before coverage bookkeeping,
+and application-owned goal identities/coverage reconstruction. Preserve explicit
+insufficiency for every uncovered slice and all literal/source/recipe fences;
+declare the mapping and fixed native pass before inference. This is a candidate
+for the observed output/latency problem, not a claim it will solve semantic
+abstention. Do not continue tweaking the same prompt or raising deadlines until a
+favorable answer appears. Native quality remains required before generation is
+enabled; approved document capture and draft activation remain planned Sprint 5 work.

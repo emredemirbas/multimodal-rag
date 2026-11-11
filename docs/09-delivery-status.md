@@ -1,12 +1,25 @@
 # Delivery status and finish lines
 
-Date: 2026-10-29. Current authorized work: **Sprint 5**, in staged implementation.
+Date: 2026-11-11. Current authorized work: **Sprint 5**, in staged implementation.
 The owner explicitly requested this new scope after the RAG milestone.
 **RAG portfolio v1 is complete** within its selected local transcript RAG scope.
 Accepted application baseline: `3c2bff5`; local acceptance and all four hosted CI
 jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
+
+Latest bounded continuation: compact extraction profile v3 is implemented and
+software regressions passed (857 backend unit cases and 17 isolated graph/worker
+cases). The three-call native review still failed: English missed core goals,
+Turkish timed out, and insufficient text was called supported. See
+`sprint5/native-output-review.md`; public generation stays closed. Next implement
+the compact extraction wire contract described in the Sprint 5 plan, preserving
+explicit insufficient coverage and all evidence/recipe/deletion fences. Do not
+extend prompt-only retry loops or deadlines on the basis of these observations.
+
+The repository is now public, verified on GitHub on 2026-11-11. Existing `cc1da53`
+[CI run 42501823081](https://github.com/emredemirbas/multimodal-rag/actions/runs/42501823081)
+passed all four jobs; subsequent commits require their own actual CI result.
 
 **Sprint 5 has contracts, saved contexts, versioned draft APIs, durable queued
 delivery/publication, a local provider and an internal LangGraph workflow**; full
@@ -232,8 +245,9 @@ under ignored `private/publication/` or in private Git metadata. Never merge/pus
 the archived history or add private audit files to the public repository.
 
 Historical commit/CI references in earlier records refer to the private archive;
-check the new repository's current Actions run for its own result. The repository
-remains private until the owner changes visibility. This publication work does
+check the new repository's current Actions run for its own result. The owner
+subsequently made the active repository public (verified 2026-11-11); the archive
+remains private. This publication work does
 not close Sprint 5's native latency/semantic-abstention gate: the next development
 step remains addressing the recorded native failures before enabling generation,
 with the confirmed opt-in/per-document approval behavior where applicable.

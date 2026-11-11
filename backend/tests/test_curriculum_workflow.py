@@ -185,7 +185,7 @@ def test_native_schema_only_offers_supplied_slice_ids_and_coherent_status_fields
     session.context.tutorial_snapshots[0].segments[0].text = "route " * 700
     batch = plan_batches(session.context)[0]
     spec = extract_spec(batch, session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v2" and spec.schema_version == "tutorial-objectives-json-v2"
+    assert spec.prompt_version == "tutorial-objectives-v3" and spec.schema_version == "tutorial-objectives-json-v3"
     definitions = spec.output_schema["$defs"]
     expected = [item.id for item in batch.slices]
     assert len(expected) > 1

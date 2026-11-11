@@ -207,9 +207,10 @@ response contains no changing latest-head metadata. New writes to archived
 projects fail, while reads/replay/delete remain available. See the Sprint 5 plan
 for strict JSON/resource bounds and validation limits.
 
-Generated objectives/whole-context coverage extraction, model workflows and
-activated assignment versions remain undelivered. The conceptual entities below
-are later schema options, not separate implemented CRUD/tables in 0020/0021.
+Generated objectives/coverage extraction and model workflows were outside the
+0020/0021 persistence boundary; the internal workflow is described below. Public
+generation and activated assignment versions remain unavailable. The conceptual
+entities below are later schema options, not separate CRUD/tables in 0020/0021.
 See `sprint5/validation-record.md`.
 
 Migration `0022_curriculum_runs.sql` adds internal project/context-owned runs,
@@ -267,6 +268,15 @@ objectives and valid tutorial relationships; publication binds again under the
 database fence. Raw source/proposal text is private checkpoint data subject to
 context/source/project deletion, never usage/log data. These are structural checks,
 not semantic support or exercise-solvability verification.
+
+Extraction profile v3 sends the model only the requested language and lossless
+slice text with local IDs and unreviewed-origin labels. Original source/segment
+IDs, generations, processing versions, modality and character offsets remain in
+the authoritative context and batch map; model output cannot supply replacements.
+The full context hash still fences replay even if different evidence produces an
+identical compact model request. Quote validation requires literal membership in
+the named slice and at most 80 UTF-8 bytes; the native schema's 80-character limit
+does not replace that byte check. Prompt/schema/recipe pins separate old progress.
 
 - `learning_objectives`
 - `objective_evidence`

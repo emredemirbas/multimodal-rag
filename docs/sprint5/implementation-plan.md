@@ -334,8 +334,11 @@ Split source text losslessly at Unicode character boundaries into <=1,800-byte
 prompt slices, preserving original evidence IDs and exact character offsets.
 At most four slices/batch and 20 batches; refuse larger contexts before inference,
 without truncating or silently selecting sources. Extraction returns <=2 goals
-per batch with exact quotes and a model-reported supported/insufficient status for
-every slice. These are unreviewed interpretations, not semantic quality scores.
+per batch with exact quotes of <=80 UTF-8 bytes and a model-reported
+supported/insufficient status for every slice. Profile v3 sends only the explicit
+language and each slice's local ID, origin and complete text; authoritative IDs,
+versions and offsets remain pinned application state. These are unreviewed
+interpretations, not semantic quality scores.
 Select <=4 of the <=40 extracted goals for a small draft; retain unselected goals
 as explicit omissions from that assignment. Bounds are technical limits, not
 hidden learner effort/difficulty defaults.
@@ -444,11 +447,17 @@ bounded objective/coverage extraction, selection, generation and one revision.
 Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
 The small predeclared native review is recorded in `native-output-review.md`.
-Supported cases exposed local latency and extraction-contract failures; a bounded
-schema/prompt correction preserves strict grounding. No supported native draft
-quality is claimed yet. Next address the demonstrated extraction latency/quote
-binding within a finite local worker budget before enabling generation; preserve
-the existing lease/call/checkpoint fences and do not increase limits blindly.
+Compact extraction profile v3 now removes irrelevant model-facing metadata and
+limits literal quotes to 80 UTF-8 bytes; full context identity and binding remain.
+The fixed three-call native follow-up still failed: English completed within the
+deadline but omitted the expected core skills, Turkish timed out, and insufficient
+text still became a supported goal. No supported native draft quality is claimed.
+Next implement a compact extraction wire contract with goals before duplicated
+coverage bookkeeping and application-owned identities/coverage reconstruction,
+retaining explicit insufficient slices and every source/quote/recipe fence. Declare
+the mapping and bounded native pass first; do not repeat prompt tweaks, increase
+limits blindly or enable generation on these results. The existing lease/call/
+checkpoint fences remain mandatory.
 No downloads or default/public enablement. The owner confirmed tutorial-only by
 default, optional external topics and approval for each official document; implement
 approved capture in step 5 before their runtime behavior, then the planned draft

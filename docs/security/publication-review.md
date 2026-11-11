@@ -1,8 +1,9 @@
 # Public repository review
 
 Date: 2026-11-08. Reviewed application baseline after privacy migration: `f7c85c1`.
-The repository remains private; visibility is an owner action, not part of this
-review. This checks repository publication hygiene, not production readiness or
+The review was performed while private; the owner subsequently made the active
+repository public (verified on GitHub 2026-11-11). Visibility was an owner action.
+This checks repository publication hygiene, not production readiness or
 the unresolved native assignment-quality gate.
 
 ## Product presentation
