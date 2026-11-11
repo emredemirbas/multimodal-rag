@@ -73,7 +73,7 @@ def install_before(database_url, cutoff):
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql", "0024_curriculum_request_identity.sql"])
+@pytest.mark.parametrize("cutoff", ["0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql", "0024_curriculum_request_identity.sql", "0025_curriculum_documentation.sql"])
 def test_curriculum_upgrade_preserves_existing_rag_sources(isolated_postgres_url, cutoff):
     """Upgrade populated RAG/context/draft databases, rather than only fresh schemas."""
     from app.curriculum.persistence import ContextCreate
@@ -211,7 +211,7 @@ def test_fresh_database_and_sprint0_upgrade(
             "SELECT version, sha256 FROM schema_migrations ORDER BY version"
         ).fetchall()
         assert [row[0] for row in migrations] == [
-            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql", "0024_curriculum_request_identity.sql"
+            "0001_sprint0.sql", "0002_sprint1_foundation.sql", "0003_transcript_ingestion.sql", "0004_chat_and_retrieval.sql", "0005_ordered_playlists.sql", "0006_local_generation_usage.sql", "0007_embedding_spaces.sql", "0008_resumable_embeddings.sql", "0009_transcript_timeline.sql", "0010_asr_checkpoints.sql", "0011_media_lifecycle.sql", "0012_scoped_audio_cleanup.sql", "0013_visual_checkpoints.sql", "0014_video_lifecycle.sql", "0015_retained_visual_gallery.sql", "0016_retained_ocr_index.sql", "0017_video_workflows.sql", "0018_visual_selection_manifest.sql", "0019_local_frame_descriptions.sql", "0020_curriculum_contexts.sql", "0021_curriculum_drafts.sql", "0022_curriculum_runs.sql", "0023_curriculum_delivery.sql", "0024_curriculum_request_identity.sql", "0025_curriculum_documentation.sql"
         ]
         assert all(len(row[1]) == 64 for row in migrations)
         if legacy_sprint0:

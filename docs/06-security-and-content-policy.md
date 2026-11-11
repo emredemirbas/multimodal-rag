@@ -87,10 +87,21 @@ allowed. Public/default processor registration stays closed pending native revie
 LangGraph hosted tracing is explicitly disabled inside construction/invocation
 without changing owner environment variables; no library checkpoint store receives
 project text. Logs contain only safe identifiers and fixed rejection codes.
-True external-topic/document permissions fail before inference in the current
-internal path until approved capture exists. The owner confirmed opt-in external
-topics and explicit approval for each official document. See the Sprint 5
-plan for resource caps.
+True external-topic/document permissions still fail before inference in the current
+internal graph. Step 5a adds an independent approved-capture API, not document
+binding or model permission. The owner confirmed opt-in external topics and
+explicit approval for each official document. Its fixed catalog policy, exact
+fingerprint and retrieve-and-retain consent are saved per context/approving actor.
+Only that actor can issue the separate capture command. All DNS answers must be
+public; sockets pin a validated numeric address with verified original-host TLS.
+No redirect/proxy/cookie/authentication or arbitrary URL is supported. A stripped-
+environment trusted child has independent and parent-enforced wall deadlines,
+CPU/memory/output limits and bounded inert HTML extraction. Raw HTML is discarded;
+stored text/excerpts stay untrusted. Failure replay never silently refetches.
+Current membership/context/policy/token/clock checks fence all adoption, and
+source/context/project deletion removes approvals, text and receipts. This child
+executes application-owned parsing only; it is not an untrusted-code sandbox.
+See the Sprint 5 plan for precise resource caps and outstanding UI/binding work.
 
 ### Malicious uploaded files
 

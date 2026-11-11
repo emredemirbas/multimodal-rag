@@ -315,8 +315,8 @@ the owner's later RAG portfolio v1 choice above now governs the first release.
 |---|---|---|
 | Assignment difficulty | User-selected, with estimated 2–4 hour default | Proposed |
 | External-topic scope | Tutorial-only default; learner may opt into prerequisites/extensions | Confirmed, 2026-10-29 |
-| External documentation | Allowlisted official documents, each selected/approved by the learner before retrieval | Confirmed, 2026-10-29; capture/approval UI not implemented yet |
-| Documentation versioning | Record URL, retrieval date, detected version, and content hash | Proposed |
+| External documentation | Allowlisted official documents, each selected/approved by the learner before retrieval | Confirmed, 2026-10-29; backend approval/capture implemented in Step 5a (0025), UI/draft binding remain |
+| Documentation versioning | Record URL, retrieval date, detected version, and content hash | Implemented for Step 5a: immutable text/raw hashes and stable excerpts; unversioned FastAPI page explicitly unknown |
 | Requirement labels | Covered, prerequisite, extension | Proposed |
 | Assignment publication | Editable draft requiring user approval | Confirmed for MVP, 2026-09-21 |
 | Deadline | Optional, learner-selected | Proposed |
@@ -327,7 +327,7 @@ Questions to answer:
 
 1. Should a learner be able to forbid extension topics?
 2. Should an exercise target one tutorial, the entire playlist, or selected sources?
-3. Can external documentation be retrieved automatically, or must users approve each domain/source?
+3. Settled: every official document needs explicit learner selection/approval before retrieval; no automatic domain-wide approval.
 4. What constitutes project completion?
 5. Should missed deadlines affect anything beyond status and reminders?
 

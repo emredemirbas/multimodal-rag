@@ -65,6 +65,8 @@ from .curriculum.http import CurriculumHttpMiddleware
 from .curriculum.persistence import ContextCreate, ContextView, DraftCreate, DraftReplace, DraftRevisionView
 from .curriculum.repository import ContextRepository
 from .curriculum.drafts import DraftRepository
+from .curriculum.documentation import CatalogPolicy, DocumentApprove, DocumentCapture, DocumentRepository, DocumentView
+from .curriculum.documentation_fetch import OfficialDocumentationFetcher
 from .vision.gallery import VisualGalleryRepository
 from .vision.gallery_contracts import VisualGallery
 from .vision.descriptions import DescriptionRepository, DescriptionView
@@ -147,6 +149,8 @@ def create_app(
         application.state.chat = ChatRepository(active_store, metrics) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum = ContextRepository(active_store) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum_drafts = DraftRepository(active_store) if isinstance(active_store, PostgresStore) else None
+        application.state.curriculum_documentation = DocumentRepository(active_store) if isinstance(active_store, PostgresStore) else None
+        application.state.documentation_fetcher = OfficialDocumentationFetcher()
         if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
             application.state.sources = SourceRepository(active_store, artifacts or S3ArtifactStore(active_settings), active_settings)
         yield
@@ -287,6 +291,11 @@ def create_app(
         if request.app.state.curriculum_drafts is None:
             raise SourceError("curriculum_not_configured", "Saved assignment drafts require PostgreSQL.", 503)
         return request.app.state.curriculum_drafts
+
+    def curriculum_documentation(request: Request) -> DocumentRepository:
+        if request.app.state.curriculum_documentation is None:
+            raise SourceError("curriculum_not_configured", "Official documentation capture requires PostgreSQL.", 503)
+        return request.app.state.curriculum_documentation
 
     @app.get("/health/live")
     async def health_live() -> dict[str, str]:
@@ -577,6 +586,32 @@ def create_app(
     @app.delete("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}", status_code=204)
     def delete_curriculum_context(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal):
         curriculum(request).delete(principal.tenant_id, project_id, actor(request, principal), context_id)
+        return Response(status_code=204)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/documentation/catalog", response_model=list[CatalogPolicy])
+    def documentation_catalog(project_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum_documentation(request).catalog(principal.tenant_id, project_id, actor(request, principal))
+
+    @app.post("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/documentation", response_model=DocumentView, status_code=201)
+    def approve_documentation(project_id: UUID, context_id: UUID, body: DocumentApprove, request: Request, principal: CurrentPrincipal):
+        return curriculum_documentation(request).approve(principal.tenant_id, project_id, actor(request, principal), context_id, body)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/documentation", response_model=list[DocumentView])
+    def list_documentation(project_id: UUID, context_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum_documentation(request).list(principal.tenant_id, project_id, actor(request, principal), context_id)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/documentation/{document_id}", response_model=DocumentView)
+    def read_documentation(project_id: UUID, document_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum_documentation(request).read(principal.tenant_id, project_id, actor(request, principal), document_id)
+
+    @app.post("/api/v1/projects/{project_id}/curriculum/documentation/{document_id}/capture", response_model=DocumentView)
+    def capture_documentation(project_id: UUID, document_id: UUID, body: DocumentCapture, request: Request, principal: CurrentPrincipal):
+        return curriculum_documentation(request).capture(principal.tenant_id, project_id, actor(request, principal), document_id,
+                                                         body, request.app.state.documentation_fetcher)
+
+    @app.delete("/api/v1/projects/{project_id}/curriculum/documentation/{document_id}", status_code=204)
+    def delete_documentation(project_id: UUID, document_id: UUID, request: Request, principal: CurrentPrincipal):
+        curriculum_documentation(request).delete(principal.tenant_id, project_id, actor(request, principal), document_id)
         return Response(status_code=204)
 
     @app.post("/api/v1/projects/{project_id}/curriculum/contexts/{context_id}/drafts", response_model=DraftRevisionView, status_code=201)

@@ -840,20 +840,104 @@ stayed stopped. No image build/download, model install, `.env`, credential, data
 or Docker setting change occurred. The default registry remains empty; neither
 software tests nor this failed native pass enable user-facing generation.
 
+## Step 5a — explicit official-document approval and capture API (2026-11-11)
+
+Starting state was rechecked on clean `main` at
+`532197b6acf864e6b4ad150e83a2b29a8671d36b`, matching GitHub. In its
+[CI run 43060500398](https://github.com/emredemirbas/multimodal-rag/actions/runs/43060500398),
+backend tests, backend integration and frontend succeeded; the image job was
+still running at the last pre-commit check. That is not overall CI success and
+this new commit requires its own hosted result.
+
+The existing Step 5 was split into backend capture (5a) and learner selection/
+approval UI (5b). The implementation is independent of the failed native model
+review and does not register a processor or enable external-topic generation.
+
+Implemented:
+
+- Migration 0025 adds project/context-owned approval, capture-command and immutable
+  snapshot tables with composite scope keys and cascading dependencies. Explicit
+  consent, original approver/time and complete catalog policy are retained. Contexts
+  must allow external documentation. Approval/read/list perform no network I/O;
+  a separate capture command is restricted to the original approving member.
+- The application-owned catalog contains one exact English FastAPI First Steps
+  route. Its MIT license was verified against the
+  [official license](https://github.com/fastapi/fastapi/blob/master/LICENSE), Git
+  blob `3e92463e6bd522a2a21e5f0a80d8089d6c4be20d`; the full notice and attribution
+  are retained with every policy. The unversioned page has `detected_version=null`.
+  No live lesson page was fetched during development or validation.
+- Production fetching checks every DNS result, rejects nonpublic/transition
+  addresses and pins the selected numeric socket for verified original-host TLS.
+  No user URL, redirect, proxy, credentials, compression, crawling or asset loading.
+  Strict status/header/framing/UTF-8/HTML checks fail closed. One balanced Material
+  article yields inert text; scripts/navigation/active/hidden content are excluded.
+- Limits: 512,000 raw HTML bytes, 128,000 UTF-8 text bytes, 32,768 header bytes,
+  3-second socket timeout and a 12-second total child deadline including DNS/TLS/
+  parsing. The parent kills/reaps on timeout; the child also owns a default-
+  terminating POSIX wall alarm if its parent disappears. CPU (5 seconds), memory
+  (256 MiB), output/file descriptor/core limits and a stripped environment bound
+  the trusted parser. Only one physical fetch per API process is admitted.
+- A committed 45-second token lease precedes I/O, without holding DB locks. The
+  immutable copy contains canonical URL, server retrieval time, unknown version,
+  complete text hash, lossless stable hashed excerpts and raw HTML hash/byte count;
+  raw HTML is not retained. Snapshot and completion commit atomically with a final
+  wall-clock check after writes. Changed policy requires current explicit approval.
+- Successful replay/new receipts retain the same snapshot without refreshing;
+  failed commands replay their original fixed error. An intentional retry needs
+  a new key. Active duplicates conflict; expired receipts are sealed before replay
+  returns. Membership/archive/context/source/document/project loss discards late
+  output. Reprocessing preserves saved evidence. Logs omit URLs, bodies and keys.
+
+Final validation on the completed code:
+
+- **1,024 backend unit/API tests passed**, including **121 fetcher cases**. Synthetic
+  socket/DNS/TLS/HTML fixtures cover private/mixed DNS, verified SNI/numeric pinning,
+  redirect/encoding/size/header/chunk errors, parser exclusions, duplicate child
+  JSON and output identity. Actual subprocesses are killed/reaped while DNS/TLS/
+  slow headers/body stall; a separate test proves the child's own alarm terminates
+  before a longer parent deadline. No Internet lesson, model or paid service call.
+- **57 new isolated PostgreSQL/API cases passed** (39 repository, 18 HTTP): approval
+  opt-in/consent, cross-tenant/project/member/original-actor rules, stale policy,
+  detached hash/version validation, Unicode excerpt splitting, concurrent admission,
+  durable failure/success replay, explicit retry, expired receipt/late original
+  response, unlocked I/O cancellation races, source/context/project cascade cleanup,
+  safe logs, authentication/no-store, strict/duplicate/oversized JSON and memory 503.
+  Context-before-approval locking is tested against direct source deletion. A
+  trigger expiring the lease after snapshot INSERT proves the whole write rolls back.
+- **62 existing PostgreSQL/RAG/context/draft regressions passed**, including populated
+  upgrade cutoffs through 0025, migration checksums and prior provenance/replay/
+  deletion behavior. No frontend change or local Docker image build was needed.
+- `git diff --check` passed; the public README remains product-focused.
+
+The first test attempt exposed a test-environment issue: parallel independent
+schemas installed pgvector into a temporary schema, whose cascade cleanup removed
+it for the other process. Both suites were rerun serially after installing the
+extension in the disposable database's public schema. Test-only timeout spelling
+and a run overlapping the consent-column edit were corrected before the final
+57/62-case results; none of those incomplete runs is counted as acceptance.
+
+Validation used a separate temporary Python environment, authored in-memory
+artifacts and one cached tmpfs-backed PostgreSQL container on a random loopback
+port. All test schemas ended absent and that container was removed. Owner container
+IDs/states, image IDs and volume names matched the before/after inventory exactly;
+existing services stayed stopped. No image/model download/build, owner `.env`,
+credentials, data, Docker setting or real-source deletion was involved.
+
+Limits: this is a backend boundary, not a complete learner-facing feature. No live
+page compatibility/availability, approved-document draft binding, external-topic
+runtime, user generation/activation or native model-quality approval is claimed.
+The strict fixed-page parser may need a reviewed update if that official page
+changes. Linux resource/signal support is required.
+
 ## Continuation
 
-The bounded compact-wire change is complete. Stop the prompt/profile iteration
-sequence here. Next implement the existing Step 5 learner-approved official-document
-capture independently: explicit scoped per-document approval, allowlisted bounded
-HTTP capture, immutable URL/retrieval/version/hash/excerpt provenance and complete
-project deletion, using local HTTP fixtures. No unapproved live fetch follows.
-The v4 native latency, quote fidelity, core-skill and semantic-abstention failures
-remain open gates before generation, with full generated-draft review still needed.
-Do not weaken validation, add sample-specific filters or raise deadlines blindly.
-
-Product choices are now confirmed: tutorial-only default, optional external topics,
-explicit selection/approval for each official document. Implement approval/capture
-in the already planned step 5 before enabling dependent behavior, then draft
-review/activation UI. No paid call/download, Sprint 6 grading/tutoring or independent
-real-video closure follows from this review. Verify the new commit's exact hosted
-CI after push; a running workflow is not success.
+Next implement Step 5b's learner-facing source/preferences/context selection and
+explicit per-document selection/consent, capture and retained-text inspection/
+deletion using the existing backend APIs. Preserve uncertain-delivery keys and
+cover accessible loading/empty/error/success and stale-context behavior. Document
+binding/external-topic generation remain disabled pending their own grounding
+implementation. The v4 native latency/quote/core-skill/semantic-abstention failures
+and full generated-draft review remain open; stop prompt/profile retries here.
+Keep the default registry/public generation closed, do not weaken checks or raise
+limits blindly, and do not begin Sprint 6/7 or close the independent real-video
+gate. Verify the exact new commit's hosted CI after push; running is not success.

@@ -311,8 +311,9 @@ responses and isolated PostgreSQL; do not call the owner's model or register a
 generation processor in this slice. **4b (implemented internally):** application
 prompts, objective/coverage batching and finite LangGraph transitions/checkpoint
 continuation. Native supported-draft quality still needs review. The owner has
-confirmed optional external topics with per-document approval; dependent approved
-capture/enablement remains unimplemented.
+confirmed optional external topics with per-document approval; Step 5a now supplies
+the independent capture API. External-topic generation and document binding remain
+disabled.
 
 `LocalCurriculumProvider` implements the application-owned JSON interface;
 `LeasedCurriculumCalls` connects it to the existing scoped call ledger. Migration
@@ -404,6 +405,22 @@ and [graph replay guidance](https://github.com/langchain-ai/docs/blob/main/src/o
 
 ### 5. Official documentation snapshots
 
+Step 5a is a bounded backend-only slice: an authenticated project member explicitly
+selects and approves the fixed English FastAPI First Steps catalog entry for one
+saved context with external documentation enabled. Approval includes the catalog
+policy fingerprint and explicit retrieve-and-retain consent; a separate capture
+command performs the fetch. Only the approving member can capture. Catalog,
+approval, reads and lists perform no network I/O. MIT text and attribution travel
+with the immutable policy; the unversioned page has an explicitly unknown version.
+No arbitrary URL, redirect, crawling, model-selected page or live lesson fetch is
+part of implementation validation. Fixed routes, public DNS/IP pinning, verified
+TLS, 12-second child-process deadline (including DNS/parsing), 512 KB HTML and
+128 KB UTF-8 text limits bound the operation. Capture uses a 45-second database
+lease without holding locks during I/O; retries require a new explicit command.
+Saved text, approval and command receipts cascade on document/context/source/project
+deletion. UI, draft binding and external-topic generation remain subsequent work;
+this independent slice does not reopen the failed native model review.
+
 Implement the owner's per-document selection/approval policy before enabling external topics.
 Maintain an application-owned exact-domain/route allowlist; no arbitrary supplied
 URL fetch, off-allowlist redirect, credentials or model-selected destination.
@@ -465,12 +482,18 @@ nonliteral/contradictory evidence, and insufficient content produced a meta-goal
 plus contradictory insufficiency. Strict validation accepted no extraction/draft.
 No supported native draft quality or representative latency improvement is claimed.
 The bounded wire correction is complete; stop prompt/profile iterations here.
-Next implement the already planned Step 5 learner-approved official-document
-capture as an independent slice, with scoped approval, allowlisted/bounded fetching
-and immutable provenance/deletion tested using local HTTP fixtures. This does not
-resolve the native latency/quote/core-skill/abstention gate or enable generation.
-Preserve the existing lease/call/checkpoint fences; do not increase limits blindly.
-No downloads or default/public enablement. The owner confirmed tutorial-only by
-default, optional external topics and approval for each official document; implement
-approved capture in step 5 before their runtime behavior, then the planned draft
-review/activation workspace. No user-facing generation/activation flow is claimed.
+Step 5a now implements the scoped approval/capture/read/list/delete backend in
+migration 0025: exact policy-bound consent, fixed MIT FastAPI catalog, bounded
+supervised HTTP capture, immutable provenance and explicit command recovery.
+Synthetic HTTP and isolated PostgreSQL/API tests cover limits, authorization,
+races and complete deletion. No live lesson capture or approval UI is claimed.
+This does not resolve the native latency/quote/core-skill/abstention gate.
+
+Next is Step 5b's learner-facing source/preferences/context selection and explicit
+per-document selection/consent, capture and retained-text inspection/deletion.
+Use the existing backend boundary and preserve command keys for uncertain
+responses; include accessible loading/empty/error/success and stale-context states.
+Document binding into drafts/external-topic runtime remains disabled until its
+separate grounding path is implemented and tested. Preserve all existing lease/
+call/checkpoint fences and the empty default registry. No downloads, paid calls,
+public generation/activation, grading/tutoring or automatic later-sprint work.

@@ -444,6 +444,43 @@ Operational routes: `/health/live`, `/health/ready`, `/health` (compatibility),
 The deprecated `POST .../sources/transcripts` compatibility endpoint is limited
 to development/test hash mode; ordinary ingestion uses queued uploads.
 
+### Official documentation API
+
+The backend supports a saved context's explicit per-document consent and separate
+capture operation. There is no learner screen or document-to-draft binding yet.
+Use the authenticated OpenAPI reference for the precise request schemas, and
+the [data/API contract](05-data-model-and-api.md#curriculum) for routes and replay
+behavior. Requires PostgreSQL migration 0025; in-memory mode returns 503.
+
+1. Save a context with selected published source generations and explicit
+   `allow_external_documentation: true`. Normal contexts remain tutorial-only.
+2. Read `/api/v1/projects/{project_id}/curriculum/documentation/catalog` and choose
+   the fixed `fastapi-first-steps-en` entry after reviewing its URL, license,
+   unknown-version policy and fingerprint.
+3. Approve it under `/curriculum/contexts/{context_id}/documentation`, supplying
+   a fresh `idempotency_key`, its `catalog_id`, `catalog_sha256` fingerprint and
+   explicit `consent: "retrieve_and_retain"`. This saves permission without fetching.
+4. Only when retrieval/storage is intended, POST a separate `{idempotency_key}`
+   to `/curriculum/documentation/{document_id}/capture`. Only the original approver
+   can capture. This is the operation that contacts the official page.
+5. Read/list the saved inert text, stable excerpts, hashes, server retrieval date
+   and MIT attribution. Deleting the approval deletes its copy and command receipts;
+   source/context/project deletion cascades them too.
+
+Preserve an unchanged request key when delivery is uncertain. A successful receipt
+returns the same immutable snapshot; it never refreshes the page. A failed key
+replays its fixed error; an intentional retry needs a new key. Concurrent captures
+return 409. A policy change requires current catalog approval. Restoring an
+archived project is necessary for new captures; saved reads/replays/delete work.
+
+Only one exact HTTPS page is supported, with no redirects, proxy use, arbitrary
+URLs or crawling. DNS/private-address checks, verified pinned TLS, child-process
+time/resource limits and strict byte/parser bounds fail closed; some site changes
+may require a reviewed catalog/parser update. Linux is required for child resource
+limits. Text remains untrusted and is never rendered as HTML or executed. This
+does not enable external-topic generation or certify the local model's quality.
+Automated validation uses authored local fixtures and no live documentation fetch.
+
 ## Testing
 
 Use separate disposable resources. Integration and smoke tests create and remove

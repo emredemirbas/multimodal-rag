@@ -88,7 +88,7 @@ class DraftRepository:
     def _bind(cls, tenant, project, context, content):
         try:
             draft = AssignmentDraft(tenant_id=tenant, project_id=project, **content.model_dump())
-            # This slice has no trusted documentation capture/fetch boundary.
+            # Approved capture is independent; draft document binding remains disabled.
             return bind_assignment(context.request, draft, context.tutorial_snapshots, [])
         except (CurriculumValidationError, ValidationError, ValueError, TypeError, AttributeError, RecursionError):
             raise cls._invalid() from None

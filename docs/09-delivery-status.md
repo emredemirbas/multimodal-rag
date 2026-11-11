@@ -8,16 +8,18 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-Latest bounded continuation: v4 compact model responses are normalized into
-application-owned goal IDs and complete canonical coverage, with strict replay
-fences. Software regressions passed (903 backend unit cases and 21 isolated
-graph/worker cases). The fixed native pass still failed: English timed out;
-Turkish and insufficient responses were rejected for invalid/contradictory
-evidence. No extraction or draft was accepted. See `sprint5/native-output-review.md`;
-public generation stays closed. The wire change is complete; stop prompt/profile
-iterations here. Next is the existing Step 5 learner-approved official-document
-capture, preserving scoped approval, bounded allowlisted fetching, provenance
-and deletion. That independent work does not resolve the native quality gate.
+Latest bounded continuation: Step 5a implements backend-only per-context official-
+document approval and separate capture/read/list/delete APIs (migration 0025).
+Explicit consent pins a catalog policy; the first catalog has one MIT-licensed
+FastAPI page. Capture is allowlisted, bounded and outside database locks; immutable
+text/hash/excerpts, explicit retry receipts and deletion/authority/expiry fences
+are tested with authored HTTP fixtures. No live lesson page was fetched. UI and
+draft document binding remain; this is not a complete user-facing feature.
+
+The preceding v4 compact wire change passed software regressions, but its fixed
+native pass failed on latency and invalid/contradictory evidence. No extraction or
+draft was accepted. See `sprint5/native-output-review.md`; public generation stays
+closed. Stop prompt/profile iterations here. Step 5a does not resolve that gate.
 
 The repository is now public, verified on GitHub on 2026-11-11. Existing `cc1da53`
 [CI run 42501823081](https://github.com/emredemirbas/multimodal-rag/actions/runs/42501823081)
@@ -48,7 +50,7 @@ mixed-language OCR/ASR vocabulary limitations remain in the validation records.
 | Sprints 0–2: foundation, projects, transcript ingestion | Implemented and validated within the documented local scope |
 | Sprint 3: RAG/chat/evidence | Implemented local baseline plus optional local models; representative quality review remains open |
 | Sprint 4: playlist and multimodal evidence | WAV/MP4/OCR, frame citations, opt-in change selection, user-asserted timeline and optional local image descriptions exist; independent real-example audiovisual/quality verification remains open |
-| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication, pinned local JSON/call attribution (0020–0024) and internal bounded LangGraph implemented. Small native review failed on latency/semantic abstention; generation stays closed. Opt-in external topics and per-document approval confirmed; capture/activation UI remain |
+| Sprint 5: learning objectives and assignments | Context/draft APIs, durable delivery/publication, pinned local JSON/call attribution and document capture APIs (0020–0025) and internal bounded LangGraph implemented. Small native review failed on latency/semantic abstention; generation stays closed. Per-document approval/capture APIs implemented; UI, document binding and activation remain |
 | Sprint 6: submissions and hardened deterministic grading | Not implemented; largest technical/security uncertainty |
 | Sprint 7: progressive tutoring/deadlines/mastery | Not implemented |
 | Sprints 8–9: broader hardening and hosted beta | Portions of safety/observability exist already; production/beta launch is not the selected portfolio target |
@@ -112,8 +114,8 @@ generates and allows one revision, reusing scoped checkpoints after process loss
 The small native review failed: supported examples time out and the insufficient
 case produced a semantically incorrect supported objective. Versioned extraction
 schema/prompt v2 strengthens decoding but does not establish quality; see
-`sprint5/native-output-review.md`. Official-document approval/capture and draft
-review/activation UI remain. Submissions and grading remain later.
+`sprint5/native-output-review.md`. Official-document approval/capture APIs now exist independently; their UI, draft
+document binding and draft review/activation remain. Submissions and grading remain later.
 
 The source-owned ingestion job/outbox/usage schema must not be repurposed with a
 fake source for multi-source assignments. New persistent curriculum work needs
@@ -123,17 +125,17 @@ README now follows product-documentation style; operator detail is in
 `local-development.md`, while plans, validation and CI history stay here. The
 same rule is recorded in `../AGENTS.md` for future updates.
 
-Next `devam`: read `sprint5/validation-record.md` and the current plan, verify Git/CI,
-and address step 4b's recorded native latency/false-positive objective failures in
-a bounded local profile/prompt slice. Start from `sprint5/native-output-review.md`
-and its exact outputs; declare changed budgets/expectations before inference,
-preserve strict grounding and lease/call/checkpoint fences. Do not retry until a
-favorable output, weaken checks or add sample-specific semantic keyword filters.
-Keep the default registry/public producer closed; no downloads or owner-data/
-service changes. The owner confirmed tutorial-only default, optional external
-topics and selection/approval for each official document; approved capture still
-needs implementation before dependent behavior. Do not claim Sprint 5 complete,
-close the independent real-video gate or start grading/tutoring.
+Next `devam`: read the current Sprint 5 plan/validation record and verify Git/CI.
+Implement Step 5b's learner-facing document selection/approval/capture/read/delete
+flow against these APIs. Begin with the saved-context source/preferences selection
+it requires; make consent and retained text/unknown version visible, preserve
+request keys for uncertain delivery, and cover accessible loading/empty/error/
+success and stale-scope states. Do not enable draft document binding or external-
+topic generation as a side effect. The existing native latency/quote/core-skill/
+abstention gate and full generated-draft review remain open; do not start another
+prompt retry loop, weaken validation or claim Sprint 5/Alpha 2 complete. Keep the
+default processor registry/public generation closed; no model downloads, paid
+services, grading/tutoring or owner data/service changes.
 
 ## Sprint 4 closure — one remaining gate
 
@@ -249,7 +251,7 @@ the archived history or add private audit files to the public repository.
 Historical commit/CI references in earlier records refer to the private archive;
 check the new repository's current Actions run for its own result. The owner
 subsequently made the active repository public (verified 2026-11-11); the archive
-remains private. This publication work does
-not close Sprint 5's native latency/semantic-abstention gate: the next development
-step remains addressing the recorded native failures before enabling generation,
-with the confirmed opt-in/per-document approval behavior where applicable.
+remains private. Publication did not close Sprint 5's native latency/semantic-
+abstention gate. The current continuation above supersedes the earlier prompt
+follow-up: bounded model iterations stopped after v4; per-document capture now
+has its independent backend boundary, with learner UI next and generation closed.

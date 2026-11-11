@@ -156,6 +156,55 @@ Citations should reference stable segment/evidence IDs. Store rendered labels se
 
 ### Curriculum
 
+Migration `0025_curriculum_documentation.sql` adds context-owned
+`curriculum_document_approvals`, `curriculum_document_commands` and
+`curriculum_document_snapshots`. Each uses tenant/project composite keys and
+cascades from the context. Approval retains the original actor, explicit
+`retrieve_and_retain` consent, timestamp and complete immutable catalog policy
+(canonical URL, parser/version policy, MIT notice/attribution and fingerprint).
+Contexts must explicitly allow external documentation; at most 20 approvals can
+be retained per context. Approval does not fetch a page. Only its original actor
+can issue a capture; authorized project members can read/list/delete saved copies.
+
+Implemented documentation endpoints under `/api/v1/projects/{project_id}/curriculum`:
+
+- `GET /documentation/catalog`: application-owned exact page policies; no fetch.
+- `POST /contexts/{context_id}/documentation`: approve with
+  `{idempotency_key, catalog_id, catalog_sha256, consent: "retrieve_and_retain"}`.
+- `GET /contexts/{context_id}/documentation`: list approved copies.
+- `GET /documentation/{document_id}`: read approval/status/snapshot.
+- `POST /documentation/{document_id}/capture`: separate explicit command with
+  `{idempotency_key}`; no URL or client-supplied provenance is accepted.
+- `DELETE /documentation/{document_id}`: remove approval, text and all receipts.
+
+The first catalog contains only the English FastAPI First Steps page. Capture is
+a bounded, synchronous API operation supervised in a trusted subprocess; it is
+not a media/model job or LangGraph workflow. A 45-second database lease is committed
+before I/O; the child has a 12-second total deadline, including DNS and parsing.
+Only globally routable DNS results are accepted, all are checked, and the selected
+numeric address is pinned for verified HTTPS with original-host SNI. Redirects,
+proxies, authentication, compressed/ambiguous HTTP, crawling and arbitrary URLs
+are excluded. HTML is limited to 512,000 bytes; one inert article is extracted as
+at most 128,000 UTF-8 bytes. Strict parsing failures require another explicit
+command. Only text is stored; raw HTML has a retained SHA-256/byte count.
+
+The one immutable snapshot retains server retrieval time, canonical URL, an
+explicitly unknown version for this unversioned page, full text hash and lossless
+excerpts (at most 8,000 characters each) with stable UUIDs and individual hashes.
+Successful replay/new receipts return the same snapshot without refreshing;
+failed receipts replay their original fixed error without a fetch. An unexpired
+duplicate returns 409. Expired receipts are sealed as failed; a new key is needed
+to retry. Active membership/project/context/approval, current policy and token/
+wall-clock fences are rechecked after I/O and after writes. Deletion, archive,
+revocation or expiry discards late results. Source/context/project deletion
+removes text and receipts; reprocessing preserves prior evidence. Logs contain
+IDs, fixed status codes, counts and timing, never fetched text or URLs.
+
+These APIs have private/no-store responses and require PostgreSQL. Approval UI,
+draft document binding and dependent external-topic generation are not enabled.
+The graph still rejects external flags before inference; public generation and
+activation remain unavailable. See the Sprint 5 implementation/validation records.
+
 Sprint 5 has strict internal assignment contracts and immutable saved tutorial
 contexts in `backend/app/curriculum/`. Migration `0020_curriculum_contexts.sql`
 adds `curriculum_contexts` and `curriculum_context_sources`, with tenant/project
