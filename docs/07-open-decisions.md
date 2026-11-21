@@ -94,7 +94,12 @@ placement, with no accepted extraction or draft; it was not retried. The latest
 instruction authorizes the one researched download contingency,
 `qwen2.5:7b-instruct-q4_K_M`, in [its own finite plan](sprint5/qwen25-generation-plan.md).
 This is an operator-selected model, not in-application fallback or unlimited model
-rotation. Existing failures remain recorded; generation stays closed until actual
+rotation. Its download and identity checks completed, and the first native
+extraction timed out at 42,043ms despite full GPU placement. No extraction/draft
+was accepted; other cases were not attempted. The model remains installed, but
+this candidate is closed. Existing timing observations now support preparing a
+concrete runtime/budget proposal, not another automatic model rotation or deadline
+increase. Existing failures remain recorded; generation stays closed until actual
 finite extraction and draft reviews pass.
 
 ## Blocking before broad implementation

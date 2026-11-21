@@ -1,0 +1,561 @@
+{
+  "date": "2026-11-21",
+  "scope": "authored MIT subtitle fixtures; no recording",
+  "identity": {
+    "provider": "ollama-local",
+    "model": "qwen2.5:7b-instruct-q4_K_M",
+    "model_digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "engine": "0.33.3"
+  },
+  "options": {
+    "temperature": 0,
+    "num_ctx": 16384,
+    "num_predict": 2048,
+    "num_thread": 4
+  },
+  "call_seconds": 60,
+  "inference_seconds": 42,
+  "recipe_sha256": "914a33be7aee39fa855aed6206905d0eca8bae47f6fd224148e4bc9d655ac5b1",
+  "partition_version": "evidence-units-byte-v1",
+  "normalization_version": "evidence-unit-extraction-map-v1",
+  "declared_max_physical_calls": 9,
+  "physical_calls": 1,
+  "candidate_stopped": true,
+  "cases": [
+    {
+      "case": "typed-list-en.vtt",
+      "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 45,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 2459,
+      "schema_bytes": 1102,
+      "request_bytes": 3930,
+      "input_sha256": "f9b77e5994a4c81bc6a1a3da42f50656b5590a39fee09f6b0b1230b253d8ae40",
+      "context_sha256": "5a15eea9b22dacea7dfe8deb1d55f3ccd346c5c3e0d09f9bd258c28fff352f10",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "21ce357fb6d606824a48e2d3ff0e1a3ff9552fea88d35b97a00083afd501e5b1",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "This short example uses FastAPI to return a typed list of strings. Create app = ",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": "FastAPI(). The route decorator @app.get(\"/items\", response_model=list[str]) regi",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "sters a GET endpoint and declares the response shape. Define def read_items(): a",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 320,
+            "text": "nd return [\"pen\", \"book\"] from it. Calling GET /items returns a JSON array of st",
+            "id": "u00003"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 320,
+            "end_char": 400,
+            "text": "rings. Changing the endpoint path or the example strings does not require anothe",
+            "id": "u00004"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "effc78ad-f5f6-5ca0-bdc2-bdbdbac0dd7a",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 400,
+            "end_char": 465,
+            "text": "r service. The response model is list[str], not a database model.",
+            "id": "u00005"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "cd34192f-5182-5238-8a04-3342ded38b9d",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "Keep the example in one Python file with from fastapi import FastAPI. This lesso",
+            "id": "u00006"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "cd34192f-5182-5238-8a04-3342ded38b9d",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": "n covers creating the application, the GET decorator, a function returning a str",
+            "id": "u00007"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "cd34192f-5182-5238-8a04-3342ded38b9d",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "ing list, and response_model=list[str]. It does not teach persistence, authentic",
+            "id": "u00008"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "679eb410-e595-49e2-b349-7e29f02ddba2",
+            "segment_id": "cd34192f-5182-5238-8a04-3342ded38b9d",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 318,
+            "text": "ation, deployment, test libraries, async functions or request-body validation.",
+            "id": "u00009"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "purpose": "extract-objectives",
+          "failure_code": "provider_timeout",
+          "retryable": true,
+          "elapsed_ms": 42043,
+          "runtime_observation": {
+            "status": "observed",
+            "polls": 139,
+            "observation_count": 85,
+            "errors": 0,
+            "sampler_stopped": true,
+            "first": {
+              "elapsed_ms": 16299,
+              "size": 5465282968,
+              "size_vram": 5465282968,
+              "context_length": 16384
+            },
+            "last": {
+              "elapsed_ms": 41891,
+              "size": 5465282968,
+              "size_vram": 5465282968,
+              "context_length": 16384
+            },
+            "max_size": 5465282968,
+            "max_size_vram": 5465282968,
+            "max_context_length": 16384
+          }
+        }
+      ],
+      "status": "retrying",
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Unchanged 42-second provider deadline expired. The downloaded exact model was observed fully on GPU; no completed response or accepted extraction exists, so semantic quality is unreviewed."
+      },
+      "failure_code": "provider_timeout",
+      "checkpoint_seq": 1,
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+          "engine": "0.33.3",
+          "prompt_version": "tutorial-objectives-units-v1",
+          "schema_version": "tutorial-objectives-units-json-v1",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "f9b77e5994a4c81bc6a1a3da42f50656b5590a39fee09f6b0b1230b253d8ae40",
+          "status": "failed",
+          "input_tokens": null,
+          "output_tokens": null,
+          "output_characters": null,
+          "duration_ms": 42050,
+          "billed_usd": "0.000000",
+          "failure_code": "provider_timeout"
+        }
+      ],
+      "accepted_extractions": [],
+      "draft_count": 0
+    },
+    {
+      "case": "health-route-tr.vtt",
+      "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "tr",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 2441,
+      "schema_bytes": 1111,
+      "request_bytes": 3929,
+      "input_sha256": "091099a9a9b97accad882d09a2f32b9006df4ce06847e3beb4999220d0c35a24",
+      "context_sha256": "eacc0b4a11abda8ed5786a4e48d1438314f3c2feab3ecd3a8b9bcd585da1f42b",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "742089b5dd90cec8b077705a64440aba457e6073c93d21af170527f84f4d4e1d",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 73,
+            "text": "Bu kısa örnekte FastAPI ile tek bir sağlık uç noktası yazıyoruz. from fas",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 73,
+            "end_char": 146,
+            "text": "tapi import FastAPI satırıyla sınıfı içeri aktarın ve app = FastAPI() ile",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 146,
+            "end_char": 220,
+            "text": " uygulamayı oluşturun. @app.get(\"/health\") dekoratörünün altında def healt",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 220,
+            "end_char": 298,
+            "text": "h(): fonksiyonunu tanımlayın. Fonksiyon return {\"status\": \"ok\"} ile sabit bir ",
+            "id": "u00003"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 298,
+            "end_char": 369,
+            "text": "sözlük döndürür. GET /health isteğinin yanıtı status alanı ok olan bir ",
+            "id": "u00004"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c96beb81-ce47-5b9e-8281-51380f6a1764",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 369,
+            "end_char": 385,
+            "text": "JSON nesnesidir.",
+            "id": "u00005"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c63d8524-ea7b-5c33-8412-8d2a92ccf0ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 70,
+            "text": "Alıştırma için uç nokta adını ve sabit metin değerini değiştirebilirsi",
+            "id": "u00006"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c63d8524-ea7b-5c33-8412-8d2a92ccf0ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 70,
+            "end_char": 146,
+            "text": "niz. Tek Python dosyası, FastAPI uygulaması, GET dekoratörü, fonksiyon ve sa",
+            "id": "u00007"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c63d8524-ea7b-5c33-8412-8d2a92ccf0ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 146,
+            "end_char": 218,
+            "text": "bit sözlük bu dersin kapsamıdır. Veritabanı, kullanıcı girişi, kimlik do",
+            "id": "u00008"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c63d8524-ea7b-5c33-8412-8d2a92ccf0ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 218,
+            "end_char": 289,
+            "text": "ğrulama, dağıtım, test kütüphanesi ve async işlevi bu derste anlatılmıy",
+            "id": "u00009"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "af2fa6f5-31ee-4a78-b292-5af0785b9828",
+            "segment_id": "c63d8524-ea7b-5c33-8412-8d2a92ccf0ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 289,
+            "end_char": 292,
+            "text": "or.",
+            "id": "u00010"
+          }
+        ]
+      },
+      "calls": [],
+      "status": "not_attempted",
+      "manual_review": {
+        "passes_predeclared_expectation": null,
+        "verdict": "Not attempted: the first extraction timed out; this finite candidate stopped without retry."
+      },
+      "accepted_extractions": [],
+      "draft_count": 0
+    },
+    {
+      "case": "insufficient-en.vtt",
+      "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 1,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 1707,
+      "schema_bytes": 1039,
+      "request_bytes": 3045,
+      "input_sha256": "ed9fd4e70812bf0a066dc5b44ca75f080eeb8f1ce6befd8177d32fcdfa0d3128",
+      "context_sha256": "2e2f504c39303cc84aa2d32d5476afbadc16786b5ba7e24b5dedd1f777d26452",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "36418bc326228eb617637ca6620318a3eed768139bb850dea77ba44ce03bc510",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "23e004d5-ac7e-49ce-a837-f9d6a8ef7dd8",
+            "segment_id": "dfcf6428-dd0f-5d9b-9519-d85be3b13982",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "This is an authored title card for a recording that is not included. There is no",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "23e004d5-ac7e-49ce-a837-f9d6a8ef7dd8",
+            "segment_id": "dfcf6428-dd0f-5d9b-9519-d85be3b13982",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": " programming demonstration, code, explanation or instruction in this text. The p",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "23e004d5-ac7e-49ce-a837-f9d6a8ef7dd8",
+            "segment_id": "dfcf6428-dd0f-5d9b-9519-d85be3b13982",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "laceholder ends here. No technical learning objective can be supported by this t",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "23e004d5-ac7e-49ce-a837-f9d6a8ef7dd8",
+            "segment_id": "dfcf6428-dd0f-5d9b-9519-d85be3b13982",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 250,
+            "text": "itle card.",
+            "id": "u00003"
+          }
+        ]
+      },
+      "calls": [],
+      "status": "not_attempted",
+      "manual_review": {
+        "passes_predeclared_expectation": null,
+        "verdict": "Not attempted: the first extraction timed out; this finite candidate stopped without retry."
+      },
+      "accepted_extractions": [],
+      "draft_count": 0
+    }
+  ],
+  "application_commit": "b774b08863ad4cb1e73be4cbab7b761b84a82f7d",
+  "declared_max_extraction_calls": 3,
+  "outcome": "failed_first_extraction_timeout",
+  "accepted_extractions": 0,
+  "published_drafts": 0,
+  "continued_positive_runs": false,
+  "public_generation_enabled": false,
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "vram_mib": 8188,
+    "system_ram_gib": 16
+  },
+  "installed_model": {
+    "identity": {
+      "provider": "ollama-local",
+      "model": "qwen2.5:7b-instruct-q4_K_M",
+      "model_digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+      "engine": "0.33.3"
+    },
+    "size_bytes": 4683087332,
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen2",
+      "families": [
+        "qwen2"
+      ],
+      "parameter_size": "7.6B",
+      "quantization_level": "Q4_K_M"
+    },
+    "capabilities": [
+      "completion",
+      "tools"
+    ],
+    "idle_before_inference": true,
+    "download_sha_verified": true,
+    "inference_calls_before_preflight": 0
+  },
+  "test_identity_note": "All source/segment/context identifiers belong to disposable authored MIT test data.",
+  "runtime_notes": [
+    "Read-only native logs confirmed 29/29 layers offloaded to GPU.",
+    "Partial prompt-processing log: 512 tokens, 85 percent progress, 13.46 seconds. This is diagnostic timing, not a successful response or completed usage.",
+    "No preload, retry, longer deadline or third model was used."
+  ],
+  "cleanup": {
+    "remaining_rows": {
+      "projects": 0,
+      "sources": 0,
+      "content_segments": 0,
+      "curriculum_contexts": 0,
+      "curriculum_runs": 0,
+      "curriculum_run_checkpoints": 0,
+      "curriculum_model_calls": 0,
+      "curriculum_drafts": 0
+    },
+    "remaining_artifacts": 0,
+    "schema_removed": true,
+    "shared_disposable_containers_removed": true,
+    "remaining_test_schemas": 0,
+    "remaining_test_redis_keys": 0,
+    "original_container_ids_and_states_unchanged": true,
+    "image_ids_unchanged": true,
+    "volumes_unchanged": true,
+    "networks_unchanged": true,
+    "native_service_pid_unchanged": true,
+    "native_queue_empty": true,
+    "existing_model_digests_unchanged": true,
+    "only_authorized_qwen25_model_added": true,
+    "no_docker_image_build_or_download": true,
+    "downloaded_weights_intentionally_retained": true,
+    "installed_model_size_bytes": 4683087332
+  }
+}

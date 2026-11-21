@@ -25,9 +25,13 @@ now covers Qwen3, Qwen3.5 and the exact Qwen2.5 7B Instruct Q4_K_M contingency,
 preserving the old default, request bytes/recipe and model-bound replay. The real
 Qwen3.5 native-GPU pass timed out at its first call despite observed full GPU
 placement: no accepted extraction/draft, other cases not attempted. That candidate
-is closed. The single authorized Qwen2.5 download is in progress under
-`sprint5/qwen25-generation-plan.md`; its installed identity and native outcome are
-not yet available. Generation stays closed and all failures remain recorded.
+is closed. The authorized `qwen2.5:7b-instruct-q4_K_M` download completed and its
+full manifest/engine pin was verified. Its first extraction also timed out at
+42,043ms despite full GPU placement (5,465,282,968 bytes); no extraction/draft was
+accepted and the remaining cases were not attempted. Both candidates are closed;
+the downloaded model stays installed. See `sprint5/qwen25-generation-plan.md` and
+the raw native artifacts. This verifies hardware fit, not semantic quality or the
+current latency gate. Generation stays closed and all failures remain recorded.
 
 Step 6b adds explicit activation of a reviewed,
 current saved draft revision. A stable assignment-version UUID references that
@@ -49,12 +53,17 @@ backend-integration and images all succeeded. The exact wire/checkpoint baseline
 `7c0236cf886aad2d6615af44827223553159aaf9`'s
 [CI run 44906073173](https://github.com/emredemirbas/multimodal-rag/actions/runs/44906073173)
 was checked on 2026-11-21: frontend/backend-tests/backend-integration succeeded,
-images remained in progress. The latest checked baseline
+images remained in progress. The subsequent documentation baseline
 `a14883ee444c7fbf1a1b083d89cb05e43eb06462`'s
 [CI run 44907640906](https://github.com/emredemirbas/multimodal-rag/actions/runs/44907640906)
-also has frontend/backend-tests/backend-integration success with images still
-running. The new provider/result work requires its own hosted result; local
-evidence is in `sprint5/validation-record.md`.
+was checked with frontend/backend-tests/backend-integration success and images
+still running. The exact provider baseline
+`b774b08863ad4cb1e73be4cbab7b761b84a82f7d`'s
+[CI run 44909273732](https://github.com/emredemirbas/multimodal-rag/actions/runs/44909273732)
+was freshly checked on 2026-11-21: frontend, backend-tests and backend-integration
+succeeded; images and the overall run remained in progress. The subsequent
+native-result documentation commit requires its own hosted result. Local evidence
+is in `sprint5/validation-record.md`.
 
 Step 5c binds explicitly selected captured documents
 to existing draft create/replace APIs under the same context/tenant/project.
@@ -202,15 +211,16 @@ README now follows product-documentation style; operator detail is in
 `local-development.md`, while plans, validation and CI history stay here. The
 same rule is recorded in `../AGENTS.md` for future updates.
 
-Current work: complete the one authorized Qwen2.5 download, verify its full local
-identity and execute only the finite pass in `sprint5/qwen25-generation-plan.md`.
-Provider compatibility/replay tests already pass; Qwen3 and Qwen3.5 failures must
-not be retried or repaired. Preserve sample/semantic/deadline gates and record
-the actual outcome before selecting the next bounded implementation. The latest
-owner instruction already authorizes this download/candidate; no repeat approval
-is needed. Keep public generation/default registration closed; no third model,
-driver/service changes, larger deadlines or grading/tutoring follow automatically.
-Full Sprint 5 and independent real-video/Alpha 2 approval remain open.
+Current continuation: the authorized model installation, explicit provider/replay
+implementation and two finite native GPU passes are recorded and cleaned up.
+Next, use the existing load/partial prompt-processing observations to prepare a
+concrete runtime/budget proposal before another native run. Completed output and
+semantic quality are still unavailable; another model download is not the next
+step. Preserve the failed receipts, fixed samples and semantic acceptance gates.
+Do not retry these closed candidates or silently raise the deadline. Keep public
+generation/default registration closed; no third model, driver/service changes,
+evaluator or grading/tutoring follows automatically. Full Sprint 5 and independent
+real-video/Alpha 2 approval remain open.
 
 ## Sprint 4 closure — one remaining gate
 

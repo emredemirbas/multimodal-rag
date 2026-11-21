@@ -1533,15 +1533,59 @@ content. [Its finite plan](qwen25-generation-plan.md) requires a freshly verifie
 full manifest digest/family/engine before any inference. A completed download or
 protocol fixture is not native quality approval. No other download is planned.
 
+## Downloaded Qwen2.5 GPU result and final cleanup (2026-11-21)
+
+The owner-authorized `ollama pull qwen2.5:7b-instruct-q4_K_M` completed with SHA
+verification. Installed size is **4,683,087,332 bytes**, Q4_K_M, family `qwen2`,
+local completion capability; exact full manifest is
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`.
+Fresh metadata pinned native engine **0.33.3** and an idle queue before inference.
+The application never downloads or falls back to a model.
+
+- Explicit three-model provider/replay code was committed and pushed as
+  **`b774b08863ad4cb1e73be4cbab7b761b84a82f7d`**. The preceding **1,266 unit/API**
+  and **80 PostgreSQL/actual-worker integration** checks passed. Subsequent changes
+  only record native results and cleanup; no production code changed.
+- All three original MIT source hashes, learner preferences, whole-source batches,
+  unit plans, recipe and request limits were preserved. Exactly **one** first
+  English extraction timed out at **42,043ms**; receipt **42,050ms**, unknown/null
+  tokens and zero spend. Only initialization checkpoint 1 exists. **Zero accepted
+  extractions/drafts**; remaining samples and every later stage were not attempted.
+  No retry, preload, diagnostic inference or longer deadline occurred.
+- The exact tag/digest occupied **5,465,282,968 bytes entirely in VRAM** with
+  context 16,384. Bounded metadata observation stopped cleanly. Read-only logs
+  confirm 29/29 layers offloaded and partial prompt processing: 512 tokens,
+  85% progress, 13.46 seconds. This timing is not completed usage or output.
+  Hardware fit is verified; deadline success and semantic quality are not.
+- [The raw Qwen2.5 result](native-qwen25-gpu-results.json) retains full identity,
+  request/source/unit pins, nullable usage, failed receipt and placement evidence.
+  [The Qwen3.5 result](native-qwen35-gpu-results.json) retains its independent
+  timeout. Both candidates are closed without repeated calls.
+- Application deletion/cleanup removed both reviews' projects, source segments,
+  contexts, runs, checkpoints, receipts, drafts and artifacts, then dropped private
+  schemas. All test schemas and Redis keys were zero before removal of the two
+  temporary containers. Original container IDs/states, image IDs, volume names and
+  networks match the initial inventory. Native service PID/engine and pre-existing
+  model digests are unchanged; its queue is empty. Only the explicitly downloaded
+  model remains as the intended installed result. No local image build/download,
+  owner data deletion, `.env`, driver or service configuration change occurred.
+- Offline verification recomputed all six unit plans and request fingerprints,
+  checked fixed source hashes, failed receipts, first-failure bounds, nullable
+  usage and cleanup fields. Public artifacts contain only authored MIT test data
+  and synthetic IDs; private harness/venv/configuration/credentials are removed.
+- Fresh exact-baseline [CI run 44909273732](https://github.com/emredemirbas/multimodal-rag/actions/runs/44909273732)
+  for `b774b08` has frontend, backend-tests and backend-integration success;
+  images and overall status remain **in progress**. This final documentation
+  commit needs its own hosted result; neither is assumed fully successful.
+
 ## Continuation
 
-Complete the one authorized Qwen2.5 download and record its full installed pin,
-then run only the finite pass in `qwen25-generation-plan.md` after preflight.
-Provider/software checks above already pass. Do not retry the closed Qwen3 or
-Qwen3.5 candidates, change their expectations or repair old output. The owner's
-latest instruction already authorizes this operator download/candidate; no repeat
-approval is needed. Keep the same semantic/sample/deadline/first-failure gates.
-Record its actual result and cleanup before the next bounded implementation.
-Public generation/default registration remain closed. No third model, driver/
-service change, larger deadline, evaluator or later sprint follows automatically.
-Full Sprint 5 and independent real-video/Alpha 2 review remain open.
+The authorized installation and finite native review are complete. Keep the
+installed model and recorded failures. The next bounded step is a concrete
+runtime/budget proposal using the existing loading and partial prompt-processing
+evidence, before another native run. No completed response exists to judge content
+quality. Do not retry these closed candidates, download a third model, change
+sample/semantic gates or silently increase the deadline. Public generation/default
+registration remain closed. No driver/service change, evaluator, grading/tutoring
+or later sprint follows automatically. Full Sprint 5 and independent real-video/
+Alpha 2 review remain open.

@@ -1,7 +1,7 @@
 # Separate local generation candidate: Qwen2.5 7B Instruct
 
-Date: 2026-11-21. Status: **one operator-selected download and finite candidate
-authorized; installed identity and native result pending**. The owner requested a
+Date: 2026-11-21. Status: **installed; full GPU placement verified; first native
+extraction timed out; candidate closed**. The owner requested a
 free local Ollama model that fits the available hardware, including a download if
 needed. This authorizes the single contingency below after the installed
 Qwen3.5 candidate stopped. It does not add automatic application downloads,
@@ -39,9 +39,11 @@ preflight block, not permission to remove owner files or select another model.
 The mutable public tag and its short website hash are not an installed identity.
 After download, freshly read local tags/show/version metadata and record the full
 manifest digest, actual quantization, local completion capability and engine pin.
-The existing native engine was **0.33.3**; reverify it rather than assuming it is
-unchanged. The full downloaded manifest digest is **pending fresh local
-verification**, and no inference is permitted until that pin is recorded.
+Fresh local metadata verified native engine **0.33.3**, exact tag and Q4_K_M
+quantization, local completion capability and an idle model queue. Ollama completed
+SHA verification; installed model size is **4,683,087,332 bytes**. Full manifest:
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`.
+This pin was recorded before inference. No earlier model tag was refreshed.
 Require family `qwen2`, the exact selected model name, and no remote model/host.
 
 Extend only the explicit application-owned model/family compatibility boundary;
@@ -137,6 +139,30 @@ another candidate. A successful small review permits only the already planned
 conditional Sprint 5 producer/progress/UI/document-generation work. Public
 generation stays closed until that work and its acceptance checks pass; no Sprint
 6, full Sprint 5 completion or independent real-video/Alpha 2 approval follows.
+
+## Recorded outcome
+
+The exact installed identity above passed preflight on engine 0.33.3. The first
+English extraction made exactly one physical call, timing out at **42,043ms**;
+the failed receipt records **42,050ms**, unknown/null usage and zero paid spend.
+Only initialization checkpoint 1 exists. No extraction or draft was accepted.
+Turkish, insufficiency and all selection/generation cases were not attempted.
+No retry, preload, diagnostic inference, longer deadline or third model followed.
+
+The exact model/digest was observed with **5,465,282,968 bytes entirely in VRAM**
+at context 16,384. Read-only runtime logs confirmed 29/29 layers offloaded to GPU
+and partial prompt processing (512 tokens, 85% progress, 13.46 seconds). This is
+partial timing evidence, not completed token usage or a successful response. The
+model fits this GPU; its output quality and success within the current deadline
+remain unreviewed. See [the raw result](native-qwen25-gpu-results.json).
+
+Normal application deletion removed all disposable records/artifacts and the
+private schema. The temporary PostgreSQL/Redis containers were removed; original
+containers/states, images, volumes, networks, native service and existing model
+digests were preserved. The downloaded weights intentionally remain installed.
+Next prepare a concrete runtime/budget proposal using the existing observations
+before another native run; do not reopen this failed candidate or silently raise
+its budget. Public generation/default registration and later sprints stay closed.
 
 ## Primary references
 

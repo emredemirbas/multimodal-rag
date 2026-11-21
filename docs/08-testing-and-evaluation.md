@@ -94,8 +94,11 @@ Protocol and SQL tests preserve legacy Qwen3 request bytes/recipe, reject identi
 drift before more I/O and resume accepted work only under the same model. Actual
 Qwen3.5 native-GPU extraction still timed out at 42 seconds despite observed full
 VRAM placement; semantic quality was not available to review. Its candidate
-stopped after one call. Downloading the single Qwen2.5 contingency is an explicit
-operator action; its native result must be recorded separately. No application
+stopped after one call. The single operator-authorized Qwen2.5 download completed;
+its separately pinned first native extraction also timed out at 42,043ms despite
+full GPU placement. No accepted extraction/draft or completed semantic review
+exists for either candidate; the remaining cases were not attempted. The raw
+artifacts preserve the actual nullable usage and failed receipts. No application
 download, automatic fallback or public generation follows from compatibility tests.
 
 ## Software test pyramid

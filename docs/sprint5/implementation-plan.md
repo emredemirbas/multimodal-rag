@@ -627,11 +627,17 @@ Protocol, SQL and real worker recovery checks pass. The selected native GPU path
 for Qwen3.5 timed out on the first extraction; full GPU placement was observed,
 but no response/extraction/draft was accepted. No other case or retry followed.
 
-The one authorized [Qwen2.5 contingency](qwen25-generation-plan.md) is downloading;
-verify its full installed identity after completion before its finite native pass.
-Keep original source/semantic/resource/deadline gates and report the actual result.
-Generation remains closed; no software test replaces native quality. Preserve
-lease/call/checkpoint fences and the empty default registry. No application model
-download/fallback, third candidate, driver/service change, deadline increase,
+The authorized [Qwen2.5 contingency](qwen25-generation-plan.md) is installed with
+its full manifest/engine pin recorded. Its first extraction timed out at 42,043ms
+while fully on the GPU (5,465,282,968 bytes); no response/extraction/draft was
+accepted. Later cases were not attempted. Both finite candidates are closed;
+the installed model is retained and all disposable test resources are removed.
+
+Next prepare a concrete runtime/budget proposal from the recorded loading and
+partial prompt-processing observations before another native run. Hardware fit
+has been verified; current-deadline success and semantic quality have not. Preserve
+source/semantic gates, failed receipts, lease/checkpoint fences and the empty
+default registry. Generation remains closed. No automatic retry, application
+model download/fallback, third candidate, driver/service change, deadline increase,
 evaluator or later sprint follows. Full Sprint 5 and independent real-video/Alpha 2
 approval stay open.

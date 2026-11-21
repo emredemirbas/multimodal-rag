@@ -511,6 +511,18 @@
       "curriculum_drafts": 0
     },
     "remaining_artifacts": 0,
-    "schema_removed": true
+    "schema_removed": true,
+    "shared_disposable_containers_removed": true,
+    "remaining_test_schemas": 0,
+    "remaining_test_redis_keys": 0,
+    "original_container_ids_and_states_unchanged": true,
+    "image_ids_unchanged": true,
+    "volumes_unchanged": true,
+    "networks_unchanged": true,
+    "native_service_pid_unchanged": true,
+    "native_queue_empty": true,
+    "existing_model_digests_unchanged": true,
+    "only_authorized_qwen25_model_added": true,
+    "no_docker_image_build_or_download": true
   }
 }

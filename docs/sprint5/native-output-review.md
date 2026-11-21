@@ -392,3 +392,54 @@ Ollama source under [its separate finite plan](qwen25-generation-plan.md).
 Its full installed identity and native result remain pending; no Qwen2.5
 inference is permitted until download, identity and software checks pass. This
 operator action is not an application fallback or an unlimited model search.
+
+## Predeclared downloaded Qwen2.5 pass — 2026-11-21
+
+The single authorized download completed with Ollama SHA verification. Fresh local
+tags/show/version checks recorded exact `qwen2.5:7b-instruct-q4_K_M`, family `qwen2`,
+Q4_K_M, local completion capability and no remote model/host on engine `0.33.3`.
+Installed size is 4,683,087,332 bytes; full manifest digest is
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`.
+The native queue was idle and approximately 7.5 GiB VRAM was available before
+inference. No old model or service/driver setting was changed.
+
+Use [the separate finite plan](qwen25-generation-plan.md) exactly: unchanged
+unit profiles, three fixed samples/preferences/expectations, English first with
+immediate stop on the first failed extraction, at most three extraction/nine total
+physical calls, no retry/diagnostic or deadline increase. Only if all three
+extractions pass may the same accepted positive checkpoints select/generate and
+use their existing one declared correction. Explicit provider/replay code is
+tested at `b774b08`; observe actual exact-model VRAM during the real call.
+Successful installation is not semantic/native acceptance or public enablement.
+
+## Downloaded Qwen2.5 native GPU result — 2026-11-21
+
+The predeclared first English extraction made **one** actual inference call and
+timed out at **42,043ms**; its failed receipt records **42,050ms**, nullable unknown
+usage and zero paid spend. Status was `retrying` with only initialization
+checkpoint 1; the finite candidate stopped without retry. **Zero accepted
+extractions and zero drafts**. Turkish, insufficiency, selection, generation and
+revision were not attempted. No completed wire response exists for semantic
+review, so this result does not establish bad content or semantic success.
+
+During that call the exact tag/digest was observed fully resident on the GPU:
+**5,465,282,968 allocated bytes in VRAM**, context 16,384, 85 matching observations
+out of 139 bounded polls with no observer errors. The sampler stopped after the
+request. Read-only logs confirm 29/29 layers on GPU and partial prompt processing
+(512 tokens, 85% progress, 13.46 seconds); these are partial timing observations,
+not completed usage. Hardware fit is verified; the current native deadline gate
+is not. See [the raw artifact](native-qwen25-gpu-results.json).
+
+Application cleanup removed both reviews' disposable records/artifacts and private
+schemas. Test-schema and Redis-key counts were zero before removing the temporary
+PostgreSQL/Redis containers. Original container states, image IDs, volumes,
+networks, native service PID and pre-existing model digests matched the initial
+inventory. The native queue is idle. Exactly the authorized Qwen2.5 model was
+added and retained; no local Docker image was built/downloaded. Temporary private
+harness files and credentials are removed after offline artifact verification.
+
+Both candidates are closed. Next prepare a concrete runtime/budget proposal from
+the existing load/prompt-processing evidence before another native run. No third
+model, retry, automatic deadline increase or weaker evidence/semantic gate follows.
+Public generation/default registration remain closed; full Sprint 5 and
+independent real-video/Alpha 2 approval remain open.

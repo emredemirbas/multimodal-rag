@@ -152,8 +152,11 @@ changes. This candidate is closed; no retry or larger deadline follows.
 
 The owner's conditional download instruction now applies to the single researched
 [Qwen2.5 contingency](qwen25-generation-plan.md). It is a separate explicitly
-selected candidate, not automatic fallback within a run. Keep public generation
-closed and preserve this failed result.
+selected candidate, not automatic fallback within a run. Its download completed
+and its first native extraction also timed out despite full GPU placement; that
+candidate is now closed too. The installed weights are retained. See its recorded
+result and runtime/budget continuation; preserve this independent failed result
+and keep public generation closed.
 
 ## Protocol references
 
