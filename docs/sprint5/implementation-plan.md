@@ -50,7 +50,7 @@ validation counts, CI run identities and handoff instructions belong in `docs/`.
 - Draft updates use optimistic version checks. Activation produces a pinned
   version; corrections can start a new editable draft, preserving the old version.
   This satisfies ADR 0010's eventual post-submission immutability without adding
-  submission behavior now. Final activation/version API is implemented in step 6.
+  submission behavior now. The activation/version API is implemented in step 6b.
 - Deleting a source must remove derived objective/draft/version text that depends
   on it, not merely delete citation rows. Complete project deletion removes all
   curriculum snapshots, checkpoints and model-call attribution as applicable.
@@ -424,8 +424,8 @@ Unrelated drafts remain. Direct approval/snapshot deletion and source/context/
 project cascades must enforce the same rule. The learner's deletion confirmation
 must explain the draft-history effect. Scope/locking, atomic failure, immutable
 replay, old-schema upgrades and historical dependency cleanup need integration
-coverage, now recorded in `validation-record.md`. Draft discovery/review/edit UI
-is the next bounded part of Step 6; activation remains a separate planned slice.
+coverage, now recorded in `validation-record.md`. Step 6a supplies draft discovery/
+review/edit UI; Step 6b adds explicit activation separately from generation.
 
 Step 5a is a bounded backend-only slice: an authenticated project member explicitly
 selects and approves the fixed English FastAPI First Steps catalog entry for one
@@ -457,6 +457,36 @@ Test SSRF/redirect/oversize/stale-version cases with local HTTP fixtures, no pai
 or unapproved live fetches. UI must make any required document approval explicit.
 
 ### 6. Learner workspace, draft review and activation
+
+Step 6b implements the bounded manual activation slice (2026-11-21). An explicit review
+acknowledgment activates the saved current draft revision, never unsaved form text
+or a historical revision. One stable version UUID references that immutable scoped
+revision, context and original actor/time; no content/evidence duplication, new
+version counter, project-wide active-assignment restriction or generation call is
+needed. Later edits leave activated versions unchanged. Re-activating the same
+current revision with another key returns the original version. Shared project
+draft command keys retain unchanged replay after later edits/archive; stale new
+commands conflict. The tiny request uses the existing 16 KiB boundary.
+
+Implemented `POST /drafts/{id}/activate` with `{idempotency_key, expected_revision,
+consent: "activate_reviewed_revision"}`, `GET /drafts/{id}/activation` with the
+latest activated revision or null, and exact `GET /assignments/{version_id}`.
+Return the pinned `DraftRevisionView` and activation identity/scope/context/actor/
+time. Migration 0027 adds revision/context FKs and an activation link in the shared
+command ledger; no source-owned job or model workflow is repurposed. Authorize,
+then context -> sorted selected documents -> draft head locks; recheck the head
+before adopting the validated revision and atomically saving version plus receipt.
+
+Deletion follows existing draft-history semantics: deleting a whole draft or any
+dependency that deletes it also deletes every activation and related receipt.
+Edits preserve old activated versions; explicit whole-history deletion does not.
+Explain that effect in draft/context/document confirmations. The learner confirms
+only a clean, current, saved review, gets a stable read-only version URL and can
+recover an uncertain activation with the original key/revision. Tests must cover
+scope, stale-head conflicts, immutable replay, archive, direct deletion races,
+historical/uncited dependency cleanup and accessible status/error states. Activation
+means learner acceptance, not model-quality approval. Public generation, deadlines,
+submissions, grading and tutoring stay closed.
 
 Step 6a implements the bounded saved-draft review/edit slice (2026-11-12). Add context-scoped draft
 summaries with UUID keyset pagination (20 per page, maximum 50), using the existing
@@ -567,10 +597,18 @@ compares retained tutorial text with its immutable context and document projecti
 with their selected captured copies. Conflict, uncertain same-key replay, archive,
 focus refresh and deletion fences are tested; no content is generated for this UI.
 
-Next implement explicit activation of the reviewed revision as Step 6b within
-Sprint 5. Record the bounded assignment-version/API/UI contract first, preserving
-idempotence, optimistic revision checks, pinned evidence and complete dependency
-deletion. Keep activation separate from generation and from later submissions.
-Preserve existing lease/call/checkpoint fences and the empty default registry.
-No model downloads, paid calls, public generation, grading/tutoring or automatic
-later-sprint work follows.
+Step 6b implements explicit activation of the reviewed saved revision, one stable
+version UUID per draft/revision and exact read-only version pages. Shared command
+replay, stale-head checks, consent, uncertain delivery, immutable evidence and
+complete historical dependency deletion are covered in `validation-record.md`.
+
+Next verify this commit's exact hosted CI. The manual workspace portion of Step 6
+is implemented; public generation/progress UI and Step 7's generated-draft review
+and end-to-end acceptance remain blocked by the recorded native quality failure.
+No accepted native extraction/draft exists. Before dependent implementation,
+surface that concrete failure and obtain an owner decision about a changed
+generation approach or an explicitly narrower Sprint 5 target. Do not silently
+select another model, install weights, repeat prompt/profile experiments, create
+an evaluator, relax evidence checks or start a later sprint. Preserve existing
+lease/call/checkpoint fences and the empty default registry. Full Sprint 5 and
+independent real-video/Alpha 2 approval remain open.

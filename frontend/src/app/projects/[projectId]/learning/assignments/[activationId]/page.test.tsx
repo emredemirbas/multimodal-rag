@@ -1,0 +1,24 @@
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import AssignmentPage from "./page";
+import { getProject } from "@/lib/api/client";
+import { getAssignmentActivation } from "@/lib/api/activations";
+import { ApiError } from "@/lib/api/errors";
+import { context, projectId, documentId } from "@/components/curriculum/test-fixtures";
+import { activationFixture } from "@/components/curriculum/draft-fixtures";
+import type { AssignmentActivation } from "@/lib/api/activation-contracts";
+vi.mock("@/lib/api/client",()=>({getProject:vi.fn()}));
+vi.mock("@/lib/api/activations",()=>({getAssignmentActivation:vi.fn()}));
+vi.mock("next/navigation",()=>({notFound:()=>{throw new Error('not-found');}}));
+vi.mock("@/components/curriculum/draft-editor",()=>({DraftEditor:({activatedVersion}:{activatedVersion:AssignmentActivation})=><p>Read only activated revision {activatedVersion.revision}</p>}));
+const accepted=activationFixture();
+const project={id:projectId,tenant_id:context.tenant_id,title:'Synthetic project',status:'active' as const,created_at:context.created_at,updated_at:context.created_at,archived_at:null};
+const open=(activationId=accepted.id)=>AssignmentPage({params:Promise.resolve({projectId,activationId})});
+beforeEach(()=>{vi.resetAllMocks();vi.mocked(getProject).mockResolvedValue(project);vi.mocked(getAssignmentActivation).mockResolvedValue({activation:accepted,context});});
+describe('bookmarked activated version page',()=>{
+ it('rejects malformed IDs before using credentials',async()=>{await expect(open('../private')).rejects.toThrow('not-found');expect(getProject).not.toHaveBeenCalled();});
+ it('reads the exact stable version under the authoritative tenant and links to its editable draft',async()=>{render(await open());expect(getAssignmentActivation).toHaveBeenCalledWith({tenant_id:context.tenant_id,project_id:projectId},accepted.id);expect(screen.getByText('Read only activated revision 1')).toBeVisible();expect(screen.getByRole('link',{name:'Editable draft'})).toHaveAttribute('href',`/projects/${projectId}/learning/drafts/${accepted.draft_id}`);});
+ it('refuses project receipt substitution without forwarding private content',async()=>{vi.mocked(getProject).mockResolvedValue({...project,id:documentId});render(await open());expect(getAssignmentActivation).not.toHaveBeenCalled();expect(screen.getByRole('alert')).toBeVisible();});
+ it('handles version/dependency removal as missing',async()=>{vi.mocked(getAssignmentActivation).mockRejectedValue(new ApiError({status:404}));await expect(open()).rejects.toThrow('not-found');});
+ it('shows recoverable safe errors without partial version text',async()=>{vi.mocked(getAssignmentActivation).mockRejectedValue(new ApiError({status:503,message:'PRIVATE ASSIGNMENT'}));render(await open());expect(screen.queryByText(/PRIVATE ASSIGNMENT|Read only activated/)).toBeNull();expect(screen.getByRole('link',{name:'Retry'})).toHaveAttribute('href',`/projects/${projectId}/learning/assignments/${accepted.id}`);});
+});

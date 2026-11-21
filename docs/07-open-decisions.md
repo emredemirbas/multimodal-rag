@@ -36,14 +36,26 @@ These choices are now confirmed. Step 5a implements approved capture APIs; Step 
 adds source/preferences selection and per-page approval/capture/read/delete UI.
 An application allowlist remains mandatory. Step 5c binds explicitly selected
 captured documents into draft APIs; Step 6a adds discovery/review and narrative
-editing of saved drafts. Activation and dependent model runtime remain closed.
-The schema/binding, saved-context and editable-draft slices require explicit
-policy/preferences and fetch nothing. Persisting a permission does not enable
-generation or document access; dependent behavior waits for approved capture.
+editing of saved drafts. Step 6b adds explicit manual activation of a reviewed
+saved current revision and read-only accepted-version pages (migration 0027).
+Acceptance is not independent model quality approval and invokes no inference or
+fetch. Dependent model runtime and public generation remain closed.
+The schema/binding, saved-context, editable-draft and activation slices require
+explicit policy/preferences and fetch nothing. Persisting a permission does not enable
+generation or document access; each document capture still requires its separate
+explicit approval and command.
 Draft content binds only to tutorial evidence already captured in its context and
 explicitly selected, same-context captured documentation;
 trusted external-document capture is now a separate 0025 boundary, and its learner
 UI is available; 0026 adds the separate scoped draft-document dependency boundary.
+Activation retains one immutable version per saved draft revision with the original
+accepting actor/time. Matching keys replay it after edits or archive; a new key
+requires an active project and current head, even when another revision was
+previously activated. Later draft edits require another reviewed activation.
+Deleting a draft or dependency also deletes all its accepted versions, including
+when any historical revision selected an uncited or subsequently dropped document.
+This continuation does not open Sprint 6 submissions/grading or change the native
+quality gate.
 The internal LangGraph component accepts only contexts whose three external-topic/
 document permissions are explicitly false; any true flag fails before inference.
 This internal path remains separate from approved document capture and does not
@@ -97,7 +109,9 @@ working answers for the MVP are:
 5. Third-party learner dependencies must be allowlisted and hash-pinned during a
    controlled build step. Grading sandboxes have no network access.
 6. Generated assignments remain editable drafts until the user explicitly
-   activates them. Activated versions are immutable after a submission.
+   activates a reviewed saved revision. Each activated version is immutable;
+   corrections require reviewing and activating another saved revision.
+   Submission handling remains later work.
 
 These decisions may be revisited through an ADR, but broad implementation should
 not silently contradict them.
@@ -323,7 +337,7 @@ the owner's later RAG portfolio v1 choice above now governs the first release.
 | External documentation | Allowlisted official documents, each selected/approved by the learner before retrieval | Confirmed, 2026-10-29; Step 5a backend/5b learner UI/5c draft API binding implemented; model runtime remains closed |
 | Documentation versioning | Record URL, retrieval date, detected version, and content hash | Implemented for Step 5a: immutable text/raw hashes and stable excerpts; unversioned FastAPI page explicitly unknown |
 | Requirement labels | Covered, prerequisite, extension | Proposed |
-| Assignment publication | Editable draft requiring user approval | Confirmed for MVP, 2026-09-21 |
+| Assignment publication | Editable draft requiring explicit approval of a saved revision | Confirmed for MVP, 2026-09-21; manual reviewed-revision activation/read-only versions implemented in Step 6b, 2026-11-21; generation quality gate unchanged |
 | Deadline | Optional, learner-selected | Proposed |
 | Reminder channels | In-app only | Proposed |
 | Hint policy | Progressive disclosure | Proposed |

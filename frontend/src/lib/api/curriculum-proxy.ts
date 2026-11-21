@@ -15,6 +15,8 @@ import {
 
 const PRIVATE_HEADERS = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Cross-Origin-Resource-Policy": "same-origin" };
 const MESSAGES: Record<string, string> = {
+  assignment_activation_not_found: "This activated assignment version is no longer available. Its draft or a dependency may have been deleted.",
+  invalid_assignment_activation: "Review the saved current revision and confirm activation before trying again.",
   curriculum_draft_not_found: "This assignment draft is no longer available. A selected source, context or document may have been deleted.",
   invalid_curriculum_draft: "Check the draft fields, effort and evidence references. Nothing was saved.",
   draft_revision_conflict: "A newer draft revision exists. Review the latest revision before editing again.",
@@ -43,7 +45,7 @@ const MESSAGES: Record<string, string> = {
   upstream_unavailable: "The local API could not be reached. Keep the unchanged command key when retrying uncertain delivery.",
   invalid_api_response: "The local API returned a response that could not be verified. Refresh before retrying an uncertain write.",
 };
-export function curriculumProxyError(error: unknown, missingCode?: "curriculum_draft_not_found" | "curriculum_context_not_found" | "documentation_not_found" | "project_not_found"): NextResponse {
+export function curriculumProxyError(error: unknown, missingCode?: "assignment_activation_not_found" | "curriculum_draft_not_found" | "curriculum_context_not_found" | "documentation_not_found" | "project_not_found"): NextResponse {
   const status = error instanceof ApiError && error.status >= 400 && error.status <= 599 ? error.status : 502;
   const code = error instanceof ApiError && Object.hasOwn(MESSAGES, error.code) ? error.code : status === 404 && missingCode ? missingCode : "request_failed";
   const message = MESSAGES[code] ?? (status === 401 || status === 403 ? "Your session could not be verified. Refresh and try again." : "The learning request could not be completed. Refresh and try again.");

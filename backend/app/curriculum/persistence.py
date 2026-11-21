@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import json
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
@@ -97,3 +97,25 @@ class DraftSummary(Boundary):
 class DraftList(Boundary):
     items: list[DraftSummary] = Field(max_length=50)
     next_after: UUID | None
+
+
+class AssignmentActivate(Boundary):
+    idempotency_key: str = Field(strict=True, min_length=8, max_length=128, pattern=r"^[a-zA-Z0-9_-]+$")
+    expected_revision: int = Field(strict=True, ge=1, le=2_147_483_647)
+    consent: Literal["activate_reviewed_revision"]
+
+
+class AssignmentActivation(Boundary):
+    id: UUID
+    tenant_id: str
+    project_id: UUID
+    draft_id: UUID
+    context_id: UUID
+    revision: int = Field(ge=1)
+    activated_at: datetime
+    activated_by: UUID
+    draft: DraftRevisionView
+
+
+class AssignmentActivationState(Boundary):
+    activation: AssignmentActivation | None

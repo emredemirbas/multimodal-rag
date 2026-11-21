@@ -28,7 +28,7 @@ export function DraftListWorkspace({ scope, contextId, initial }: { scope: Learn
   }, [load]);
   return <section className="panel stack" aria-label="Saved assignment drafts" aria-busy={busy}>
     <h2>Saved assignment drafts</h2>
-    <p>Review existing drafts for this fixed selection. Assignment generation and activation are not available yet.</p>
+    <p>Review existing drafts for this fixed selection. Assignment generation is not available yet. Open a saved draft to review and explicitly activate a revision.</p>
     {gone ? <p role="status">This saved selection is no longer available. Its drafts may have been deleted with a dependency.</p> : <>
       <button className="button button--secondary" disabled={busy} onClick={() => void load()}>Refresh drafts</button>
       {page.items.length ? <ul className="stack">{page.items.map((draft) => <li key={draft.id}>

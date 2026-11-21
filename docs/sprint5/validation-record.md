@@ -1,9 +1,11 @@
 # Sprint 5 — validation record
 
-Date: 2026-10-29. Status: internal contracts, saved contexts, versioned draft APIs
-durable queued delivery/atomic draft publication and the pinned local JSON/call
-provider foundation implemented. Model
-extraction/generation, review/activation UI and full Sprint 5 acceptance remain undelivered.
+Updated: 2026-11-21. Internal contracts, saved contexts, versioned draft APIs,
+durable queued delivery/atomic publication, the pinned local provider and internal
+workflow, document capture/binding, draft review/edit and explicit manual activation
+are implemented in the slices below. Public generation and full Sprint 5 acceptance
+remain blocked by the failed native-output review. Historical entries describe
+what was delivered at their recorded date.
 The ordered plan is `implementation-plan.md`.
 
 ## Starting state and documentation
@@ -1180,16 +1182,97 @@ contexts stay empty until a draft is authored through the existing API. This edi
 changes wording/effort, not structural item creation/removal or evidence rewiring.
 Native latency/semantic abstention and independent real-video review remain open.
 
+## Step 6b — explicit reviewed-revision activation (2026-11-21)
+
+Started with clean `main` at `560f58670bd971bee5aaf79c7007f3c951f2daff`, matching
+origin after fetch. Its exact
+[CI run 43100568694](https://github.com/emredemirbas/multimodal-rag/actions/runs/43100568694)
+was verified completed/success. This slice requires its own actual hosted result.
+
+- Migration 0027 adds scoped assignment-version references to immutable draft
+  revisions/contexts and activation links in the existing project draft-command
+  ledger. No content/evidence copy or project-wide active pointer is introduced.
+  One version UUID per draft/revision preserves its original actor/time; later
+  edits leave it unchanged. Whole-history deletion removes all versions/receipts.
+- Authenticated POST activation requires strict current `expected_revision` and
+  explicit `activate_reviewed_revision` consent. GET state returns the latest
+  activated revision or null; exact GET reads one pinned version. Membership,
+  tenant/project, archive, context and sorted selected-document fences apply.
+  Replay precedes mutable-head/archive checks; stale new commands conflict.
+  Create/replace/activate share command identity, so operation/target reuse conflicts.
+- The learner reviews a clean current saved revision and explicitly acknowledges
+  it before activation. Unsaved/historical/archived content cannot start one.
+  Uncertain delivery freezes the original key/body/reviewed draft; substituted
+  receipts are rejected. Status checks perform no mutation. Stable assignment
+  URLs are read only; a later edit can be reviewed/activated separately. All
+  deletion confirmations explain removal of activated versions, and late responses
+  cannot restore deleted copied text.
+- Backend tests caught a constructed boolean revision being serialized as an
+  integer; raw strict revalidation now rejects it. Direct version deletion raced
+  with a new receipt: a version key-share fence now serializes that case. Tests
+  preserve whole-history cleanup for historical/uncited document dependencies.
+
+Final validation:
+
+- **54 new PostgreSQL/API activation tests passed**, including real blocking races,
+  both scopes, auth, strict input/consent, atomic failure, shared-key conflicts,
+  replay after edits/archive, actor/version stability and complete deletion.
+- **83 existing PostgreSQL migration/draft/document regression tests passed**.
+  Both explicit migration inventories now include 0027.
+- **1,024 backend non-integration tests passed** in a separate cached Python 3.12
+  environment. Owner tooling/settings were unchanged.
+- **459 frontend tests passed** in 58 files, plus lint and typecheck. New contract,
+  BFF, page and component cases cover explicit consent, strict scoped receipts,
+  dependency/projection tampering, uncertain exact replay, stale-head conflict,
+  dirty/history/archive restrictions, immutable view refresh and deletion races.
+- Independent read-only implementation/documentation review found no material
+  blocker. `git diff --check` and all 27 local links in eight changed Markdown files
+  passed; browser static bundles contained no synthetic bearer token.
+- The production build exposed a genuine security notice for Next 16.4.2. The
+  [official November release](https://nextjs.org/blog/november-2026-security-release)
+  fixes the affected line from 16.4.5; the subsequent
+  [16.4.6 patch](https://github.com/vercel/next.js/releases/tag/v16.4.6) is now
+  pinned with matching config/plugin and the existing lint adapter compatibility
+  assertion. A compatible `typescript-eslint` 8.73.0 transitive update removes
+  vulnerable minimatch 10.2.6 in favor of 11.0.9, without another direct dependency.
+  The full **459 tests, lint, typecheck, five lint-compatibility cases and production
+  build passed again after this patch**. Final `npm audit` exited 0 with **zero
+  findings across production and development dependencies**. The original stopped
+  build is not counted as a success; no agent-upgrade workflow/configuration
+  bypass or security-check suppression was used.
+- Browser walkthrough used the **production Next 16.4.6 frontend and real
+  FastAPI/PostgreSQL** with a separate authored source, synthetic approved/captured
+  document and API-authored draft. Revision 1 required explicit consent, activated
+  and opened at a read-only UUID URL. Editing the title saved revision 2 without
+  activating it; separate new consent activated revision 2 under a different UUID.
+  Reopening version 1 still showed its original title/revision. Tutorial and
+  external-document labels stayed separate and synthetic HTML stayed literal.
+  Deleting only the synthetic document through the test API removed both versions
+  and the complete draft (404); refreshing the already-open version cleared its
+  content. Browser error logs were empty. A screenshot is retained locally outside
+  Git. This is software workflow evidence, not native generation or quality review.
+
+The owned loopback servers were stopped and both ports closed. The browser schema
+was dropped, leaving zero test schemas, and the labelled cached tmpfs PostgreSQL
+container was removed. Owner container IDs/states, unique image IDs and volume
+names matched the initial inventory. No image was built/downloaded locally;
+no real data, owner `.env`/credentials, Docker settings or existing service state
+was changed. No paid service, live-document fetch, model invocation or automatic
+model download occurred. Only ordinary npm security-patch packages were retrieved.
+The temporary test environment/scripts were removed.
+
+Limits: activation records explicit learner acceptance of already-saved content.
+It enables no public draft creation/generation, submission, grading or tutor.
+No native-model or independent real-video quality gate closes.
+
 ## Continuation
 
-Continue Step 6 **within Sprint 5** with explicit activation of a reviewed draft
-revision (Step 6b). Record its bounded assignment-version/API/UI contract first,
-then preserve idempotent activation, optimistic revision checks, immutable source/
-document provenance and complete dependency deletion. Reuse existing command and
-scope patterns; do not introduce submissions, grading, deadlines or another prompt
-iteration. Activation remains separate from the closed generation registry.
-Keep the empty default registry/public generation closed: native latency, literal
-quotes, core-skill/semantic abstention and full generated-draft review remain open.
-No new prompt retry loop, relaxed checks, paid calls/downloads, grading/tutoring or
-Alpha 2 closure follows. Verify this new commit's exact hosted CI; running is not
-success and a prior passing commit does not prove this slice's hosted result.
+Verify the new commit's exact hosted CI; a running workflow is not success. The
+bounded manual review/edit/activation workspace is implemented. The remaining
+planned generation/progress UI and Step 7 acceptance require supported native
+generated drafts; the predeclared review accepted none. Keep the default registry
+and public generation closed. Before dependent work, surface the failed review and
+obtain an owner decision on changing the generation approach or explicitly narrowing
+the remaining Sprint 5 target. Do not repeat prompt/profile experiments, install
+models, invent evaluators, weaken checks or start submissions/grading/tutoring.
+Full Sprint 5 and independent real-video/Alpha 2 quality approval remain open.

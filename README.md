@@ -23,7 +23,8 @@ add speech transcription, selected video frames, OCR and image descriptions.
 - **Learning preparation:** save source versions and preferences, then explicitly
   approve and retain the catalogued FastAPI documentation page with its provenance.
   Review existing assignment drafts, inspect their evidence and save wording edits
-  as new revisions; assignment generation and activation remain unavailable.
+  as new revisions. Explicitly activate a reviewed saved revision as a fixed,
+  read-only assignment version; assignment generation remains unavailable.
 - **Playlist organization:** import official YouTube metadata and associate your
   own authorized transcripts with individual lessons.
 - **Recoverable processing:** durable jobs, checkpointed indexing and atomic

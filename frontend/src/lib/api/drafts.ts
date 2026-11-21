@@ -9,7 +9,7 @@ import { authorizeLearningProject, curriculumPath, getDocument, invalidLearningR
 import { curriculumJson, curriculumRequestBody } from "./curriculum-proxy";
 import { draftContent, parseDraftList, parseDraftReplace, parseDraftRevision, type DraftReplaceBody } from "./draft-contracts";
 
-async function decodeDraft(payload: unknown, expected: LearningScope, draftId: string, revision?: number) {
+export async function decodeDraft(payload: unknown, expected: LearningScope, draftId: string, revision?: number) {
   try {
     if (!payload || typeof payload !== "object" || !("context_id" in payload)) throw new TypeError();
     learningScope(payload as Record<string, unknown>, expected);

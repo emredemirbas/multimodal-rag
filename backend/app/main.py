@@ -65,6 +65,8 @@ from .curriculum.http import CurriculumHttpMiddleware
 from .curriculum.persistence import ContextCreate, ContextView, DraftCreate, DraftReplace, DraftRevisionView, DraftList
 from .curriculum.repository import ContextRepository
 from .curriculum.drafts import DraftRepository
+from .curriculum.assignments import AssignmentRepository
+from .curriculum.persistence import AssignmentActivate, AssignmentActivation, AssignmentActivationState
 from .curriculum.documentation import CatalogPolicy, DocumentApprove, DocumentCapture, DocumentRepository, DocumentView
 from .curriculum.documentation_fetch import OfficialDocumentationFetcher
 from .vision.gallery import VisualGalleryRepository
@@ -149,6 +151,7 @@ def create_app(
         application.state.chat = ChatRepository(active_store, metrics) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum = ContextRepository(active_store) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum_drafts = DraftRepository(active_store) if isinstance(active_store, PostgresStore) else None
+        application.state.curriculum_assignments = AssignmentRepository(active_store) if isinstance(active_store, PostgresStore) else None
         application.state.curriculum_documentation = DocumentRepository(active_store) if isinstance(active_store, PostgresStore) else None
         application.state.documentation_fetcher = OfficialDocumentationFetcher()
         if isinstance(active_store, PostgresStore) and (artifacts is not None or active_settings.s3_access_key):
@@ -291,6 +294,11 @@ def create_app(
         if request.app.state.curriculum_drafts is None:
             raise SourceError("curriculum_not_configured", "Saved assignment drafts require PostgreSQL.", 503)
         return request.app.state.curriculum_drafts
+
+    def curriculum_assignments(request: Request) -> AssignmentRepository:
+        if request.app.state.curriculum_assignments is None:
+            raise SourceError("curriculum_not_configured", "Assignment activation requires PostgreSQL.", 503)
+        return request.app.state.curriculum_assignments
 
     def curriculum_documentation(request: Request) -> DocumentRepository:
         if request.app.state.curriculum_documentation is None:
@@ -641,6 +649,20 @@ def create_app(
     def delete_curriculum_draft(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal):
         curriculum_drafts(request).delete(principal.tenant_id, project_id, actor(request, principal), draft_id)
         return Response(status_code=204)
+
+    @app.post("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}/activate", response_model=AssignmentActivation, status_code=201)
+    def activate_curriculum_assignment(project_id: UUID, draft_id: UUID, body: AssignmentActivate,
+                                       request: Request, principal: CurrentPrincipal):
+        return curriculum_assignments(request).activate(principal.tenant_id, project_id, actor(request, principal), draft_id, body)
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/drafts/{draft_id}/activation", response_model=AssignmentActivationState)
+    def latest_curriculum_assignment(project_id: UUID, draft_id: UUID, request: Request, principal: CurrentPrincipal):
+        return AssignmentActivationState(activation=curriculum_assignments(request).latest(
+            principal.tenant_id, project_id, actor(request, principal), draft_id))
+
+    @app.get("/api/v1/projects/{project_id}/curriculum/assignments/{assignment_id}", response_model=AssignmentActivation)
+    def read_curriculum_assignment(project_id: UUID, assignment_id: UUID, request: Request, principal: CurrentPrincipal):
+        return curriculum_assignments(request).read(principal.tenant_id, project_id, actor(request, principal), assignment_id)
 
     @app.post("/api/v1/projects/{project_id}/conversations", response_model=Conversation, status_code=201)
     def create_conversation(project_id: UUID, body: ConversationCreate, request: Request, principal: CurrentPrincipal):

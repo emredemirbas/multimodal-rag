@@ -472,7 +472,8 @@ for new approval/capture. Deletion confirmation hides retained text immediately;
 if delivery is uncertain, check the deletion result before showing a copy again.
 Deleting a selected source also removes its saved context and documents. Deleting
 a document also deletes any draft that selected it in any revision, including the
-entire revision history and replay receipts; the confirmation explains this effect.
+entire revision history, activated versions and replay receipts; the confirmation
+explains this effect.
 
 Follow **Review saved assignment drafts** from a saved selection to see its current
 drafts. Open one to inspect labelled requirements, original evidence, criteria and
@@ -482,9 +483,22 @@ requires explicit discard/reload, while an uncertain save repeats its unchanged
 body/key. Refresh/focus rechecks dependencies; unconfirmed deletion hides text until
 checked. Bookmark the draft URL to recover the authoritative saved version.
 
-Assignment generation and activation remain unavailable. Lists can be empty: this
-UI does not manufacture sample/generated drafts. Existing drafts authored through
-the draft API are reviewable; no public creation/generation control is added.
+To activate an assignment, review the current saved revision, save or discard any
+unsaved changes, then check **I have reviewed saved revision … and accept its requirements and evidence**
+and choose **Activate saved revision …**. Historical reviews and archived
+projects cannot start a new activation. The resulting assignment URL opens exactly
+that immutable revision, read only. Later draft edits leave this version unchanged;
+a newly reviewed revision can be activated separately. Deleting the complete draft
+or a dependency that removes its history also removes every activated version.
+
+An uncertain activation preserves its original request key and reviewed revision;
+retry that exact command instead of creating another. **Check activation status**
+only reads state. An accepted command can replay after edits/archive; an unaccepted
+stale revision conflicts and requires review of the current saved content.
+
+Assignment generation remains unavailable. Lists can be empty: this UI does not
+manufacture sample/generated drafts. Existing drafts authored through the draft
+API are reviewable and can be activated; no public creation/generation control is added.
 No project text is stored in browser local/session storage; recovery uses the saved
 page's URL and authoritative server state.
 
@@ -547,7 +561,26 @@ pointer; unrelated drafts remain. Create a separate draft without that document
 when independent retention is needed.
 
 This API is a structural binding boundary. It does not certify semantic evidence,
-enable model generation, activate an assignment or introduce submission/grading.
+enable model generation or introduce submission/grading. Activation is a separate
+explicit command after review.
+
+### Reviewed assignment activation API
+
+Requires PostgreSQL migration 0027. `POST /curriculum/drafts/{draft_id}/activate`
+accepts `{idempotency_key, expected_revision, consent: "activate_reviewed_revision"}`.
+It activates only the current saved revision and returns its stable version UUID,
+original actor/time and pinned draft. Repeating an identical key replays that
+version even after edits/archive. A changed body/operation/target conflicts;
+a new command with a stale expected revision conflicts. A different key for an
+already activated current revision returns the existing version.
+
+`GET /curriculum/drafts/{draft_id}/activation` returns the latest activated
+revision or null for a live unactivated draft. `GET /curriculum/assignments/{id}`
+reads the exact immutable version. All routes are under the authenticated project
+prefix, enforce tenant/project scope, and return private/no-store responses.
+Version retention follows complete draft-history deletion, including dependencies
+selected by historical revisions even if uncited. Activation calls no model,
+fetcher, worker or code runner; it records learner acceptance only.
 
 ## Testing
 

@@ -108,15 +108,42 @@ remove an entire logical draft/history and receipts/result pointers if any selec
 document is deleted, including older or uncited selections. Deletion confirmation
 states that effect. Scoped context -> document -> draft locks and a final head
 recheck prevent direct deletion from racing an orphan revision into storage.
+Migration 0027's activated assignment versions reference that exact scoped
+context/draft/revision and inherit its deletion dependencies. Deleting the draft,
+source, context or project removes accepted versions and their activation receipts;
+deleting any historically selected document or its captured snapshot also removes
+them, even when the latest revision dropped that document or never cited it.
+Activation cannot preserve derived text beyond the underlying dependency lifetime.
 The draft review BFF reauthorizes scope, checks copied tutorial text against the
 immutable context and selected document excerpts against retained captures, and
 matches replacement receipts to the submitted content and revision. Strict bounded
 original JSON and same-origin writes apply; browser text stays literal and is not
 persisted in local/session storage. Conflict handling never silently overwrites a
 newer revision; uncertain saves keep their original command and body. Explicit
-deletion hides text pending reconciliation and fences late responses. The graph's
-external flags and public generation remain closed. See the Sprint 5 plan for
-precise resource caps and outstanding activation work.
+deletion hides text pending reconciliation and fences late responses.
+
+Manual activation requires `activate_reviewed_revision` consent and the current
+saved revision. The server revalidates authoritative evidence under scope/context/
+document locks before checking the locked head; it never trusts browser evidence.
+Its key shares the draft create/replace command namespace. Conflicting input is
+rejected; matching accepted replay returns the original immutable version after
+later edits or archive. New keys cannot accept stale revisions or create receipts
+while archived. Accepting the already activated current revision preserves its
+original ID/actor/time. Exact-version reads and activation-state reads retain the
+same membership/project and dependency fences. Retained-version key-share locks
+prevent direct deletion racing a new activation receipt into an orphan FK.
+
+The learner must review a clean saved revision and explicitly check consent.
+Editing/adopting a revision or entering history clears that consent. An uncertain
+activation freezes its reviewed snapshot and original body/key; retry does not
+silently accept a newer revision. Same-origin strict original JSON is bounded to
+16 KB, responses are private/no-store, accepted-version pages are read only, and
+the shared deletion/request epoch clears text and fences late results. Logs retain
+safe version/draft/project IDs, revision and replay state rather than content.
+Manual acceptance is not independent semantic, native-model quality or code-test
+approval. It invokes no model or fetcher. The graph's external flags and public
+generation remain closed; submissions and grading remain later work. See the
+Sprint 5 plan for precise resource caps and the remaining quality gate.
 
 ### Malicious uploaded files
 

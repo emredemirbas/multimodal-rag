@@ -211,10 +211,12 @@ text. An eight-second ordinary timeout stays unchanged; capture alone has a
 25-second window. The UI fences late reads after deletion/scope changes and keeps
 unchanged uncertain command bodies/keys. No browser storage keeps project text.
 The draft API can bind explicitly selected captured document IDs (0026 below);
-the learner can inspect and edit existing draft wording in Step 6a.
+the learner can inspect/edit existing draft wording and explicitly activate a
+reviewed saved revision (0027 below).
 Dependent external-topic generation remains disabled.
-The graph still rejects external flags before inference; public generation and
-activation remain unavailable. See the Sprint 5 implementation/validation records.
+The graph still rejects external flags before inference; public generation remains
+unavailable. Manual acceptance does not change its quality gate. See the Sprint 5
+implementation/validation records.
 
 Sprint 5 has strict internal assignment contracts and immutable saved tutorial
 contexts in `backend/app/curriculum/`. Migration `0020_curriculum_contexts.sql`
@@ -266,7 +268,8 @@ Draft endpoints under the same curriculum prefix:
 - `PUT /drafts/{draft_id}`: append a full replacement using
   `{idempotency_key, expected_revision, content, documentation_ids?: []}`;
   stale expected revision is 409. The document selection is replaced in full too.
-- `DELETE /drafts/{draft_id}`: delete all draft revisions and receipts, returning 204.
+- `DELETE /drafts/{draft_id}`: delete all draft revisions, activated versions and
+  receipts, returning 204.
 
 Content excludes client-provided scope/evidence metadata. Each write rebinds it
 against the saved context under membership/project/context fences. Command keys
@@ -287,7 +290,8 @@ unconfirmed deletion can be checked/repeated. Focus/refresh rechecks dependencie
 Server-only routes reauthorize project scope, validate strict bounded original JSON,
 compare tutorial projections with the saved context and document projections with
 selected captured copies, and verify replacement receipts against submitted content.
-No generation, activation or browser text persistence is enabled.
+Explicit reviewed-revision activation is described below. No generation or browser
+text persistence is enabled.
 
 Migration `0026_curriculum_draft_documents.sql` adds a bounded `documentation_ids`
 selection to each immutable draft revision and scoped `curriculum_draft_documents`
@@ -312,9 +316,9 @@ by snapshot/document ID. Structural binding is not semantic quality approval.
 
 All selected documents are revision dependencies, including uncited selections.
 Deleting an approval or its snapshot deletes every logical draft that selected it
-in any historical revision, with all revisions/command receipts and generated
-result pointers. A later revision dropping that document does not exempt the old
-history. Unrelated drafts remain. Source/context/project cascades remove the same
+in any historical revision, with all revisions, activated versions, command
+receipts and generated result pointers. A later revision dropping that document
+does not exempt the old history. Unrelated drafts remain. Source/context/project cascades remove the same
 derived material. Composite FKs enforce matching context and scope, not merely
 matching document IDs. Context and selected-document locks precede draft locks;
 replacement rechecks the locked head after those locks so direct deletion winning
@@ -322,10 +326,67 @@ a race returns a missing draft rather than an orphan revision. The learner delet
 confirmation explains this history effect. No network/model call or processor
 enablement is part of this boundary.
 
+Migration `0027_curriculum_assignment_versions.sql` adds
+`curriculum_assignment_versions`: a stable version UUID, accepting actor/time and
+an exact immutable draft revision reference. Tenant/project composite FKs bind
+both the saved context/draft identity and the revision; one version exists per
+draft revision. The original wording, labels, evidence IDs, processing versions
+and selected-document dependencies are resolved from that saved revision. Later
+draft edits do not update an accepted version, and no version-edit endpoint exists.
+Activation records explicit learner acceptance, not semantic support, feasibility,
+native-model quality approval or deterministic code assessment.
+
+Implemented activation endpoints under the curriculum prefix:
+
+- `POST /drafts/{draft_id}/activate`: strict
+  `{idempotency_key, expected_revision, consent: "activate_reviewed_revision"}`.
+  Returns 201 with `{id, tenant_id, project_id, draft_id, context_id, revision,
+  activated_at, activated_by, draft}`, where `draft` is the exact pinned
+  `DraftRevisionView`. A new command requires the current saved revision; stale
+  input returns 409 `draft_revision_conflict`. Invalid consent/body or invalid
+  retained evidence cannot create an activation.
+- `GET /drafts/{draft_id}/activation`: `{activation: <version> | null}` for the
+  highest activated revision, which can be older than the editable head. A null
+  state still requires an available scoped draft; missing/deleted/foreign targets
+  return 404.
+- `GET /assignments/{assignment_id}`: read that exact immutable version with its
+  pinned draft and evidence, independently of later edits or newer activations.
+
+Activation shares `curriculum_draft_commands`' project-wide key namespace with
+create/replace. Its fingerprint binds operation, draft, expected revision and
+consent. A matching accepted key returns the original version/actor/time after
+later edits or archive; any different input/operation conflicts. A new key for an
+already activated **current** revision returns the same version without changing
+its accepting actor/time. Archived projects allow reads and accepted-key replay,
+but reject every new activation receipt. Membership/project locks serialize
+commands; context and selected-document fences precede the final locked-head
+revision check. Retained-version locks protect new receipt FKs from direct deletion.
+
+Draft/source/context/project deletion cascades activated versions and activation
+receipts together with the complete draft history. Deleting an approved document
+or captured snapshot has the same effect when any historical revision selected
+it, including uncited selections or a document dropped by a newer revision.
+An activated version does not extend retention or bypass dependency deletion.
+Unrelated drafts/versions remain. Deleting a version directly also removes its
+activation receipts without deleting the draft or create/replace receipts.
+
+The learner activation form requires a clean saved current revision and explicit
+review consent; history and accepted-version views remain read only. The BFF
+reauthorizes scope, validates the exact pinned revision and its authoritative
+evidence, and compares successful activation with that immutable reviewed input.
+Writes require same-origin JSON bounded to 16 KB; success/errors are private and
+no-store. Uncertain delivery keeps the original reviewed revision/body/key for
+unchanged replay. Editing, history changes or adopting another revision clears
+consent. Shared request/deletion fences prevent late responses restoring deleted
+text. The bookmarked accepted-version page refreshes its exact immutable ID.
+No fetch, model invocation, public generation, submission or grading capability is
+enabled by activation.
+
 Generated objectives/coverage extraction and model workflows were outside the
 0020/0021 persistence boundary; the internal workflow is described below. Public
-generation and activated assignment versions remain unavailable. The conceptual
-entities below are later schema options, not separate CRUD/tables in 0020/0021.
+generation remains unavailable; manual reviewed-version activation uses 0027.
+The conceptual entities below are later schema options, not separate CRUD/tables
+in 0020/0021.
 See `sprint5/validation-record.md`.
 
 Migration `0022_curriculum_runs.sql` adds internal project/context-owned runs,
@@ -727,6 +788,10 @@ only configured mode/model, retrieval baseline and no-paid-provider policy, neve
 service URLs or credentials. The model port itself is not published.
 
 ### Assignments
+
+Manual saved-revision activation and exact-version reads are implemented under
+`/api/v1/projects/{project_id}/curriculum`, as described above. The broader routes
+below remain roadmap outlines, not additional implemented endpoints:
 
 - `POST /projects/{project_id}/assignments/generate`
 - `GET /projects/{project_id}/assignments`

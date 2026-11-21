@@ -13,3 +13,10 @@ export function draftFixture(revision = 1): DraftRevision {
   }, tutorial_evidence: [{ segment_id: segmentId, source_id: sourceId, source_filename: "lesson.vtt", start_ms: 1000, end_ms: 4000, text: "create_app exposes GET /health. <script>unsafe()</script>", modality: "transcript", generation: 1, processing_version: context.selected_sources[0].processing_version, asr_origin: null, frame_id: null, visual_origin: null }], documentation_snapshots: [] } };
 }
 export function rawContextFixture() { return { tenant_id: context.tenant_id, project_id: context.project_id, id: context.id, created_at: context.created_at, request: { tenant_id: context.tenant_id, project_id: context.project_id, selected_sources: context.selected_sources.map(({source_filename: _filename, ...pin}) => { void _filename; return { tenant_id: context.tenant_id, project_id: context.project_id, ...pin }; }), learner: context.learner }, tutorial_snapshots: [{ pin: { tenant_id: context.tenant_id, project_id: context.project_id, source_id: sourceId, generation: 1, processing_version: context.selected_sources[0].processing_version }, segments: draftFixture().assignment.tutorial_evidence }] }; }
+
+export function activationFixture(revision = 1): import("@/lib/api/activation-contracts").AssignmentActivation {
+  const draft = draftFixture(revision);
+  return { id: "92345678-1234-4234-8234-123456789abc", tenant_id: draft.tenant_id, project_id: draft.project_id,
+    draft_id: draft.id, context_id: draft.context_id, revision, activated_at: "2026-11-21T12:00:00Z",
+    activated_by: "a2345678-1234-4234-8234-123456789abc", draft };
+}
