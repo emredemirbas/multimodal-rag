@@ -14,9 +14,13 @@ concurrent replay, archive rules, retained generations, managed provenance,
 bounded input/snapshots and complete deletion. Draft tests also cover immutable
 revision reads, historical command replay after later edits/archive, competing
 optimistic edits, binding/effort/permission failures, atomic rollback and complete
-history cleanup. See `sprint5/implementation-plan.md`
-and its validation record. These do not constitute model-quality review or a
-delivered assignment generation/activation UI/workflow.
+history cleanup. Manual activation tests additionally cover explicit reviewed-revision
+consent, stale-head rejection, immutable version identity, exact-key replay after
+edits/archive, complete dependency deletion and actual version-delete races.
+Scoped BFF/page/component tests and a production-browser walkthrough cover the
+saved draft review/edit/activation workspace with synthetic content. See
+`sprint5/implementation-plan.md` and its validation record. These establish the
+delivered manual workflow, not native model quality or enabled generation.
 The internal run foundation additionally tests original-actor membership, fresh
 lease clocks after real PostgreSQL lock waits, cancellation/recovery, immutable
 checkpoint/call replay, unknown versus zero usage and complete private-state
@@ -54,11 +58,21 @@ draft/result. This proves recovery and structural validity, not native model
 quality, semantic coverage, appropriate difficulty or solvability.
 
 The separate small native review in `sprint5/native-output-review.md` used actual
-pre-existing local weights and authored MIT subtitle fixtures. It failed on
-latency and semantic abstention; strengthened v2 decoding is not quality approval.
+pre-existing local weights and authored MIT subtitle fixtures. Its bounded passes
+through compact profile v4 failed on latency, literal quotes, core-skill extraction
+and semantic abstention. Zero extraction/drafts were accepted in the final pass;
+the prompt/profile retry sequence stopped. Software validation and manual
+activation do not replace the required native generated-draft review.
 Exact failures/usage are recorded separately from authored HTTP test success.
 Neither these native text samples nor the software tests close the independent
 real-video/audiovisual gate.
+
+The owner-selected [evidence-unit redesign](sprint5/local-generation-redesign.md)
+starts with a pure lossless planner. Its tests cover exact UTF-8/source-span
+reconstruction, strict raw types, immutable detached units, complete ordered input
+fingerprints and forged saved plans. Existing extraction/workflow regressions stay
+unchanged. Unit-to-quote wire conversion, checkpoint integration and the single
+finite native pass are subsequent gates; no native inference was run for this slice.
 
 ## Software test pyramid
 

@@ -602,13 +602,15 @@ version UUID per draft/revision and exact read-only version pages. Shared comman
 replay, stale-head checks, consent, uncertain delivery, immutable evidence and
 complete historical dependency deletion are covered in `validation-record.md`.
 
-Next verify this commit's exact hosted CI. The manual workspace portion of Step 6
-is implemented; public generation/progress UI and Step 7's generated-draft review
-and end-to-end acceptance remain blocked by the recorded native quality failure.
-No accepted native extraction/draft exists. Before dependent implementation,
-surface that concrete failure and obtain an owner decision about a changed
-generation approach or an explicitly narrower Sprint 5 target. Do not silently
-select another model, install weights, repeat prompt/profile experiments, create
-an evaluator, relax evidence checks or start a later sprint. Preserve existing
-lease/call/checkpoint fences and the empty default registry. Full Sprint 5 and
-independent real-video/Alpha 2 approval remain open.
+The owner confirmed on 2026-11-21: retain free local automatic generation in
+Sprint 5 and plan a different approach. The explicit continuation is
+[application-owned evidence units](local-generation-redesign.md), rather than
+another prompt-only retry or a silently narrower manual-assignment target.
+The pure lossless planner is the first implementation slice; next implement
+strict model unit-ID selection, source-derived quote mapping and versioned private
+checkpoint replay. The existing v4 runtime remains closed until that protocol is
+integrated/tested and its single predeclared native extraction/draft review passes.
+No native result is supplied by pure software tests. Verify actual hosted CI first.
+Preserve existing lease/call/checkpoint fences and the empty default registry;
+no automatic model switch/download, resource/deadline increase, evaluator or later
+sprint follows. Full Sprint 5 and independent real-video/Alpha 2 approval stay open.

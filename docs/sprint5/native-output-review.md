@@ -254,3 +254,14 @@ capture; it must not enable generation or imply that these native failures are
 resolved. Native latency, literal quote fidelity, core-skill extraction and
 semantic abstention remain explicit gates before user-facing generation, with
 full generated-draft review still required. No later sprint or new evaluator opens.
+
+## Owner-selected approach after manual activation — 2026-11-21
+
+The owner retains free local automatic generation in Sprint 5 and explicitly asks
+for a different approach. [The evidence-unit plan](local-generation-redesign.md)
+changes the application/model boundary: application-owned source spans replace
+model-written quote bytes. The v4 results above remain failures. Pure partitioning
+or valid unit IDs do not prove semantic support, core-skill extraction or correct
+abstention. No new inference result is recorded here yet. The new plan predeclares
+one finite native pass and its unchanged expectations, call/deadline limits and
+stop boundary; it does not reopen an unbounded prompt/profile retry sequence.

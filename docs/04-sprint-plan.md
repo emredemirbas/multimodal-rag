@@ -281,13 +281,18 @@ remaining quality/Alpha 2 gates stay unchanged. See `docs/sprint4/change-ocr-gui
 
 ## Sprint 5 — Learning model and case studies
 
-**Implementation status (2026-10-29):** Explicitly authorized. The ordered plan
+**Implementation status (2026-11-21):** Explicitly authorized. The ordered plan
 is in `sprint5/implementation-plan.md`. Contracts/binding, saved contexts and
 versioned drafts, durable queued runs, pinned local provider/call attribution and
-the internal bounded LangGraph workflow are implemented and locally tested.
-Public generation/activation UI, native draft-quality review and Sprint 5
-acceptance remain open. The owner confirmed optional external topics and approval
-for each official document; dependent capture/enablement is still unimplemented.
+the internal bounded LangGraph workflow are implemented. Learner-approved official
+document capture, explicit draft-document binding, saved draft review/edit and
+manual activation of immutable reviewed versions are implemented and tested.
+Public generation/progress UI, successful native draft-quality review and Sprint 5
+acceptance remain open. The recorded native review accepted no extraction/draft;
+manual activation does not resolve that gate. The owner selected a different local
+extraction approach on 2026-11-21 while retaining automatic generation in scope;
+see `sprint5/local-generation-redesign.md`.
+External-topic generation stays closed despite the delivered document capture.
 
 **Duration:** 2 weeks
 

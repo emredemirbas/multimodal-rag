@@ -8,7 +8,15 @@ jobs passed. Later documentation-only commits retain this accepted baseline.
 
 ## Where we are
 
-Latest bounded continuation: Step 6b adds explicit activation of a reviewed,
+The owner confirmed on 2026-11-21 that **free local automatic generation remains
+in Sprint 5** and selected planning a different approach. The bounded plan is
+`sprint5/local-generation-redesign.md`: application-owned lossless evidence units,
+model ID selection, strict quote/replay mapping, then one finite native pass under
+unchanged quality/resource gates. The pure planner is implemented and its focused
+regressions passed; no new model call or enabled generator is implied. The old v4
+review still fails.
+
+Step 6b adds explicit activation of a reviewed,
 current saved draft revision. A stable assignment-version UUID references that
 immutable revision, its context and evidence; later draft edits preserve it.
 Activation requires explicit learner consent and a clean review form. Shared
@@ -21,10 +29,11 @@ Migration 0027 adds these scoped revision links without duplicating content.
 Generation remains unavailable; empty contexts never invent drafts. Manual
 activation is learner acceptance, not native-model quality approval.
 
-The exact preceding `560f58670bd971bee5aaf79c7007f3c951f2daff` baseline's
-[CI run 43100568694](https://github.com/emredemirbas/multimodal-rag/actions/runs/43100568694)
-was verified on 2026-11-21 as completed/success. The Step 6b commit requires its
-own hosted result; local results are in `sprint5/validation-record.md`.
+The exact activation baseline `1881015586f77781f8f02d4623d25996a4e6c41c`'s
+[CI run 44902011214](https://github.com/emredemirbas/multimodal-rag/actions/runs/44902011214)
+was verified on 2026-11-21 as completed/success: frontend, backend-tests,
+backend-integration and images all succeeded. The planner change requires its own
+hosted result; local checks are in `sprint5/validation-record.md`.
 
 Step 5c binds explicitly selected captured documents
 to existing draft create/replace APIs under the same context/tenant/project.
@@ -172,19 +181,18 @@ README now follows product-documentation style; operator detail is in
 `local-development.md`, while plans, validation and CI history stay here. The
 same rule is recorded in `../AGENTS.md` for future updates.
 
-Next `devam`: verify this commit's actual Git/CI result and read the current
-Sprint 5 plan/validation record. The bounded manual review/edit/activation workspace
-is implemented. Remaining Sprint 5 work is the already planned generated-draft
-quality/public-enablement and finite end-to-end acceptance boundary in Steps 4/6/7.
-Its concrete blocker is unchanged: the predeclared local native review accepted no
-extraction/draft, so no representative generated draft exists for the required
-review. Keep the default registry and public generation closed. Do not open another
-prompt/profile retry loop, weaken quote/semantic checks, invent an evaluator or start
-submissions/grading/tutoring. Before work that depends on generated content, surface
-that failed review and obtain an owner decision about changing the generation
-approach or explicitly narrowing the remaining Sprint 5 target. Read-only CI repair
-and defects in the delivered bounded workspace remain authorized. Do not claim
-Sprint 5 or full Alpha 2 complete.
+Next `devam`: verify exact Git/CI and read `sprint5/local-generation-redesign.md`
+with the current plan/validation record. Continue item 2: strict unit-selection
+wire conversion, authoritative unit-to-literal quote mapping and version-pinned
+private checkpoint replay. Preserve all source/context/deletion fences, bound
+actual request bytes, and leave the default registry/public generation closed.
+The owner has selected this changed approach; no repeat scope confirmation is
+needed. Run the predeclared native pass only after protocol/workflow regression
+checks, with freshly verified model/engine identity and separate disposable
+resources. Old native failures and the finite stop boundary remain visible.
+Do not silently substitute the running native model endpoint for the old container
+profile, download models, extend deadlines or start grading/tutoring. Full Sprint 5
+and independent real-video/Alpha 2 approval remain open.
 
 ## Sprint 4 closure — one remaining gate
 

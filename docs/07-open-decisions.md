@@ -66,6 +66,19 @@ Difficulty, available effort, source selection and output language are explicit
 inputs rather than hidden defaults. The source-first bounded contract does not
 resolve deadlines, missed deadlines, grading dependencies or project mastery.
 
+## Local generation redesign decision (2026-11-21)
+
+The owner explicitly keeps free local automatic generation in Sprint 5 and asks
+for a different approach; the remaining target is **not** narrowed to manual
+assignments. The bounded [evidence-unit plan](sprint5/local-generation-redesign.md)
+replaces model-written quote text with application-owned source spans selected by
+ID. Implementation begins with the pure lossless unit planner, then strict wire/
+checkpoint integration and one predeclared native pass. This is authorization for
+the changed approach, not a successful quality result or automatic model switch.
+No paid service, model download, owner-service change, weaker evidence check or
+later sprint follows. Existing native failures remain recorded; generation stays
+closed until the finite extraction and actual draft reviews pass.
+
 ## Blocking before broad implementation
 
 | Decision | Proposed default | Status |

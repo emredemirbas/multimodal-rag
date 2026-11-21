@@ -1265,14 +1265,65 @@ Limits: activation records explicit learner acceptance of already-saved content.
 It enables no public draft creation/generation, submission, grading or tutor.
 No native-model or independent real-video quality gate closes.
 
+## Evidence-unit redesign and pure planner — 2026-11-21
+
+Started with clean `main` at `1881015586f77781f8f02d4623d25996a4e6c41c`, matching
+origin after fetch. Its exact
+[CI run 44902011214](https://github.com/emredemirbas/multimodal-rag/actions/runs/44902011214)
+was initially still running; frontend/backend unit/integration had passed while
+images continued. It was subsequently verified **completed/success in all four
+jobs** before this commit. The new planner commit requires its own hosted result.
+
+The owner explicitly chose to retain free local automatic generation and plan a
+different approach. [The bounded plan](local-generation-redesign.md) replaces
+model-written quote bytes with selection of application-owned source-unit IDs.
+It retains the original semantic/native gates and failed v4 artifacts, with one
+predeclared pass capped at three extraction / nine total physical calls. No new
+native call is part of this implementation slice.
+
+- `curriculum/evidence_units.py` builds a pure immutable plan from a revalidated
+  bounded source batch. Every source character, whitespace and Unicode form is
+  retained. Greedy units contain <=80 UTF-8 bytes and carry exact absolute source
+  spans, parent/source/segment/version/origin pins and batch-local ordered IDs.
+- The plan fingerprint covers the full ordered source input and partition version.
+  Revalidation reconstructs and checks exact greedy spans and source coherence.
+  Mutated/constructed raw fields are checked before serialization; a boolean offset
+  cannot become a valid integer. This pure module does not authenticate a caller,
+  retrieve material or replace context/project authority.
+- Existing extraction, provider settings, workflow/checkpoint recipe, public
+  citation IDs, default registry, database schema and product UI are unchanged.
+  Wire conversion and checkpoint integration are the next implementation boundary.
+- Main requirements, sprint overview and testing-strategy documents now reflect
+  delivered manual activation/document capture. Historical dated failures stay
+  intact. README receives no sprint or internal handoff content.
+
+Validation:
+
+- **224 focused tests passed**: 107 new planner cases, 46 compact-extraction,
+  14 extraction-profile and 57 workflow regressions. Checks include exact
+  reconstruction, absolute offsets, whitespace, Unicode/normalization form,
+  80-byte boundaries (including a valid 24-unit slice), strict raw mutated and
+  constructed fields, detached/frozen results, fingerprint pin changes, forged
+  saved plans and exact greedy round trips. Existing source batching and v4
+  extraction/workflow behavior remain unchanged.
+- Independent read-only implementation and plan reviews found no material blocker.
+  `git diff --check` and all ten local links in nine changed Markdown files passed.
+- Tests used a unique temporary Python 3.12 environment with offline cached
+  dependencies. The owner environment was unchanged; the temporary environment
+  and scripts were removed. No Docker/model service was started, image built or
+  downloaded, inference made, application document captured, or real application data
+  changed. No native correctness/latency claim follows from these pure tests.
+
 ## Continuation
 
-Verify the new commit's exact hosted CI; a running workflow is not success. The
-bounded manual review/edit/activation workspace is implemented. The remaining
-planned generation/progress UI and Step 7 acceptance require supported native
-generated drafts; the predeclared review accepted none. Keep the default registry
-and public generation closed. Before dependent work, surface the failed review and
-obtain an owner decision on changing the generation approach or explicitly narrowing
-the remaining Sprint 5 target. Do not repeat prompt/profile experiments, install
-models, invent evaluators, weaken checks or start submissions/grading/tutoring.
-Full Sprint 5 and independent real-video/Alpha 2 quality approval remain open.
+The owner has selected the changed local generation approach; do not ask the scope
+question again. Verify this commit's exact hosted CI, then continue item 2 in
+`local-generation-redesign.md`: strict unit-selection wire schema, authoritative
+ID-to-literal quote mapping, complete parent-slice insufficiency and recipe-pinned
+private checkpoint/replay integration. Check actual input/schema/request bytes
+through the provider boundary; preserve full source coverage and existing limits.
+Keep the default registry and public generation closed until the finite native
+extraction and full draft reviews pass. Refresh actual isolated model/engine pins;
+the running native endpoint is not the old container profile. No automatic model
+switch/download, timeout increase, owner-service changes, evaluator or later sprint
+follows. Full Sprint 5 and independent real-video/Alpha 2 review remain open.

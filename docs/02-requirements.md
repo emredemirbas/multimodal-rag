@@ -73,7 +73,8 @@ ready → reprocessing → ready
 - Every requirement is labeled `covered`, `prerequisite`, or `extension`.
 - Covered requirements cite project sources.
 - External requirements cite allowlisted, version-aware official documentation.
-- Assignment versions are immutable after a learner submits against them.
+- Explicit activation pins an immutable reviewed revision; later corrections
+  require another reviewed version. Submission handling remains later work.
 
 Minimum assignment fields:
 
