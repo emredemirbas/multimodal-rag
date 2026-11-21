@@ -619,12 +619,19 @@ and missing slice coverage, no accepted extraction or draft. It stopped immediat
 Turkish/negative samples were not attempted. Raw output is retained in
 `native-evidence-units-results.json`; do not retry or repair this candidate.
 
-The owner then selected [a separate installed-Qwen3.5 plan](qwen35-generation-plan.md).
-Only read-only local metadata was inspected; no provider code changed or Qwen3.5
-inference occurred. Next verify exact Git/CI, then implement its explicit identity/
-family compatibility slice and tests, preserving legacy request/checkpoint pins.
-Any later native pass needs isolated runtime preflight and the same finite gates.
-Generation remains closed; no software test replaces native quality.
-Preserve existing lease/call/checkpoint fences and the empty default registry;
-no automatic model switch/download, resource/deadline increase, evaluator or later
-sprint follows. Full Sprint 5 and independent real-video/Alpha 2 approval stay open.
+The owner then selected [the Qwen3.5 plan](qwen35-generation-plan.md) and explicitly
+authorized a hardware-fitting Ollama download if needed with continued development.
+Provider identity/family compatibility now covers the two Qwen3 models and exact
+`qwen2.5:7b-instruct-q4_K_M`, with old request/recipe/checkpoint pins preserved.
+Protocol, SQL and real worker recovery checks pass. The selected native GPU path
+for Qwen3.5 timed out on the first extraction; full GPU placement was observed,
+but no response/extraction/draft was accepted. No other case or retry followed.
+
+The one authorized [Qwen2.5 contingency](qwen25-generation-plan.md) is downloading;
+verify its full installed identity after completion before its finite native pass.
+Keep original source/semantic/resource/deadline gates and report the actual result.
+Generation remains closed; no software test replaces native quality. Preserve
+lease/call/checkpoint fences and the empty default registry. No application model
+download/fallback, third candidate, driver/service change, deadline increase,
+evaluator or later sprint follows. Full Sprint 5 and independent real-video/Alpha 2
+approval stay open.

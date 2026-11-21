@@ -86,7 +86,17 @@ not attempted. Full source text was supplied; intentional unit edges were mistak
 for truncation. See the raw artifact and review, not software fixture replies.
 The owner selected [a separate installed-Qwen3.5 plan](sprint5/qwen35-generation-plan.md);
 metadata inspection is not inference or a quality result. Legacy identity/replay
-regression and a fresh isolated-runtime preflight must precede its finite pass.
+regression and a fresh selected-runtime preflight must precede its finite pass.
+
+The explicit provider allowlist now also covers Qwen3.5 and the owner-authorized
+Qwen2.5 7B Q4_K_M contingency, each with a fixed family and full identity pin.
+Protocol and SQL tests preserve legacy Qwen3 request bytes/recipe, reject identity
+drift before more I/O and resume accepted work only under the same model. Actual
+Qwen3.5 native-GPU extraction still timed out at 42 seconds despite observed full
+VRAM placement; semantic quality was not available to review. Its candidate
+stopped after one call. Downloading the single Qwen2.5 contingency is an explicit
+operator action; its native result must be recorded separately. No application
+download, automatic fallback or public generation follows from compatibility tests.
 
 ## Software test pyramid
 

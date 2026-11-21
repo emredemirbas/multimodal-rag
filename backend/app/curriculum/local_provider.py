@@ -28,6 +28,7 @@ CALL_SECONDS = 60
 METADATA_SECONDS = 2
 INFERENCE_SECONDS = 42
 OPTIONS = {"temperature": 0, "num_ctx": 16_384, "num_predict": 2048, "num_thread": 4}
+MODEL_FAMILIES = {"qwen3:4b": "qwen3", "qwen3.5:4b": "qwen35", "qwen2.5:7b-instruct-q4_K_M": "qwen2"}
 
 
 class CurriculumProviderError(Exception):
@@ -40,7 +41,7 @@ class CurriculumProviderError(Exception):
 class LocalModelIdentity(Contract):
     model_config = ConfigDict(frozen=True)
     provider: Literal["ollama-local"] = "ollama-local"
-    model: Literal["qwen3:4b"] = "qwen3:4b"
+    model: Literal["qwen3:4b", "qwen3.5:4b", "qwen2.5:7b-instruct-q4_K_M"] = "qwen3:4b"
     model_digest: Digest
     engine: str = Field(min_length=1, max_length=64,
                         pattern=r"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -130,7 +131,7 @@ class LocalCurriculumProvider:
         try:
             if not isinstance(identity, LocalModelIdentity):
                 raise ValueError()
-            self.identity = LocalModelIdentity.model_validate(identity.model_dump(warnings=False), strict=True)
+            self.identity = LocalModelIdentity.model_validate(identity, strict=True)
         except (ValueError, TypeError, AttributeError):
             raise ValueError("An explicit local model digest and engine pin are required.") from None
         self.opener = build_opener(ProxyHandler({}), NoRedirects())
@@ -196,13 +197,17 @@ class LocalCurriculumProvider:
         if (info.get("remote_host") not in (None, "") or info.get("remote_model") not in (None, "")
                 or type(info.get("capabilities")) is not list
                 or "completion" not in info["capabilities"] or type(info.get("details")) is not dict
-                or info["details"].get("family") != "qwen3" or version != self.identity.engine):
+                or info["details"].get("family") != MODEL_FAMILIES[self.identity.model]
+                or version != self.identity.engine):
             raise CurriculumProviderError("provider_unavailable", retryable=False)
 
     def prepare(self, spec: JsonCallSpec) -> PreparedCall:
         try:
             if not isinstance(spec, JsonCallSpec):
                 raise ValueError()
+            if not isinstance(self.identity, LocalModelIdentity):
+                raise ValueError()
+            identity = LocalModelIdentity.model_validate(self.identity, strict=True)
             spec = JsonCallSpec.model_validate(spec.model_dump(warnings=False), strict=True)
             size = len(spec.system.encode("utf-8")) + len(spec.user.encode("utf-8"))
             if (size > MAX_INPUT_BYTES or not spec.system.strip() or not spec.user.strip()
@@ -221,13 +226,13 @@ class LocalCurriculumProvider:
                         local_references(nested)
 
             local_references(spec.output_schema)
-            payload = _json_bytes({"model": self.identity.model, "stream": False, "think": False, "keep_alive": 0,
+            payload = _json_bytes({"model": identity.model, "stream": False, "think": False, "keep_alive": 0,
                                    "format": spec.output_schema, "options": OPTIONS,
                                    "messages": [{"role": "system", "content": spec.system},
                                                 {"role": "user", "content": spec.user}]})
             if len(payload) > MAX_REQUEST_BYTES:
                 raise ValueError()
-            return PreparedCall(self.identity, spec, sha256(payload).hexdigest(), len(spec.system) + len(spec.user), payload)
+            return PreparedCall(identity, spec, sha256(payload).hexdigest(), len(spec.system) + len(spec.user), payload)
         except (ValueError, TypeError, AttributeError, RecursionError, UnicodeError):
             raise _invalid() from None
 

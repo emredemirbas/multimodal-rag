@@ -1457,17 +1457,91 @@ non-thinking/structured output. No model was loaded or downloaded for that check
 family support, legacy replay tests and isolated preflight before another finite
 native pass, preserving the original semantic/resource/deadline stop conditions.
 
+## Explicit local model compatibility and native GPU review — 2026-11-21
+
+Started clean at `a14883ee444c7fbf1a1b083d89cb05e43eb06462`, matching origin after
+fetch. Its exact
+[CI run 44907640906](https://github.com/emredemirbas/multimodal-rag/actions/runs/44907640906)
+has frontend/backend-tests/backend-integration success; images remains running at
+the check. No overall hosted success is assumed.
+
+The owner explicitly requested a hardware-fitting Ollama model, authorizing a
+download if needed and continued development. This supersedes the earlier
+planning-only/download restriction for this bounded operator action. Fresh local
+checks found a working RTX 4060 Laptop 8 GB, 16 GB RAM and an idle native Ollama
+service; the first unprivileged device-query failure was sandbox access, not a
+missing driver. The native engine/digest were explicitly selected rather than
+treated as equivalent to the earlier CPU-only container.
+
+- Provider identity now permits exactly `qwen3:4b → qwen3`, `qwen3.5:4b → qwen35`
+  and `qwen2.5:7b-instruct-q4_K_M → qwen2`. Existing Qwen3 default and request
+  bytes/hash remain unchanged. Full digest/engine, local completion/remote-model
+  exclusion, strict response/usage/thinking/tool and all request/deadline bounds
+  remain. Raw identity is revalidated before serialization and prepared identity
+  is detached. No application discovery, pull, model rotation or fallback exists.
+- Accepted checkpoints remain pinned to their selected identity. Authored Qwen3.5
+  and Qwen2.5 SQL restarts reuse accepted extraction with fresh adapters; another
+  model/digest/engine cannot start more HTTP or receipts from that progress.
+  Legacy recipe `914a33be…` and all three recorded Qwen3 request fingerprints/byte
+  lengths remain unchanged. No database migration, public endpoint, registry
+  registration or product UI change is needed.
+
+Software validation:
+
+- **1,266 backend unit/API tests passed, 901 integration cases deselected** on the
+  final three-model provider code. **130 provider protocol cases** are a subset,
+  including all three families, legacy frozen bytes/hash, identity drift, locality,
+  missing capability, invalid response, unknown/zero usage and no fallback.
+- **80 real PostgreSQL/worker integration cases passed**: 57 existing workflow/
+  unit-selection/model-call regressions, 11 new Qwen3.5 SQL cases, nine new Qwen2.5
+  SQL cases and three existing actual Celery SIGKILL/replacement-worker cases.
+  Replay, tenant/project scope, cancellation/deletion, attribution, empty registry
+  and no repeated extraction are covered. No skips; all model replies here are
+  authored HTTP fixtures rather than native output.
+- Independent read-only provider/security/replay review found no concrete blocker.
+  Offline native-artifact reconstruction verifies the original three source/unit/
+  request fingerprints, unchanged recipe/options, actual GPU-size observations,
+  unknown timeout usage, first-failure stop and zero retained application data.
+  `git diff --check` and 31 local links across ten changed Markdown files pass.
+  Tests use a separate offline-cache Python environment and cached-image tmpfs
+  PostgreSQL/Redis, random loopback ports and synthetic credentials/data. No image
+  build/download, owner `.env`, service/driver configuration or real-data change.
+
+Native Qwen3.5 result:
+
+- Fresh pins matched the installed `qwen3.5:4b` digest and native **0.33.3**. Pure
+  preflight preserved all original sample hashes/preferences/prompts/recipe and
+  fitted each complete source in one batch. Exactly **one** English extraction
+  timed out at **42,044ms**, failed receipt **42,056ms**, usage unknown/null, zero
+  spend. Only initialization checkpoint 1 remains; no extraction/draft accepted.
+- Actual exact-model/digest observations recorded full **3,627,171,183-byte VRAM**
+  placement and context 16,384. GPU availability alone was not used as proof.
+  No completed response existed for semantic review. Later samples were not
+  attempted; no retry, preload, diagnostic call or deadline increase occurred.
+  Native GPU-discovery watchdog warnings appeared around cancellation; afterward
+  the existing service was idle with no loaded model and no observed OOM.
+- [The raw result](native-qwen35-gpu-results.json) retains request/source/unit-plan
+  pins, nullable usage, failed receipt and bounded placement observations. Normal
+  application deletion/cleanup removed all its test projects/artifacts/contexts/
+  runs/calls/checkpoints/drafts and dropped its private schema. Shared temporary
+  PostgreSQL/Redis remain only for the next authorized finite candidate.
+
+The one researched contingency, `qwen2.5:7b-instruct-q4_K_M`, is downloading
+through Ollama under the latest owner instruction. Its approximately 4.7 GB
+weights are an intentional installed result, not disposable data or repository
+content. [Its finite plan](qwen25-generation-plan.md) requires a freshly verified
+full manifest digest/family/engine before any inference. A completed download or
+protocol fixture is not native quality approval. No other download is planned.
+
 ## Continuation
 
-The old evidence-unit Qwen3 candidate is closed as failed; do not rerun or repair
-its output. The owner selected `qwen35-generation-plan.md`; no repeat model-choice
-question is needed. Verify this commit's exact hosted CI, then implement item 1's
-explicit provider compatibility and focused tests. Preserve old Qwen3 request and
-checkpoint identity, then complete the proportional replay/recovery checks.
-No Qwen3.5 inference or provider switch was made in this planning turn. Any later
-finite pass requires fresh isolated identity/resources and the same fixed samples,
-three-extraction/nine-total-call cap, deadlines and first-failure stop. Metadata,
-valid IDs and protocol fixtures do not establish semantic correctness. Keep the
-default registry/public generation closed. No automatic download, owner-service
-change, evaluator or later sprint follows. Full Sprint 5 and independent
-real-video/Alpha 2 review remain open.
+Complete the one authorized Qwen2.5 download and record its full installed pin,
+then run only the finite pass in `qwen25-generation-plan.md` after preflight.
+Provider/software checks above already pass. Do not retry the closed Qwen3 or
+Qwen3.5 candidates, change their expectations or repair old output. The owner's
+latest instruction already authorizes this operator download/candidate; no repeat
+approval is needed. Keep the same semantic/sample/deadline/first-failure gates.
+Record its actual result and cleanup before the next bounded implementation.
+Public generation/default registration remain closed. No third model, driver/
+service change, larger deadline, evaluator or later sprint follows automatically.
+Full Sprint 5 and independent real-video/Alpha 2 review remain open.

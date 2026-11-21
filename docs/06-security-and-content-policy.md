@@ -73,7 +73,10 @@ Controls:
 - prevent one source from altering project/system policy.
 
 The internal curriculum provider exposes only a local JSON completion interface,
-with fixed model/options and explicit digest/engine pins. It disables proxies,
+with explicitly allowed model/family pairs, fixed options and full digest/engine
+pins. Raw identity values are checked before serialization; prepared calls hold a
+detached identity so a later mutation cannot replace their pin. Operator-authorized
+model installation is separate; the adapter never pulls or falls back. It disables proxies,
 redirects, tools, thinking and cloud fallback; only local tags/show/version/chat
 endpoints are used. Schema `$ref` links must point inside the supplied schema. Bound request/body/
 response bytes, reject duplicate/non-finite JSON and reject incomplete or late

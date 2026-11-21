@@ -1,9 +1,41 @@
 # Separate local generation candidate: installed Qwen3.5 4B
 
-Date: 2026-11-21. Status: **owner-selected plan only**. No provider change or
-Qwen3.5 inference has been made. The owner explicitly selected this separate plan
-after the finite Qwen3 evidence-unit candidate failed. This is not an automatic
-fallback or a successful native result.
+Date: 2026-11-21. Status: provider compatibility and replay implemented; the native
+GPU candidate **failed at its first extraction with a timeout**. See
+[the exact result](native-qwen35-gpu-results.json). The owner selected this
+separate candidate after the finite Qwen3 evidence-unit failure, then explicitly
+requested a hardware-compatible local Ollama model, authorizing a download if
+needed and continued development. This supersedes the earlier planning-only and
+no-download restriction for that bounded operator action. It adds no automatic
+application download, model rotation or public fallback.
+
+## Hardware and runtime decision
+
+Fresh local inspection found an RTX 4060 Laptop with 8 GB VRAM, a working NVIDIA
+driver, 16 GB system RAM and an idle native Ollama service. The existing pinned
+Qwen3.5 model occupies about 3.4 GB on disk. It is the first candidate; no new
+download is needed to test it. The earlier CPU-only container result does not
+measure this native GPU path. Actual GPU loading must be observed during inference,
+not inferred from driver availability or weight size.
+
+Use the existing idle native engine **0.33.3**, explicitly pinned with the installed
+model digest below, without restarting/reconfiguring the service. This is a
+deliberate hardware/runtime selection under the latest owner request, not a claim
+that native and container runtimes are equivalent. Keep application request,
+context/output, thread and deadline limits unchanged. The prior six-GiB CPU
+container cap is not a native-service setting; do not modify the owner's service
+limits. Observe native VRAM/host-memory use within the available hardware and
+retain `keep_alive=0` so this review's model unloads after each request. Use only
+authored public MIT text and a disposable test PostgreSQL; prompts receive no
+owner content or credentials. Provider requests remain bounded local-only calls
+without tools, arbitrary URL retrieval or cloud model fallback.
+
+If this finite candidate fails, the latest owner request authorizes one hardware-
+fitting download if needed. The researched contingency is
+`qwen2.5:7b-instruct-q4_K_M` (about 4.7 GB weights); do not download it preemptively
+or run an unbounded model search. Any such separate candidate must be pinned and
+declared before inference, with the same semantic/deadline gates. A runtime/GPU
+failure must be diagnosed as such; a larger model is not its automatic remedy.
 
 ## Baseline and fixed decision
 
@@ -30,9 +62,9 @@ candidate; public model listings or advertised benchmarks do not establish local
 quality, latency, non-thinking behavior or compatibility.
 
 Keep the current evidence-unit extraction prompt/schema/mapping, source material
-and semantic expectations. Only the explicitly pinned model changes. No model
-download, paid API, GPU setup, owner-service restart/configuration change,
-arbitrary model picker, automatic fallback or public registration is included.
+and semantic expectations. Select the model/runtime explicitly. No paid API,
+GPU/driver installation, owner-service restart/configuration change, arbitrary
+model picker, automatic fallback or public registration is included.
 
 ## Ordered implementation
 
@@ -59,16 +91,16 @@ arbitrary model picker, automatic fallback or public registration is included.
    regressions with an explicitly supplied test registry. Keep one physical call
    per delivery, receipts, scope/lease/deletion fences and the empty default registry.
 
-3. **Isolated runtime preflight, then one finite native pass.** Locate the already
-   installed manifest and referenced blobs without copying owner credentials or
-   publishing host paths. Mount those weights read-only in the existing cached
-   Ollama `0.40.3` image on a disposable internal network. Freshly verify its actual
-   tags/show/version identity and local family/capabilities; the native `0.33.3`
-   metadata above does not prove that runtime can load the model. Reuse the prior
-   six-GiB model-memory limit and available host resources; no resource/deadline
-   increase to evade failure. If weights/runtime/resources are unavailable, record
-   a preflight block and stop before inference. Do not install, pull, restart the
-   owner's service or silently use its endpoint instead.
+3. **Selected native GPU runtime preflight, then one finite pass.** Freshly verify
+   actual tags/show/version pins, local family/completion capability, no remote
+   model/host, an idle model queue and available VRAM/RAM. Do not copy credentials
+   or publish host paths. The selected native `0.33.3` runtime replaces the former
+   cached CPU-container proposal above; it is not assumed interchangeable.
+   Observe `/api/ps` model/digest and allocated VRAM during the real request, and
+   check this review's model unloads afterward. If identity/runtime/resources are
+   unavailable, record a preflight block rather than downloading/restarting or
+   changing service/driver settings. Download permission alone is not a remedy
+   for unavailable runtime resources.
 
    After software checks and preflight, predeclare and run the same three MIT
    samples in order: English typed list, Turkish health route, insufficient title
@@ -76,7 +108,8 @@ arbitrary model picker, automatic fallback or public registration is included.
    forbidden topics from [the original review](native-output-review.md).
    Each complete context must fit one batch without lost source text. Use real
    ingestion, saved contexts, leased receipts and graph checkpoints in a separate
-   disposable PostgreSQL. This plan's approval itself starts no inference.
+   disposable PostgreSQL. The latest owner instruction authorizes implementing
+   and exercising this finite candidate after its software checks pass.
 
    Keep `temperature=0`, four threads, 16,384 context, 2,048 output tokens,
    `stream=false`, `think=false`, `keep_alive=0`, 42-second inference / 60-second
@@ -110,9 +143,17 @@ candidate. A passed small review permits only the existing conditional producer/
 progress/UI/document-generation work in the Sprint 5 plan. It does not complete
 Sprint 5, open submissions/grading or close the independent real-video/Alpha 2 gate.
 
-Next `devam`: verify exact Git/CI, implement item 1 and its focused tests, then
-continue item 2 as appropriate. Keep public generation closed. This planning
-turn makes no Qwen3.5 inference and does not change the current provider.
+Items 1–2 pass software regression. Item 3 made exactly one native English call,
+timing out at 42,044ms. Actual model/digest observations showed all 3,627,171,183
+runtime bytes in VRAM with the unchanged 16,384 context. No extraction or draft
+was accepted; Turkish/negative cases were not attempted, so their semantics and
+all draft quality remain unreviewed. The runtime returned to idle without service
+changes. This candidate is closed; no retry or larger deadline follows.
+
+The owner's conditional download instruction now applies to the single researched
+[Qwen2.5 contingency](qwen25-generation-plan.md). It is a separate explicitly
+selected candidate, not automatic fallback within a run. Keep public generation
+closed and preserve this failed result.
 
 ## Protocol references
 
@@ -122,3 +163,9 @@ Its [thinking controls](https://docs.ollama.com/capabilities/thinking) depend on
 model/runtime behavior; requesting no thinking is not a quality or compatibility
 guarantee. These references describe protocol options, not this candidate's native
 success. The installed local manifest, not the mutable public tag, supplies its pin.
+Hardware support and GPU-placement inspection follow Ollama's
+[hardware documentation](https://docs.ollama.com/gpu) and
+[local FAQ](https://docs.ollama.com/faq#how-can-i-tell-if-my-model-was-loaded-onto-the-gpu).
+The contingency weight size comes from the
+[official Qwen2.5 tag](https://ollama.com/library/qwen2.5:7b-instruct-q4_K_M);
+weight size alone is not a runtime-memory or quality guarantee.

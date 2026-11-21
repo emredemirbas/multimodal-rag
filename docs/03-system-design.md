@@ -285,8 +285,12 @@ Expose application-owned interfaces for:
 
 Record provider, model identifier, prompt/template version, latency, tokens, and cost attribution. Provider payloads should not leak into domain models.
 
-The internal curriculum JSON adapter is now separate from chat answers. It requires
-an explicit local `qwen3:4b` digest/engine pin, checks identity before and after
+The internal curriculum JSON adapter is separate from chat answers. It accepts
+only explicit `qwen3:4b`, `qwen3.5:4b` or `qwen2.5:7b-instruct-q4_K_M`
+identities, with fixed expected families `qwen3`, `qwen35` and `qwen2`. The existing
+Qwen3 default remains unchanged; each selected model needs a full local digest and
+engine pin. There is no discovery, download, model rotation or fallback in the
+adapter. It checks identity before and after
 inference and returns bounded raw JSON plus usage to the application. A scoped
 call receipt commits before inference; no database lock spans the HTTP request.
 Exact request-body hashes and schema/request versions complement the existing

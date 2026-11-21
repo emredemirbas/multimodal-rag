@@ -336,3 +336,59 @@ inference was made. [The new finite plan](qwen35-generation-plan.md) keeps the
 same evidence/semantic/resource gates and requires explicit identity compatibility
 and isolated runtime preflight. The old candidate is closed as failed; public
 generation remains closed. This does not silently reopen Qwen3 prompt tuning.
+
+## Predeclared Qwen3.5 native GPU pass — 2026-11-21
+
+The owner subsequently requested a hardware-fitting local Ollama model, including
+a download if needed, and continued implementation. The installed Qwen3.5 candidate
+needs no download. Fresh local checks found a working RTX 4060 Laptop 8 GB and an
+idle native Ollama service. Explicitly select that native **0.33.3** runtime and
+installed `qwen3.5:4b` digest
+`2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd`, family `qwen35`.
+This is a deliberate runtime choice under the new owner instruction, not an
+assumption that the earlier CPU-only container is equivalent. No service/driver
+or owner configuration is changed; observe actual model VRAM placement during
+inference. Provider/code compatibility and replay regressions must pass first.
+
+Use unchanged evidence-unit prompts/schema/mapping, all three original samples,
+learner settings and expectations. The order and immediate stop rule remain:
+English, Turkish, insufficient; inspect each before the next, stop this candidate
+on the first timeout/invalid/semantic failure. At most three extraction calls, no
+retry/diagnostic. Only if all three pass, continue the same accepted positive
+checkpoints through selection/generation and at most one declared correction each,
+nine physical calls total. A `revision_pending` checkpoint permits only that one
+correction; terminal/transport/semantic failure stops continuation.
+
+Retain four threads, 16,384 context, 2,048 output tokens, `think=false`,
+`stream=false`, `keep_alive=0`, 42/60-second deadlines and existing lease/worker
+limits. Use authored public MIT text, normal ingestion/saved contexts/leased
+checkpoints and a separate disposable PostgreSQL. Record raw results, full unit
+mapping, coverage, actual usage, timing and exact model/digest VRAM observations.
+GPU use, successful HTTP or a correct unit ID alone cannot establish native quality.
+No public/default registration or full Sprint 5/Alpha 2 approval follows here.
+
+## Qwen3.5 GPU result and authorized download — 2026-11-21
+
+Exactly **one** English extraction call timed out at **42,044ms**; its failed
+physical receipt records **42,056ms**, nullable unknown token usage and zero spend.
+There was no completed raw response, accepted extraction or draft. The run stayed
+`retrying` at initialization checkpoint 1, but this probe did not retry it.
+Turkish and insufficient cases were not attempted; their semantic behavior and
+all draft quality remain unreviewed.
+
+Bounded `/api/ps` observations matched the exact selected model/digest and showed
+all **3,627,171,183 runtime bytes in VRAM**, with context 16,384. GPU placement is
+therefore observed rather than inferred. It did not make this request meet its
+deadline. Native logs emitted GPU-discovery watchdog warnings around cancellation;
+the service returned to idle with no loaded model or observed OOM. No service or
+driver change, preload, diagnostic inference or longer deadline followed.
+Exact failure/placement/receipt and application cleanup are in
+[native-qwen35-gpu-results.json](native-qwen35-gpu-results.json).
+
+The latest owner instruction explicitly authorizes downloading a hardware-fitting
+local Ollama model if needed. The single researched contingency,
+`qwen2.5:7b-instruct-q4_K_M` (about 4.7 GB), is downloading from the official
+Ollama source under [its separate finite plan](qwen25-generation-plan.md).
+Its full installed identity and native result remain pending; no Qwen2.5
+inference is permitted until download, identity and software checks pass. This
+operator action is not an application fallback or an unlimited model search.

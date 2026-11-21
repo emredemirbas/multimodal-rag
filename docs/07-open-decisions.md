@@ -10,7 +10,9 @@ historical private-beta first-release answer below and the previously pending
 portfolio-versus-learning-platform choice. Production/SaaS is outside this target.
 Keep existing authorized subtitle -> scoped chat -> stable evidence -> complete
 deletion flows; local models and restricted media remain optional experiments.
-No paid service, automatic model download or owner-stack change is authorized.
+No paid service or owner-stack change is authorized. The later 2026-11-21 model
+decision below permits a hardware-fitting Ollama download if needed; the
+application still never downloads or switches models automatically.
 
 Assignments, solution uploads, hardened code grading and the later learning loop
 remain Sprint 5–7 roadmap after v1. Their unresolved decisions need no silent
@@ -79,12 +81,21 @@ accepted extraction/draft. The remaining cases were not attempted.
 
 After that result the owner explicitly selected a **separate plan for already
 installed `qwen3.5:4b`**; see [the finite plan](sprint5/qwen35-generation-plan.md).
-This turn inspects metadata and plans only, with no new Qwen3.5 inference or
-automatic provider switch. Next implement explicit model/family compatibility and
-preserve existing request/checkpoint pins before any separate finite native pass.
-No paid service, model download, owner-service change, weaker evidence check or
-later sprint follows. Existing native failures remain recorded; generation stays
-closed until the finite extraction and actual draft reviews pass.
+The owner subsequently requested continued development and a hardware-compatible
+Ollama model, explicitly authorizing a download if needed. Fresh inspection found
+a working 8 GB NVIDIA GPU and an idle native runtime. Use installed Qwen3.5 first;
+no download is needed for that candidate. Implement explicit model/family support
+and replay tests, then use the deliberately selected/pinned native GPU path under
+the finite plan. This supersedes planning-only/no-download restrictions for this
+operator action; it does not authorize paid services, driver installation, service
+configuration changes, weaker evidence checks, automatic fallback or later sprints.
+That Qwen3.5 native-GPU pass then timed out on its first call despite full GPU
+placement, with no accepted extraction or draft; it was not retried. The latest
+instruction authorizes the one researched download contingency,
+`qwen2.5:7b-instruct-q4_K_M`, in [its own finite plan](sprint5/qwen25-generation-plan.md).
+This is an operator-selected model, not in-application fallback or unlimited model
+rotation. Existing failures remain recorded; generation stays closed until actual
+finite extraction and draft reviews pass.
 
 ## Blocking before broad implementation
 
