@@ -79,8 +79,14 @@ recipes, including identical text at another occurrence. SQL adapter reconstruct
 resumes without repeating extraction and preserves cancellation/deletion fences.
 The existing real Celery SIGKILL/replacement-worker regressions also pass for this
 representation, including no repeated extraction and one result after duplicate
-deliveries. The single finite native pass remains separate. No native inference
-was run for these software slices; valid unit IDs do not establish semantic support.
+deliveries. Its separate finite native pass then failed at the first English
+extraction: existing unit IDs, but duplicate/contradictory insufficiency and missing
+slice coverage. One actual call, no accepted extraction/draft; later samples were
+not attempted. Full source text was supplied; intentional unit edges were mistaken
+for truncation. See the raw artifact and review, not software fixture replies.
+The owner selected [a separate installed-Qwen3.5 plan](sprint5/qwen35-generation-plan.md);
+metadata inspection is not inference or a quality result. Legacy identity/replay
+regression and a fresh isolated-runtime preflight must precede its finite pass.
 
 ## Software test pyramid
 

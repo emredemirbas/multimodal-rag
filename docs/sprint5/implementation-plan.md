@@ -613,10 +613,18 @@ digests; replay checks exact occurrences even when different spans have equal
 text. Partition/schema/mapping pins reject old v4 checkpoints. Actual provider
 preparation bounds input/schema/request bytes with earlier lossless batch flushes.
 Unit, PostgreSQL recovery/fence and existing actual SIGKILL/replacement-worker
-regressions pass, completing redesign item 3. Next verify isolated runtime identity
-before item 4's single predeclared native extraction/draft review.
-Generation remains closed. No native result is supplied by software tests.
-Verify actual hosted CI first.
+regressions pass, completing redesign item 3. Item 4's finite native pass failed
+at the first English extraction: one call, contradictory/duplicate insufficiency
+and missing slice coverage, no accepted extraction or draft. It stopped immediately;
+Turkish/negative samples were not attempted. Raw output is retained in
+`native-evidence-units-results.json`; do not retry or repair this candidate.
+
+The owner then selected [a separate installed-Qwen3.5 plan](qwen35-generation-plan.md).
+Only read-only local metadata was inspected; no provider code changed or Qwen3.5
+inference occurred. Next verify exact Git/CI, then implement its explicit identity/
+family compatibility slice and tests, preserving legacy request/checkpoint pins.
+Any later native pass needs isolated runtime preflight and the same finite gates.
+Generation remains closed; no software test replaces native quality.
 Preserve existing lease/call/checkpoint fences and the empty default registry;
 no automatic model switch/download, resource/deadline increase, evaluator or later
 sprint follows. Full Sprint 5 and independent real-video/Alpha 2 approval stay open.

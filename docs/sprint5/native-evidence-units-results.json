@@ -1,0 +1,567 @@
+{
+  "date": "2026-11-21",
+  "scope": "authored MIT subtitle fixtures; no recording",
+  "identity": {
+    "provider": "ollama-local",
+    "model": "qwen3:4b",
+    "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "engine": "0.40.3"
+  },
+  "options": {
+    "temperature": 0,
+    "num_ctx": 16384,
+    "num_predict": 2048,
+    "num_thread": 4
+  },
+  "call_seconds": 60,
+  "inference_seconds": 42,
+  "recipe_sha256": "914a33be7aee39fa855aed6206905d0eca8bae47f6fd224148e4bc9d655ac5b1",
+  "partition_version": "evidence-units-byte-v1",
+  "normalization_version": "evidence-unit-extraction-map-v1",
+  "declared_max_physical_calls": 9,
+  "physical_calls": 1,
+  "cases": [
+    {
+      "case": "typed-list-en.vtt",
+      "source_sha256": "96c24a31d53276ac5993972fdcd71eda2ecc486de4af89941d55f9bffe07a0f7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 45,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 2459,
+      "schema_bytes": 1102,
+      "request_bytes": 3912,
+      "input_sha256": "e87e036d605053291a5eb3e9eac35292dce6fc082e94a5272c054d7042c8b5b3",
+      "context_sha256": "5321caca93d69915b8ce371421a4ffb62feb9a4fd73e1bd718834b0d2ada1e2e",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "bd6a33d1c92025d3fa6fc726186194347a17849f06a6b1902030cb516afd4cf5",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "This short example uses FastAPI to return a typed list of strings. Create app = ",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": "FastAPI(). The route decorator @app.get(\"/items\", response_model=list[str]) regi",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "sters a GET endpoint and declares the response shape. Define def read_items(): a",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 320,
+            "text": "nd return [\"pen\", \"book\"] from it. Calling GET /items returns a JSON array of st",
+            "id": "u00003"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 320,
+            "end_char": 400,
+            "text": "rings. Changing the endpoint path or the example strings does not require anothe",
+            "id": "u00004"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 400,
+            "end_char": 465,
+            "text": "r service. The response model is list[str], not a database model.",
+            "id": "u00005"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "942348b6-e82e-5af7-a5ba-c0c83e1b42e2",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "Keep the example in one Python file with from fastapi import FastAPI. This lesso",
+            "id": "u00006"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "942348b6-e82e-5af7-a5ba-c0c83e1b42e2",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": "n covers creating the application, the GET decorator, a function returning a str",
+            "id": "u00007"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "942348b6-e82e-5af7-a5ba-c0c83e1b42e2",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "ing list, and response_model=list[str]. It does not teach persistence, authentic",
+            "id": "u00008"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+            "segment_id": "942348b6-e82e-5af7-a5ba-c0c83e1b42e2",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 318,
+            "text": "ation, deployment, test libraries, async functions or request-body validation.",
+            "id": "u00009"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "purpose": "extract-objectives",
+          "done": true,
+          "done_reason": "stop",
+          "prompt_eval_count": 605,
+          "eval_count": 196,
+          "total_duration": 41565488340,
+          "load_duration": 7743395226,
+          "prompt_eval_duration": 15758581000,
+          "eval_duration": 18046943000,
+          "output": "{\n  \"goals\": [\n    {\n      \"description\": \"Create a FastAPI application with a GET endpoint that returns a typed list of strings using response_model=list[str]\",\n      \"unit_ids\": [\"u00000\", \"u00001\"]\n    }\n  ],\n  \"insufficient\": [\n    {\n      \"reason\": \"Incomplete sentence: 'regi' likely truncated\",\n      \"slice_id\": \"s00000\"\n    },\n    {\n      \"reason\": \"Incomplete sentence: 'a' likely truncated\",\n      \"slice_id\": \"s00000\"\n    },\n    {\n      \"reason\": \"Incomplete sentence: 'st' likely truncated\",\n      \"slice_id\": \"s00000\"\n    },\n    {\n      \"reason\": \"Incomplete sentence: 'anothe' likely truncated\",\n      \"slice_id\": \"s00000\"\n    }\n  ]\n}",
+          "has_thinking": false,
+          "has_tool_calls": false,
+          "elapsed_ms": 41574
+        }
+      ],
+      "status": "failed",
+      "manual_review": {
+        "passes_predeclared_expectation": false,
+        "verdict": "Invalid extraction: four duplicate s00000 insufficiency entries contradict its selected evidence, while s00001 is omitted. All source text was supplied; the model interpreted intentional byte-unit edges as truncated sentences. The description names expected GET/typed-list skills, but no valid complete extraction was accepted."
+      },
+      "failure_code": "invalid_output",
+      "checkpoint_seq": 1,
+      "accepted_stages": [
+        "curriculum.initialized"
+      ],
+      "receipts": [
+        {
+          "purpose": "extract-objectives",
+          "model_digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "engine": "0.40.3",
+          "prompt_version": "tutorial-objectives-units-v1",
+          "schema_version": "tutorial-objectives-units-json-v1",
+          "request_version": "curriculum-json-call-v1",
+          "input_sha256": "e87e036d605053291a5eb3e9eac35292dce6fc082e94a5272c054d7042c8b5b3",
+          "status": "succeeded",
+          "input_tokens": 605,
+          "output_tokens": 196,
+          "output_characters": 649,
+          "duration_ms": 41576,
+          "billed_usd": "0.000000",
+          "failure_code": null
+        }
+      ],
+      "accepted_extractions": [],
+      "draft_count": 0,
+      "structural_review": {
+        "all_selected_unit_ids_exist": true,
+        "selected_parent_slices": [
+          "s00000"
+        ],
+        "duplicate_insufficient_slice_ids": [
+          "s00000"
+        ],
+        "anchored_and_insufficient_slice_ids": [
+          "s00000"
+        ],
+        "missing_coverage_slice_ids": [
+          "s00001"
+        ],
+        "canonical_extraction_accepted": false,
+        "wire_shape_valid": true,
+        "coverage_valid": false
+      },
+      "observed_unit_references": [
+        {
+          "goal_index": 0,
+          "units": [
+            {
+              "slice_id": "s00000",
+              "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+              "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+              "processing_version": "transcript-chunks-v1:g1",
+              "modality": "transcript",
+              "origin": "uploaded_transcript",
+              "start_char": 0,
+              "end_char": 80,
+              "text": "This short example uses FastAPI to return a typed list of strings. Create app = ",
+              "id": "u00000"
+            },
+            {
+              "slice_id": "s00000",
+              "source_id": "a3826aaf-4919-4d48-ab5b-0dcaa53e79e5",
+              "segment_id": "91f8a699-61a1-5d1a-a480-e77ae6f8ecda",
+              "processing_version": "transcript-chunks-v1:g1",
+              "modality": "transcript",
+              "origin": "uploaded_transcript",
+              "start_char": 80,
+              "end_char": 160,
+              "text": "FastAPI(). The route decorator @app.get(\"/items\", response_model=list[str]) regi",
+              "id": "u00001"
+            }
+          ],
+          "accepted": false,
+          "note": "Unaccepted source projection for inspection only; no repaired or normalized extraction was adopted."
+        }
+      ],
+      "wire_content_bytes": 649,
+      "wire_minified_bytes": 503,
+      "normalized_minified_bytes": null
+    },
+    {
+      "case": "health-route-tr.vtt",
+      "source_sha256": "abcb58150b6e90eae5b6d9e5c8222c6c06dfc6b1d1713bca51d305d958be1c11",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "tr",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 2,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 2441,
+      "schema_bytes": 1111,
+      "request_bytes": 3911,
+      "input_sha256": "19e9c9813c8ce715f8c88e48ec6753819943d2674590c8fb5cdd9a4e49164a61",
+      "context_sha256": "6579a57ba4f1af8aafe32c3b8916ba9eeaf5217d13ccfe27fa8c084baaaa69f1",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "e887d84528ede919ae099bb21455f703e1eb978214b001a0bbceeaa06e3f92c9",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 73,
+            "text": "Bu kısa örnekte FastAPI ile tek bir sağlık uç noktası yazıyoruz. from fas",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 73,
+            "end_char": 146,
+            "text": "tapi import FastAPI satırıyla sınıfı içeri aktarın ve app = FastAPI() ile",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 146,
+            "end_char": 220,
+            "text": " uygulamayı oluşturun. @app.get(\"/health\") dekoratörünün altında def healt",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 220,
+            "end_char": 298,
+            "text": "h(): fonksiyonunu tanımlayın. Fonksiyon return {\"status\": \"ok\"} ile sabit bir ",
+            "id": "u00003"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 298,
+            "end_char": 369,
+            "text": "sözlük döndürür. GET /health isteğinin yanıtı status alanı ok olan bir ",
+            "id": "u00004"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "b8992771-6b06-5116-afe3-fa5c948870ea",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 369,
+            "end_char": 385,
+            "text": "JSON nesnesidir.",
+            "id": "u00005"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "7b156e98-5d62-5ba7-b145-093824bee83f",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 70,
+            "text": "Alıştırma için uç nokta adını ve sabit metin değerini değiştirebilirsi",
+            "id": "u00006"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "7b156e98-5d62-5ba7-b145-093824bee83f",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 70,
+            "end_char": 146,
+            "text": "niz. Tek Python dosyası, FastAPI uygulaması, GET dekoratörü, fonksiyon ve sa",
+            "id": "u00007"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "7b156e98-5d62-5ba7-b145-093824bee83f",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 146,
+            "end_char": 218,
+            "text": "bit sözlük bu dersin kapsamıdır. Veritabanı, kullanıcı girişi, kimlik do",
+            "id": "u00008"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "7b156e98-5d62-5ba7-b145-093824bee83f",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 218,
+            "end_char": 289,
+            "text": "ğrulama, dağıtım, test kütüphanesi ve async işlevi bu derste anlatılmıy",
+            "id": "u00009"
+          },
+          {
+            "slice_id": "s00001",
+            "source_id": "678858f8-c365-4e4d-aef8-97db96b12ecf",
+            "segment_id": "7b156e98-5d62-5ba7-b145-093824bee83f",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 289,
+            "end_char": 292,
+            "text": "or.",
+            "id": "u00010"
+          }
+        ]
+      },
+      "calls": [],
+      "status": "not_attempted",
+      "manual_review": {
+        "passes_predeclared_expectation": null,
+        "verdict": "Not attempted: candidate stopped at the first English extraction failure."
+      },
+      "accepted_extractions": [],
+      "draft_count": 0
+    },
+    {
+      "case": "insufficient-en.vtt",
+      "source_sha256": "2edbb9dc4b742895946d424b57949c7dcb91b8413356bfeb9fa226bf69a8c2a7",
+      "learner": {
+        "experience": "intermediate",
+        "difficulty": "beginner",
+        "language": "en",
+        "available_minutes": 30,
+        "allow_prerequisites": false,
+        "allow_extensions": false,
+        "allow_external_documentation": false
+      },
+      "batches": 1,
+      "slices": 1,
+      "prompt_version": "tutorial-objectives-units-v1",
+      "schema_version": "tutorial-objectives-units-json-v1",
+      "input_bytes": 1707,
+      "schema_bytes": 1039,
+      "request_bytes": 3027,
+      "input_sha256": "9f20e40bc18d50ff57307435e9a342b84eabb7825c43a62e4856893fde272d70",
+      "context_sha256": "fb42fffef5bb1a662bf107ee1022d98bf007ea8b76194f2a95e7cf2c221170d6",
+      "unit_plan": {
+        "partition_version": "evidence-units-byte-v1",
+        "batch_index": 0,
+        "plan_sha256": "21fd378f1f0946c9fb740cb07397f684691cb8c77e7ce4b994c430dbf6beb94c",
+        "units": [
+          {
+            "slice_id": "s00000",
+            "source_id": "86b06692-7189-4551-8b3c-776408cffd27",
+            "segment_id": "27f0d406-10a9-59c3-9fea-0aae1d31e7f8",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 0,
+            "end_char": 80,
+            "text": "This is an authored title card for a recording that is not included. There is no",
+            "id": "u00000"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "86b06692-7189-4551-8b3c-776408cffd27",
+            "segment_id": "27f0d406-10a9-59c3-9fea-0aae1d31e7f8",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 80,
+            "end_char": 160,
+            "text": " programming demonstration, code, explanation or instruction in this text. The p",
+            "id": "u00001"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "86b06692-7189-4551-8b3c-776408cffd27",
+            "segment_id": "27f0d406-10a9-59c3-9fea-0aae1d31e7f8",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 160,
+            "end_char": 240,
+            "text": "laceholder ends here. No technical learning objective can be supported by this t",
+            "id": "u00002"
+          },
+          {
+            "slice_id": "s00000",
+            "source_id": "86b06692-7189-4551-8b3c-776408cffd27",
+            "segment_id": "27f0d406-10a9-59c3-9fea-0aae1d31e7f8",
+            "processing_version": "transcript-chunks-v1:g1",
+            "modality": "transcript",
+            "origin": "uploaded_transcript",
+            "start_char": 240,
+            "end_char": 250,
+            "text": "itle card.",
+            "id": "u00003"
+          }
+        ]
+      },
+      "calls": [],
+      "status": "not_attempted",
+      "manual_review": {
+        "passes_predeclared_expectation": null,
+        "verdict": "Not attempted: candidate stopped at the first English extraction failure."
+      },
+      "accepted_extractions": [],
+      "draft_count": 0
+    }
+  ],
+  "application_commit": "7c0236cf886aad2d6615af44827223553159aaf9",
+  "declared_max_extraction_calls": 3,
+  "extraction_order": [
+    "typed-list-en.vtt",
+    "health-route-tr.vtt",
+    "insufficient-en.vtt"
+  ],
+  "outcome": "failed_first_extraction",
+  "stop_reason": "invalid_output; no retry, diagnostic or continuation after the first failed case",
+  "test_identity_note": "All source/segment/context identifiers in this artifact belong to disposable authored MIT test data.",
+  "accepted_extractions": 0,
+  "published_drafts": 0,
+  "continued_positive_runs": false,
+  "independent_review": "Second read-only review confirmed the raw response diagnosis and stop boundary.",
+  "public_generation_enabled": false,
+  "cleanup": {
+    "remaining_rows": {
+      "projects": 0,
+      "sources": 0,
+      "content_segments": 0,
+      "curriculum_contexts": 0,
+      "curriculum_runs": 0,
+      "curriculum_run_checkpoints": 0,
+      "curriculum_model_calls": 0,
+      "curriculum_drafts": 0
+    },
+    "remaining_artifacts": 0,
+    "schema_removed": true,
+    "disposable_containers_removed": true,
+    "internal_network_removed": true,
+    "loopback_relay_stopped": true,
+    "original_container_ids_and_states_unchanged": true,
+    "image_ids_unchanged": true,
+    "volumes_unchanged": true,
+    "networks_unchanged": true,
+    "no_image_or_model_download": true,
+    "model_weights_read_only": true
+  }
+}

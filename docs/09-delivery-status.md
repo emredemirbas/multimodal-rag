@@ -16,8 +16,12 @@ unchanged quality/resource gates. The planner, strict model unit-ID wire,
 whole-unit quote mapping and version-pinned private checkpoint replay are now
 implemented. Unit, real PostgreSQL and actual worker process-loss regressions
 passed, including identical text at different source offsets and resume without
-repeating extraction; no new model call or enabled generator is implied.
-The old v4 review still fails.
+repeating extraction. Its finite native candidate then failed at the first English
+extraction: one call, contradictory/incomplete coverage, no accepted extraction or
+draft. The remaining two cases were not attempted. The owner selected a separate
+plan for already installed `qwen3.5:4b` in `sprint5/qwen35-generation-plan.md`.
+Only read-only metadata was inspected for that model; no Qwen3.5 inference or
+provider change has been made. Generation stays closed and earlier failures remain.
 
 Step 6b adds explicit activation of a reviewed,
 current saved draft revision. A stable assignment-version UUID references that
@@ -35,12 +39,12 @@ activation is learner acceptance, not native-model quality approval.
 The exact activation baseline `1881015586f77781f8f02d4623d25996a4e6c41c`'s
 [CI run 44902011214](https://github.com/emredemirbas/multimodal-rag/actions/runs/44902011214)
 was verified on 2026-11-21 as completed/success: frontend, backend-tests,
-backend-integration and images all succeeded. The exact planner baseline
-`eadc0f6bc77f78a908dbc55eb53582afaf437dc2`'s
-[CI run 44904205553](https://github.com/emredemirbas/multimodal-rag/actions/runs/44904205553)
+backend-integration and images all succeeded. The exact wire/checkpoint baseline
+`7c0236cf886aad2d6615af44827223553159aaf9`'s
+[CI run 44906073173](https://github.com/emredemirbas/multimodal-rag/actions/runs/44906073173)
 was checked on 2026-11-21: frontend/backend-tests/backend-integration succeeded,
-images remained in progress. This wire/checkpoint change requires its own hosted
-result; local checks are in `sprint5/validation-record.md`.
+images remained in progress. The native result/documentation commit requires its
+own hosted result; local evidence is in `sprint5/validation-record.md`.
 
 Step 5c binds explicitly selected captured documents
 to existing draft create/replace APIs under the same context/tenant/project.
@@ -188,20 +192,17 @@ README now follows product-documentation style; operator detail is in
 `local-development.md`, while plans, validation and CI history stay here. The
 same rule is recorded in `../AGENTS.md` for future updates.
 
-Next `devam`: verify exact Git/CI and read `sprint5/local-generation-redesign.md`
-with the current plan/validation record. Items 1–3 are implemented and software
-regressions pass, including actual worker process loss and restart. Begin item 4's
-isolated runtime identity preflight, then its single finite native pass if the
-existing cached identity/resources are available. Preserve all source/context/
-deletion fences, bound actual request bytes, and leave the default registry/public
-generation closed.
-The owner has selected this changed approach; no repeat scope confirmation is
-needed. Run the predeclared native pass only after protocol/workflow regression
-checks, with freshly verified model/engine identity and separate disposable
-resources. Old native failures and the finite stop boundary remain visible.
-Do not silently substitute the running native model endpoint for the old container
-profile, download models, extend deadlines or start grading/tutoring. Full Sprint 5
-and independent real-video/Alpha 2 approval remain open.
+Next `devam`: verify exact Git/CI and read `sprint5/qwen35-generation-plan.md`
+with the current plan/validation record. Implement its explicit provider-identity/
+family compatibility slice and focused tests, preserving legacy Qwen3 request and
+checkpoint identity. The owner already selected this separate plan; no repeat
+model-choice question is needed. No Qwen3.5 inference was made in this planning
+turn. A later finite pass needs software checks and fresh isolated runtime identity/
+resource preflight, with the same sample, semantic and deadline gates. The old
+candidate is closed as failed and must not be retried or repaired. Keep public
+generation/default registration closed. Do not silently substitute the owner's
+native endpoint, download models, extend deadlines or start grading/tutoring.
+Full Sprint 5 and independent real-video/Alpha 2 approval remain open.
 
 ## Sprint 4 closure — one remaining gate
 

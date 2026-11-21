@@ -74,8 +74,14 @@ assignments. The bounded [evidence-unit plan](sprint5/local-generation-redesign.
 replaces model-written quote text with application-owned source spans selected by
 ID. The pure lossless unit planner and strict wire/checkpoint integration are
 implemented and software recovery regressions pass. The one predeclared native
-pass remains next. This authorizes the changed approach, not a successful quality
-result or automatic model switch.
+pass failed at its first extraction and stopped: one call, invalid coverage and no
+accepted extraction/draft. The remaining cases were not attempted.
+
+After that result the owner explicitly selected a **separate plan for already
+installed `qwen3.5:4b`**; see [the finite plan](sprint5/qwen35-generation-plan.md).
+This turn inspects metadata and plans only, with no new Qwen3.5 inference or
+automatic provider switch. Next implement explicit model/family compatibility and
+preserve existing request/checkpoint pins before any separate finite native pass.
 No paid service, model download, owner-service change, weaker evidence check or
 later sprint follows. Existing native failures remain recorded; generation stays
 closed until the finite extraction and actual draft reviews pass.

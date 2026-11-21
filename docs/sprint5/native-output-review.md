@@ -265,3 +265,74 @@ or valid unit IDs do not prove semantic support, core-skill extraction or correc
 abstention. No new inference result is recorded here yet. The new plan predeclares
 one finite native pass and its unchanged expectations, call/deadline limits and
 stop boundary; it does not reopen an unbounded prompt/profile retry sequence.
+
+## Predeclared evidence-unit pass — 2026-11-21
+
+Redesign items 1–3 are software-validated at `7c0236c`. This pass uses
+`tutorial-objectives-units-v1` / `tutorial-objectives-units-json-v1` and
+`evidence-unit-extraction-map-v1`. The application derives complete original
+quotes from selected unit IDs and retains exact unit bindings for replay.
+Structural validity still does not establish semantic support.
+
+Before inference, a disposable cached-image runtime freshly verified the existing
+`qwen3:4b` digest
+`359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7`
+and Ollama `0.40.3`, local `qwen3` completion capability and no remote model/host.
+Installed weights are read-only, the network is internal-only and PostgreSQL data
+is disposable. No owner service is restarted or reconfigured, image/model
+downloaded, GPU configured or deadline raised.
+
+Retain the exact three samples, source hashes, learner settings, core skills and
+forbidden topics in the original expectations above. Process them sequentially:
+English typed list, Turkish health route, then insufficient title card. Inspect
+each extraction before the next. **Any timeout, invalid output or semantic failure
+ends this candidate immediately**; remaining cases are marked not attempted.
+At most three physical extraction calls, no retry or diagnostic. Only if all three
+pass, continue the same accepted positive checkpoints through selection and draft
+generation with at most the existing one correction each, nine total calls.
+
+Keep four threads, 16,384 context, 2,048 output tokens, non-thinking/non-streaming
+JSON, `keep_alive=0`, 42-second inference / 60-second acceptance and existing
+lease/worker limits. Use real source processing, saved contexts, leased-call
+receipts and graph checkpoints. Record raw wire, application-derived literal
+mapping, coverage, nullable usage, elapsed time and semantic judgment separately.
+No public/default registration or full Sprint 5/Alpha 2 approval follows from this
+small text-only review. A failed candidate returns the concrete model/runtime
+decision to the owner; no prompt/profile tuning loop or automatic model switch.
+
+## Evidence-unit result and owner decision — 2026-11-21
+
+The candidate **failed at its first English extraction**. Exactly one native call
+returned complete JSON in 41,574ms; the successful physical-call receipt records
+41,576ms, 605 input / 196 output tokens and zero spend. It was within the unchanged
+inference deadline, but the application rejected it as `invalid_output`.
+
+The goal description names the expected GET/typed-string-list behavior and selects
+existing `u00000` / `u00001`, both from `s00000`. The response also lists `s00000`
+four times as insufficient, contradicting those anchors, and omits `s00001`.
+Its "incomplete sentence" reasons mistake deliberate 80-byte unit boundaries for
+missing source text. Every source character was supplied; this is not application
+truncation. Strict unique/complete coverage checks correctly reject the response.
+There is no repaired canonical extraction, accepted evidence checkpoint or draft.
+
+Per the predeclared immediate stop boundary, Turkish and insufficient samples
+were **not attempted**. No retry, diagnostic, selection, generation or revision
+followed. Their language/abstention behavior and all native draft quality remain
+unreviewed. No representative latency or semantic-quality improvement is claimed.
+Exact raw response, unaccepted unit-reference projection, source/request/recipe
+pins, receipt and cleanup are in
+[native-evidence-units-results.json](native-evidence-units-results.json).
+An independent read-only review confirmed this interpretation.
+
+All disposable projects, source artifacts, contexts, runs, calls and checkpoints
+were removed through application cleanup; the private schema, model/PostgreSQL
+containers, loopback relay and internal network were removed. Original container
+IDs/states, image IDs, volumes and networks matched their initial inventory.
+No image/model was downloaded or built; installed weights remained read-only.
+
+After seeing the failure, the owner explicitly selected a **separate plan for the
+already installed `qwen3.5:4b`**. Read-only metadata inspection only; no Qwen3.5
+inference was made. [The new finite plan](qwen35-generation-plan.md) keeps the
+same evidence/semantic/resource gates and requires explicit identity compatibility
+and isolated runtime preflight. The old candidate is closed as failed; public
+generation remains closed. This does not silently reopen Qwen3 prompt tuning.

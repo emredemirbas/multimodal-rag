@@ -1384,17 +1384,90 @@ Validation:
   Temporary Python dependencies came from the offline cache in a separate
   environment, removed after verification.
 
+## Finite evidence-unit native pass and separate model plan — 2026-11-21
+
+Started with clean `main` at `7c0236cf886aad2d6615af44827223553159aaf9`, matching
+origin after fetch. Its exact
+[CI run 44906073173](https://github.com/emredemirbas/multimodal-rag/actions/runs/44906073173)
+was checked: frontend, backend-tests and backend-integration succeeded; images
+remained in progress. Neither its overall CI nor this documentation commit's own
+hosted result is assumed successful.
+
+The predeclared redesign item 4 used the original MIT samples, learner settings,
+core skills and forbidden topics. A cached-image isolated Ollama runtime freshly
+verified the same full `qwen3:4b` digest and engine `0.40.3`, local family/completion
+capability and no remote model/host. Weights were mounted read-only, networking
+was internal-only and PostgreSQL used separate tmpfs state. Pure preflight fitted
+every complete sample in one batch within actual input/schema/request limits.
+No prompt, unit partition, model options, timeout, worker or lease budget changed.
+
+- **One native extraction call**: English returned JSON in **41,574ms**, successful
+  physical receipt **41,576ms**, **605 input / 196 output tokens**, zero spend.
+  The JSON wire shape and selected IDs were valid, but normalization rejected
+  duplicate/contradictory and incomplete slice coverage as `invalid_output`.
+- Existing `u00000`/`u00001` both point to `s00000`. The goal description names
+  GET/typed-list behavior, but four insufficiency rows also repeat `s00000` and
+  `s00001` is omitted. Reasons mistake intended 80-byte unit edges for incomplete
+  source. All source text was present; no application truncation occurred.
+- The run retained only its initialization checkpoint: **zero accepted
+  extractions and zero drafts**. No repair or branch selection was applied.
+  The first failure ended the candidate immediately. Turkish and negative cases
+  were **not attempted**; no retry, diagnostic, selection/generation/revision or
+  native abstention/draft-quality claim follows. The model container was removed
+  immediately after failure. This is not a timeout or representative latency gain.
+- Raw output, original unit plans, unaccepted reference projection, exact source/
+  request/recipe pins, receipts and cleanup are in
+  [native-evidence-units-results.json](native-evidence-units-results.json).
+  An independent read-only review confirmed the actual response diagnosis and
+  immediate stop boundary. No owner content or private service inventory is in
+  that artifact; its UUIDs belong to disposable MIT test data.
+
+Validation and cleanup:
+
+- An offline artifact check rebuilt all three complete source batches from their
+  saved plans, revalidated greedy spans and recomputed every request fingerprint
+  through the unchanged real provider `prepare`. Original sample hashes, recipe,
+  options/deadlines and physical-call counts match. The actual wire shape parses,
+  and its application normalization reproduces the unique-insufficiency rejection.
+  Successful transport is kept separate from failed application acceptance.
+- Actual application project deletion and artifact cleanup left zero projects,
+  sources, segments, contexts, runs, checkpoints, calls and drafts in the test
+  tenant and zero in-memory artifacts. The private schema was dropped. Temporary
+  model/PostgreSQL containers, loopback relay and internal network were removed;
+  original container IDs/states, unique image IDs, volumes and networks matched
+  the initial inventory exactly. No image/model build/download or owner-service/
+  configuration/data change occurred. Python dependencies came only from the
+  offline cache into a separate temporary environment; it, the temporary scripts,
+  credentials and private inventory files were removed after verification.
+- `git diff --check` and all **25 local links in eight changed Markdown files**
+  pass. The captured artifact contains no host paths, DSN, endpoint or credential
+  fields. Its offline replay checks make no model or database request.
+- Production code and product UI are unchanged in this slice. The prior 1,176
+  unit/API and 208 integration software checks remain separate evidence; they
+  were not rerun or relabelled as native quality checks. README is unchanged.
+
+After this concrete failure the owner explicitly chose **a separate plan for
+already installed `qwen3.5:4b`**, with no new inference in this turn. Read-only
+native tags/show/version metadata identifies installed digest
+`2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd`, family
+`qwen35`, Q4_K_M and local completion capability on native engine `0.33.3`.
+This does not prove compatibility with the isolated cached engine or successful
+non-thinking/structured output. No model was loaded or downloaded for that check.
+[The separate finite plan](qwen35-generation-plan.md) defines explicit identity/
+family support, legacy replay tests and isolated preflight before another finite
+native pass, preserving the original semantic/resource/deadline stop conditions.
+
 ## Continuation
 
-The owner has selected the changed local generation approach; do not ask the scope
-question again. Items 1–3 in `local-generation-redesign.md` pass their software
-checks. Verify this commit's exact hosted CI, then begin item 4: freshly verify
-the isolated cached model digest/engine and resource availability before the one
-predeclared native extraction/draft pass. Its fixed samples, semantic expectations,
-three-extraction/nine-total-call cap, original deadlines and stop boundary remain.
-Valid unit IDs and authored protocol replies do not establish semantic correctness.
-Keep the default registry and public generation closed until the finite native
-extraction and full draft reviews pass. Refresh actual isolated model/engine pins;
-the running native endpoint is not the old container profile. No automatic model
-switch/download, timeout increase, owner-service changes, evaluator or later sprint
-follows. Full Sprint 5 and independent real-video/Alpha 2 review remain open.
+The old evidence-unit Qwen3 candidate is closed as failed; do not rerun or repair
+its output. The owner selected `qwen35-generation-plan.md`; no repeat model-choice
+question is needed. Verify this commit's exact hosted CI, then implement item 1's
+explicit provider compatibility and focused tests. Preserve old Qwen3 request and
+checkpoint identity, then complete the proportional replay/recovery checks.
+No Qwen3.5 inference or provider switch was made in this planning turn. Any later
+finite pass requires fresh isolated identity/resources and the same fixed samples,
+three-extraction/nine-total-call cap, deadlines and first-failure stop. Metadata,
+valid IDs and protocol fixtures do not establish semantic correctness. Keep the
+default registry/public generation closed. No automatic download, owner-service
+change, evaluator or later sprint follows. Full Sprint 5 and independent
+real-video/Alpha 2 review remain open.

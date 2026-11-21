@@ -1,8 +1,10 @@
 # Local assignment generation: evidence-unit selection
 
 Date: 2026-11-21. Status: owner-selected direction; items 1–3 implemented and tested
-(see `validation-record.md`). Remaining items below are planned. This is a different
-extraction representation, not a successful native result or public generation enablement.
+(see `validation-record.md`). Item 4 failed at its first English extraction;
+item 5 remains closed. The owner subsequently selected a
+[separate installed-Qwen3.5 plan](qwen35-generation-plan.md), with no new inference.
+This representation is not a successful native result or public enablement.
 
 ## Decision and evidence
 
@@ -122,7 +124,15 @@ its own migration and scope/deletion coverage.
    attribution, all-or-nothing publication and the empty default registry remain.
    Independent read-only review found no blocker. These checks claim no semantic
    or native success.
-4. **One predeclared native pass.** Use the existing three MIT subtitle samples and
+4. **One predeclared native pass — failed; do not rerun.**
+   The procedure below ended at its first English extraction: one native call,
+   contradictory/duplicate insufficiency and missing slice coverage, no accepted
+   extraction/draft. Remaining cases were not attempted. See
+   [the raw result](native-evidence-units-results.json) and
+   [review](native-output-review.md). The following fixed procedure is retained
+   as the predeclared contract, not an instruction to repeat this candidate.
+
+   Use the existing three MIT subtitle samples and
    their unchanged learner settings, core skills, forbidden topics and expected
    insufficiency. Verify the actual cached model digest/engine first; select no
    automatic fallback. Use an isolated cached-image runtime, read-only weights and
@@ -157,15 +167,14 @@ its own migration and scope/deletion coverage.
 
 ## Stop boundary and next slice
 
-Items 1–3 stop at the internal wire/checkpoint and software recovery boundary.
-No native call, new provider/model, public run endpoint, runtime UI, submission, grader, tutor or
-evaluator is part of those slices. Next `devam` verifies exact Git/CI, then begins
-item 4's fresh isolated runtime identity preflight and finite native pass. Unit,
-SQL adapter-restart and actual SIGKILL/replacement-worker checks already pass.
-The old failed review remains visible. A failure in item 4
-ends this finite candidate and returns the concrete model/runtime decision to the
-owner; it does not start a prompt-tuning loop or automatically narrow Sprint 5.
-The independent real-video/Alpha 2 review remains open.
+Items 1–3 pass their software gates. Item 4's first failure ended this finite
+candidate immediately; no Qwen3 retry, profile tuning or public enablement follows.
+The old v4 and new unit-selection failures remain visible. The owner selected a
+separate plan for installed `qwen3.5:4b`; see
+[qwen35-generation-plan.md](qwen35-generation-plan.md). That selection authorizes
+planning, not a new inference result. Next `devam` verifies exact Git/CI and starts
+its explicit provider compatibility slice and focused tests. The independent
+real-video/Alpha 2 review remains open; Sprint 5 is not complete.
 
 ## Protocol references
 
