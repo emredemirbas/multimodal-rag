@@ -72,9 +72,10 @@ The owner explicitly keeps free local automatic generation in Sprint 5 and asks
 for a different approach; the remaining target is **not** narrowed to manual
 assignments. The bounded [evidence-unit plan](sprint5/local-generation-redesign.md)
 replaces model-written quote text with application-owned source spans selected by
-ID. Implementation begins with the pure lossless unit planner, then strict wire/
-checkpoint integration and one predeclared native pass. This is authorization for
-the changed approach, not a successful quality result or automatic model switch.
+ID. The pure lossless unit planner and strict wire/checkpoint integration are
+implemented and software recovery regressions pass. The one predeclared native
+pass remains next. This authorizes the changed approach, not a successful quality
+result or automatic model switch.
 No paid service, model download, owner-service change, weaker evidence check or
 later sprint follows. Existing native failures remain recorded; generation stays
 closed until the finite extraction and actual draft reviews pass.

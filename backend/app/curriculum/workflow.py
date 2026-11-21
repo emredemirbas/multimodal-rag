@@ -4,7 +4,7 @@ from hashlib import sha256
 from importlib.metadata import version
 import json
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from langgraph.graph import END, START, StateGraph
@@ -15,6 +15,8 @@ from typing_extensions import TypedDict
 from ..sources.contracts import SourceError
 from .contracts import AssignmentContent, Contract, Digest
 from .drafts import DraftRepository
+from . import evidence_units
+from .evidence_units import EvidenceUnit, UnitPlan, plan_evidence_units
 from .execution import StageFailure, StageInput, StageLeaseLost, StageResult
 from .local_provider import (
     OPTIONS, REQUEST_VERSION, CurriculumProviderError, JsonCallSpec, LocalModelIdentity, _json_bytes,
@@ -24,7 +26,7 @@ from .objectives import (
     EXTRACT_PROMPT, EXTRACT_SYSTEM, MAX_BATCHES, MAX_BATCH_SLICES, MAX_SELECTED_GOALS, MAX_SLICE_BYTES,
     NORMALIZATION_VERSION, SELECT_PROMPT, SELECT_SYSTEM,
     BatchExtraction, CompactExtraction, GlobalGoalId, GoalSelection, checked_context, context_digest, extract_spec,
-    global_goals, parse_extraction, parse_value, plan_batches, select_spec, validate_normalized_extraction,
+    global_goals, normalize_extraction, parse_value, plan_batches, select_spec, validate_normalized_extraction,
 )
 from .run_contracts import MAX_CHECKPOINT_BYTES, CheckpointSave, CheckpointView, RunClaim, RunView
 
@@ -51,6 +53,9 @@ DRAFT_SYSTEM = (
 class AcceptedBatch(Contract):
     index: int = Field(ge=0, lt=MAX_BATCHES)
     input_sha256: Digest
+    unit_plan_sha256: Digest
+    selection: CompactExtraction
+    unit_bindings: list[Annotated[list[EvidenceUnit], Field(min_length=1, max_length=2)]] = Field(max_length=2)
     extraction: BatchExtraction
 
 
@@ -92,6 +97,9 @@ def recipe_digest():
         "request": REQUEST_VERSION, "options": OPTIONS, "slice_bytes": MAX_SLICE_BYTES,
         "batch_slices": MAX_BATCH_SLICES, "batches": MAX_BATCHES, "selected": MAX_SELECTED_GOALS,
         "repair_bytes": MAX_REPAIR_BYTES, "extract_system": EXTRACT_SYSTEM, "select_system": SELECT_SYSTEM,
+        "partition_version": evidence_units.PARTITION_VERSION, "unit_bytes": evidence_units.MAX_UNIT_BYTES,
+        "unit_plan_schema": UnitPlan.model_json_schema(),
+        "accepted_batch_schema": AcceptedBatch.model_json_schema(),
         "draft_system": DRAFT_SYSTEM, "extract_schema": CompactExtraction.model_json_schema(),
         "normalized_schema": BatchExtraction.model_json_schema(), "normalization": NORMALIZATION_VERSION,
         "select_schema": GoalSelection.model_json_schema(), "draft_schema": AssignmentContent.model_json_schema(),
@@ -127,7 +135,16 @@ def draft_spec(batches, progress, learner):
 
 def _change(progress, **changes):
     # Revalidate Python values; do not let model_copy bypass strict state fields.
+    progress = WorkflowProgress.model_validate(progress, strict=True)
     return WorkflowProgress.model_validate(progress.model_dump(warnings=False) | changes, strict=True)
+
+
+def _unit_bindings(batch, selection):
+    plan = plan_evidence_units(batch)
+    by_id = {unit.id: unit for unit in plan.units}
+    if any(key not in by_id for goal in selection.goals for key in goal.unit_ids):
+        raise ValueError("Unknown selected evidence unit")
+    return [[by_id[key] for key in goal.unit_ids] for goal in selection.goals]
 
 
 class TutorialAssignmentWorkflow:
@@ -167,7 +184,10 @@ class TutorialAssignmentWorkflow:
         if any(item.identity != prepared[0].identity for item in prepared):
             raise ValueError("Invalid provider identity")
         return WorkflowProgress(context_id=stage.context.id, context_sha256=context_digest(stage.context),
-            recipe_sha256=recipe_digest(), plan_sha256=sha256(_json_bytes([item.input_sha256 for item in prepared])).hexdigest(),
+            recipe_sha256=recipe_digest(), plan_sha256=sha256(_json_bytes([
+                {"input_sha256": item.input_sha256, "unit_plan_sha256": plan_evidence_units(batch).plan_sha256}
+                for batch, item in zip(batches, prepared)
+            ])).hexdigest(),
             identity=prepared[0].identity, batch_count=len(batches))
 
     def _load(self, stage, batches, initial):
@@ -175,7 +195,7 @@ class TutorialAssignmentWorkflow:
             raise ValueError("Missing run progress")
         previous = None
         for index, supplied in enumerate(stage.checkpoints, 1):
-            cp = CheckpointView.model_validate(supplied.model_dump(warnings=False), strict=True)
+            cp = CheckpointView.model_validate(supplied, strict=True)
             if ((cp.tenant_id, cp.project_id, cp.run_id, cp.workflow_version, cp.sequence)
                     != (stage.run.tenant_id, stage.run.project_id, stage.run.id, WORKFLOW_VERSION, index)
                     or sha256(_json_bytes(cp.payload)).hexdigest() != cp.content_sha256):
@@ -203,7 +223,16 @@ class TutorialAssignmentWorkflow:
             if (accepted.index != offset or accepted.input_sha256 != self._prepared(
                     extract_spec(batches[offset], stage.context.request.learner)).input_sha256):
                 raise ValueError("Changed extraction request")
-            validate_normalized_extraction(batches[offset], accepted.extraction)
+            batch = batches[offset]
+            if accepted.unit_plan_sha256 != plan_evidence_units(batch).plan_sha256:
+                raise ValueError("Changed evidence unit plan")
+            # Private progress retains the exact unit choice as well as its
+            # derived literal quotes. Neither a rehashed checkpoint nor a
+            # different occurrence of the same text can substitute that choice.
+            normalized = normalize_extraction(batch, accepted.selection)
+            if (accepted.unit_bindings != _unit_bindings(batch, accepted.selection)
+                    or normalized != validate_normalized_extraction(batch, accepted.extraction)):
+                raise ValueError("Changed evidence unit selection or literal mapping")
             expected = _change(old, accepted=new.accepted, phase="select" if len(new.accepted) == len(batches) else "extract")
         elif old.phase == "select":
             if cp_stage != "curriculum.selected":
@@ -226,8 +255,8 @@ class TutorialAssignmentWorkflow:
 
     def __call__(self, stage: StageInput) -> StageResult:
         try:
-            run = RunView.model_validate(stage.run.model_dump(warnings=False), strict=True)
-            claim = RunClaim.model_validate(stage.claim.model_dump(warnings=False), strict=True)
+            run = RunView.model_validate(stage.run, strict=True)
+            claim = RunClaim.model_validate(stage.claim, strict=True)
             context = checked_context(stage.context)
             if (run.workflow_version != WORKFLOW_VERSION or run.status != "running"
                     or (run.tenant_id, run.project_id, run.id, run.attempt_count)
@@ -239,7 +268,9 @@ class TutorialAssignmentWorkflow:
             learner = context.request.learner
             if learner.allow_prerequisites or learner.allow_extensions or learner.allow_external_documentation:
                 self._reject(stage, "external_policy_unavailable", unavailable=True)
-            batches = plan_batches(context)
+            # prepare is pure: use the real provider's input/schema/wire limits
+            # when deciding batch boundaries, before any physical call receipt.
+            batches = plan_batches(context, prepare=self.calls.provider.prepare)
             initial = self._initial(stage, batches)
             progress = self._load(stage, batches, initial)
             if not stage.checkpoints:
@@ -306,8 +337,11 @@ class TutorialAssignmentWorkflow:
         stage, batches, progress = state["stage"], state["batches"], state["progress"]
         if progress.phase == "extract":
             batch = batches[len(progress.accepted)]
-            extraction = parse_extraction(batch, state["raw"])
-            accepted = [*progress.accepted, AcceptedBatch(index=batch.index, input_sha256=state["request_sha256"], extraction=extraction)]
+            selection = parse_value(CompactExtraction, state["raw"])
+            extraction = normalize_extraction(batch, selection)
+            accepted = [*progress.accepted, AcceptedBatch(index=batch.index,
+                input_sha256=state["request_sha256"], unit_plan_sha256=plan_evidence_units(batch).plan_sha256,
+                selection=selection, unit_bindings=_unit_bindings(batch, selection), extraction=extraction)]
             new = _change(progress, accepted=accepted, phase="select" if len(accepted) == len(batches) else "extract")
         elif progress.phase == "select":
             choice = parse_value(GoalSelection, state["raw"])

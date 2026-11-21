@@ -297,9 +297,15 @@ a small goal subset, generates and allows at most one revision. Each delivery
 does at most one physical model call; accepted progress remains in the existing
 tenant/project-owned run checkpoints. No library checkpointer or hosted tracing
 is used (tracing is explicitly disabled even if enabled in the environment).
-The default registry/public producer remain closed pending native-output review
-and approved document capture. The owner selected optional external topics with
-approval for each official document. Queue coordination and CRUD stay ordinary code.
+Extraction now asks the model to select application-owned lossless evidence-unit
+IDs. The application derives whole-unit literal quotes; private checkpoints pin
+exact selected spans and replay them against the authorized context. This changes
+the internal representation, not the public citation identity or authority boundary.
+The default registry/public producer remain closed pending native-output quality
+review and dependent generation integration. Approved document capture and explicit
+draft binding are implemented separately; external generation stays rejected.
+The owner selected optional external topics with approval for each official
+document. Queue coordination and CRUD stay ordinary code.
 
 ### LangGraph workflows
 

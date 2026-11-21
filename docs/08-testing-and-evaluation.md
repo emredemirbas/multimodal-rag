@@ -68,11 +68,19 @@ Neither these native text samples nor the software tests close the independent
 real-video/audiovisual gate.
 
 The owner-selected [evidence-unit redesign](sprint5/local-generation-redesign.md)
-starts with a pure lossless planner. Its tests cover exact UTF-8/source-span
+includes a pure lossless planner. Its tests cover exact UTF-8/source-span
 reconstruction, strict raw types, immutable detached units, complete ordered input
-fingerprints and forged saved plans. Existing extraction/workflow regressions stay
-unchanged. Unit-to-quote wire conversion, checkpoint integration and the single
-finite native pass are subsequent gates; no native inference was run for this slice.
+fingerprints and forged saved plans. Strict model unit-ID selection now maps to
+complete source-derived quotes. Tests cover per-batch enums, old-wire rejection,
+complete insufficiency and actual provider input/schema/request budgets without
+truncation. Private checkpoints retain the selection, plan digest and exact unit
+bindings; unit and real PostgreSQL replay reject changed IDs, text, spans or
+recipes, including identical text at another occurrence. SQL adapter reconstruction
+resumes without repeating extraction and preserves cancellation/deletion fences.
+The existing real Celery SIGKILL/replacement-worker regressions also pass for this
+representation, including no repeated extraction and one result after duplicate
+deliveries. The single finite native pass remains separate. No native inference
+was run for these software slices; valid unit IDs do not establish semantic support.
 
 ## Software test pyramid
 

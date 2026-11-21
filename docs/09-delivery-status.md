@@ -12,9 +12,12 @@ The owner confirmed on 2026-11-21 that **free local automatic generation remains
 in Sprint 5** and selected planning a different approach. The bounded plan is
 `sprint5/local-generation-redesign.md`: application-owned lossless evidence units,
 model ID selection, strict quote/replay mapping, then one finite native pass under
-unchanged quality/resource gates. The pure planner is implemented and its focused
-regressions passed; no new model call or enabled generator is implied. The old v4
-review still fails.
+unchanged quality/resource gates. The planner, strict model unit-ID wire,
+whole-unit quote mapping and version-pinned private checkpoint replay are now
+implemented. Unit, real PostgreSQL and actual worker process-loss regressions
+passed, including identical text at different source offsets and resume without
+repeating extraction; no new model call or enabled generator is implied.
+The old v4 review still fails.
 
 Step 6b adds explicit activation of a reviewed,
 current saved draft revision. A stable assignment-version UUID references that
@@ -32,8 +35,12 @@ activation is learner acceptance, not native-model quality approval.
 The exact activation baseline `1881015586f77781f8f02d4623d25996a4e6c41c`'s
 [CI run 44902011214](https://github.com/emredemirbas/multimodal-rag/actions/runs/44902011214)
 was verified on 2026-11-21 as completed/success: frontend, backend-tests,
-backend-integration and images all succeeded. The planner change requires its own
-hosted result; local checks are in `sprint5/validation-record.md`.
+backend-integration and images all succeeded. The exact planner baseline
+`eadc0f6bc77f78a908dbc55eb53582afaf437dc2`'s
+[CI run 44904205553](https://github.com/emredemirbas/multimodal-rag/actions/runs/44904205553)
+was checked on 2026-11-21: frontend/backend-tests/backend-integration succeeded,
+images remained in progress. This wire/checkpoint change requires its own hosted
+result; local checks are in `sprint5/validation-record.md`.
 
 Step 5c binds explicitly selected captured documents
 to existing draft create/replace APIs under the same context/tenant/project.
@@ -182,10 +189,12 @@ README now follows product-documentation style; operator detail is in
 same rule is recorded in `../AGENTS.md` for future updates.
 
 Next `devam`: verify exact Git/CI and read `sprint5/local-generation-redesign.md`
-with the current plan/validation record. Continue item 2: strict unit-selection
-wire conversion, authoritative unit-to-literal quote mapping and version-pinned
-private checkpoint replay. Preserve all source/context/deletion fences, bound
-actual request bytes, and leave the default registry/public generation closed.
+with the current plan/validation record. Items 1–3 are implemented and software
+regressions pass, including actual worker process loss and restart. Begin item 4's
+isolated runtime identity preflight, then its single finite native pass if the
+existing cached identity/resources are available. Preserve all source/context/
+deletion fences, bound actual request bytes, and leave the default registry/public
+generation closed.
 The owner has selected this changed approach; no repeat scope confirmation is
 needed. Run the predeclared native pass only after protocol/workflow regression
 checks, with freshly verified model/engine identity and separate disposable

@@ -1,6 +1,6 @@
 # Local assignment generation: evidence-unit selection
 
-Date: 2026-11-21. Status: owner-selected direction; item 1 implemented and tested
+Date: 2026-11-21. Status: owner-selected direction; items 1–3 implemented and tested
 (see `validation-record.md`). Remaining items below are planned. This is a different
 extraction representation, not a successful native result or public generation enablement.
 
@@ -77,9 +77,14 @@ than repairing them. Resolve each selected ID to the **entire** original unit;
 never take a convenient prefix, fix quote spelling or silently choose a branch.
 All original literal, duplicate-anchor and complete-coverage checks remain.
 
-Private checkpoints retain selected unit identities and the plan digest alongside
-normalized literal anchors. Replay rebuilds the plan from the same authoritative
-context and checks IDs, spans, complete text and mapping. Old v4 checkpoints are
+Private accepted batches retain the strict model `selection`, `unit_plan_sha256`,
+and ordered per-goal `unit_bindings` alongside normalized literal anchors. Bindings
+contain the entire selected units, including identity, absolute spans and text;
+equal quote bytes at another occurrence cannot silently replace a selected unit.
+Replay rebuilds the plan from the same authoritative context and checks IDs,
+spans, complete text and mapping. The initial batch-plan hash includes both
+request and unit-plan digests; the recipe pins the private accepted-batch schema.
+Old v4 checkpoints are
 not converted or resumed with this recipe. Old saved drafts/activated versions stay
 readable through their existing contracts. No new database table/migration is
 needed for a versioned private checkpoint payload; any later schema change requires
@@ -94,20 +99,29 @@ its own migration and scope/deletion coverage.
    strict bounds, mutated input, deterministic IDs and changed source/recipe identity.
    This first slice does not change `objectives.py` extraction, call a model, enable
    a registry or claim improved model behavior.
-2. **Wire conversion and exact replay.** Add strict unit-selection response models,
-   per-batch enums and application-owned unit-to-quote normalization in
-   `objectives.py`. Preserve explicit insufficiency and canonical goal/coverage order.
-   Extend private accepted-batch data and recipe checks in `workflow.py`; fail closed
-   on old/changed recipes, forged unit identity, altered text and foreign source pins.
-   Use the actual provider `prepare` path to check input/schema/request byte budgets.
-   ID overhead may require an earlier bounded batch flush; never drop units/text or
-   increase the context/call budget. Keep all external-topic flags rejected here.
-3. **Workflow regression and review.** Run focused extraction/workflow tests plus
-   existing PostgreSQL cancellation, membership, lease/call/checkpoint, publication,
-   deletion and process-loss recovery tests. Use authored replies only as labelled
-   protocol fixtures. Preserve Celery/outbox, one physical call per delivery, original
-   actor attribution, all-or-nothing draft publication and the empty default registry.
-   First semantic success is still not claimed by these tests.
+2. **Wire conversion and exact replay — implemented.**
+   `objectives.py` uses strict unit-selection responses, per-batch ID enums and
+   application-owned whole-unit quote normalization. Explicit insufficiency and
+   canonical `BatchExtraction` goal/coverage order remain unchanged. Prompt/schema
+   versions are `tutorial-objectives-units-v1` / `tutorial-objectives-units-json-v1`;
+   mapping is `evidence-unit-extraction-map-v1`. `workflow.py` retains selections,
+   complete bindings and plan digests and rechecks them before resuming; old v4
+   wire/checkpoints are rejected. The graph structure/version stays unchanged;
+   its changed recipe separates the new representation. The actual provider's
+   pure `prepare` path checks input/schema/request bytes before inference or call
+   receipts. ID/escaping overhead causes an earlier bounded batch flush or explicit
+   failure, never lost source text or increased context/call budgets. All external
+   flags, default registration and public generation remain closed.
+3. **Workflow regression and review — passed.** Focused extraction/workflow and
+   full backend unit tests pass, along with real PostgreSQL cancellation,
+   membership, lease/call/checkpoint, publication and deletion regressions. Existing
+   Celery process-loss tests also pass: after SIGKILL, a fresh worker resumes the
+   accepted unit-selection checkpoint without repeating extraction; duplicate
+   deliveries leave one draft/result. Authored HTTP replies remain labelled
+   protocol fixtures. Celery/outbox, one physical call per delivery, original actor
+   attribution, all-or-nothing publication and the empty default registry remain.
+   Independent read-only review found no blocker. These checks claim no semantic
+   or native success.
 4. **One predeclared native pass.** Use the existing three MIT subtitle samples and
    their unchanged learner settings, core skills, forbidden topics and expected
    insufficiency. Verify the actual cached model digest/engine first; select no
@@ -143,10 +157,12 @@ its own migration and scope/deletion coverage.
 
 ## Stop boundary and next slice
 
-The immediate implementation is item 1 only. No native call, new provider/model,
-public run endpoint, runtime UI, submission, grader, tutor or evaluator is part of
-that slice. Next `devam` verifies exact Git/CI, then implements item 2 if the pure
-planner is validated. The old failed review remains visible. A failure in item 4
+Items 1–3 stop at the internal wire/checkpoint and software recovery boundary.
+No native call, new provider/model, public run endpoint, runtime UI, submission, grader, tutor or
+evaluator is part of those slices. Next `devam` verifies exact Git/CI, then begins
+item 4's fresh isolated runtime identity preflight and finite native pass. Unit,
+SQL adapter-restart and actual SIGKILL/replacement-worker checks already pass.
+The old failed review remains visible. A failure in item 4
 ends this finite candidate and returns the concrete model/runtime decision to the
 owner; it does not start a prompt-tuning loop or automatically narrow Sprint 5.
 The independent real-video/Alpha 2 review remains open.

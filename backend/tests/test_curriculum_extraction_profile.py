@@ -9,6 +9,7 @@ from uuid import uuid4
 import pytest
 
 from app.curriculum.execution import StageFailure
+from app.curriculum.evidence_units import plan_evidence_units
 from app.curriculum.local_provider import _json_bytes
 from app.curriculum.objectives import (
     BatchExtraction, context_digest, extract_spec, global_goals, parse_value,
@@ -41,11 +42,13 @@ def test_compact_request_preserves_literal_untrusted_text_and_origin(context, or
     spec = extract_spec(batch, session.context.request.learner)
     body = json.loads(spec.user)
     assert body["learner"] == {"language": "tr"}
-    assert body["slices"] == [{"id": batch.slices[0].id, "origin": origin, "text": segment.text}]
+    assert body["slices"] == [{"id": batch.slices[0].id, "origin": origin,
+                               "units": [{"id": item.id, "text": item.text}
+                                         for item in plan_evidence_units(batch).units]}]
     prepared = session.calls.provider.prepare(spec)
     messages = json.loads(prepared.payload)["messages"]
     assert [item["role"] for item in messages] == ["system", "user"]
-    assert json.loads(messages[1]["content"])["slices"][0]["text"] == segment.text
+    assert "".join(unit["text"] for unit in json.loads(messages[1]["content"])["slices"][0]["units"]) == segment.text
     assert segment.text not in messages[0]["content"]
     for hidden in (str(segment.segment_id), str(segment.source_id), segment.processing_version,
                    segment.source_filename, session.context.tenant_id, str(session.context.project_id)):
@@ -111,12 +114,13 @@ def test_quote_cap_is_eighty_utf8_bytes_in_the_actual_extraction_parser(context,
             parse_value(BatchExtraction, raw)
 
 
-def test_native_schema_uses_the_new_bounded_quote_profile(context):
+def test_native_schema_only_accepts_selected_unit_ids(context):
     session = Session(context)
     spec = extract_spec(plan_batches(session.context)[0], session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v4"
-    assert spec.schema_version == "tutorial-objectives-json-v4"
-    assert spec.output_schema["$defs"]["GoalAnchor"]["properties"]["quote"]["maxLength"] == 80
+    assert spec.prompt_version == "tutorial-objectives-units-v1"
+    assert spec.schema_version == "tutorial-objectives-units-json-v1"
+    assert "GoalAnchor" not in spec.output_schema["$defs"]
+    assert set(spec.output_schema["$defs"]["ProposedGoal"]["properties"]) == {"description", "unit_ids"}
 
 
 def test_identical_model_projection_cannot_reuse_progress_after_authoritative_ids_change(context):
@@ -140,7 +144,7 @@ def test_identical_model_projection_cannot_reuse_progress_after_authoritative_id
     assert session.calls.requests == [] and len(session.checkpoints) == 1
 
 
-def test_native_v2_recipe_checkpoint_cannot_silently_adopt_compact_v3(context):
+def test_native_v2_recipe_checkpoint_cannot_silently_adopt_unit_selection(context):
     session = Session(context)
     session.advance()
     # Recorded corrective-v2 recipe from the committed native review. Rehashing

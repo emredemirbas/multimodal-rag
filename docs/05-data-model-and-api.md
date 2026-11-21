@@ -445,29 +445,43 @@ database fence. Raw source/proposal text is private checkpoint data subject to
 context/source/project deletion, never usage/log data. These are structural checks,
 not semantic support or exercise-solvability verification.
 
-Compact extraction requests (introduced in profile v3) send only the requested language and lossless
-slice text with local IDs and unreviewed-origin labels. Original source/segment
+Compact extraction requests (introduced in profile v3) send only the requested
+language and lossless text with local IDs and unreviewed-origin labels. Original source/segment
 IDs, generations, processing versions, modality and character offsets remain in
 the authoritative context and batch map; model output cannot supply replacements.
 The full context hash still fences replay even if different evidence produces an
 identical compact model request. Quote validation requires literal membership in
-the named slice and at most 80 UTF-8 bytes; the native schema's 80-character limit
-does not replace that byte check. Prompt/schema/recipe pins separate old progress.
+the named slice and at most 80 UTF-8 bytes. Prompt/schema/recipe pins separate old progress.
 
-Profile v4 uses a separate model wire contract: `goals` contain descriptions and
-literal anchors; `insufficient` contains an explicit slice ID/reason for every
-unanchored slice. The model cannot provide goal IDs, coverage status or goal links.
+The failed historical v4 profile asked the model for literal anchors. The current
+internal unit-selection wire uses `goals: [{description, unit_ids}]`; model-authored
+quotes/anchors are rejected. Each input slice groups `{id, origin, units:[{id,text}]}`
+from the application-owned lossless <=80 UTF-8 byte partition. Every source
+character is sent once; private identities and offsets stay in the application.
+Per-request schema enums restrict IDs to the actual batch. `insufficient` contains
+an explicit slice ID/reason for every unanchored parent slice. The model cannot
+provide goal IDs, coverage status, goal links or source metadata.
 The application assigns `goal0`/`goal1` by response order and reconstructs the same
-canonical `BatchExtraction` checkpoint shape, with batch-ordered coverage. Reject
+canonical `BatchExtraction` shape, with whole-unit literal anchors and
+batch-ordered coverage. Reject
 missing/foreign/duplicate insufficiency, anchored/insufficient contradictions,
 duplicate anchors and identical goal rows; never infer insufficiency from omission.
 Two goals may share evidence, and a goal may anchor two slices.
 
-Mapping version `compact-extraction-map-v1`, wire schema and normalized schema are
-pinned in the recipe. Resume revalidates application-owned identities and coverage
-order as well as quote/source binding; old v3 progress is rejected before inference,
-not migrated or silently adapted. No database migration or public endpoint changes
-are needed. Successful HTTP/model-call attribution and accepted interpretation
+Prompt `tutorial-objectives-units-v1`, schema `tutorial-objectives-units-json-v1`,
+mapping `evidence-unit-extraction-map-v1`, partition and private/canonical schemas
+are pinned in the recipe. Each private accepted batch also retains its original
+strict selection, unit-plan digest and ordered per-goal complete unit bindings
+(including absolute spans and text), alongside canonical extraction. Resume
+rebuilds the plan and mapping; equal text at a different occurrence is not an
+interchangeable selection. The initial batch-plan hash covers ordered request and
+unit-plan digests, while the context hash binds scope and source generations.
+Old v4 progress is rejected before inference, not migrated or silently adapted.
+Actual provider `prepare` checks input/schema/request budgets before physical-call
+receipts, flushing earlier within the same four-slice/20-batch limits or rejecting
+an oversized context without discarding text. No database migration, public
+endpoint, saved draft or activated-version contract changes are needed.
+Successful HTTP/model-call attribution and accepted interpretation
 remain distinct: malformed wire JSON can have a successful physical-call receipt
 but cannot add a checkpoint or draft. These checks do not establish semantic
 support or enable generation.
@@ -481,7 +495,9 @@ support or enable generation.
 - `rubrics`
 - `rubric_criteria`
 
-Assignment versions become immutable after the first submission.
+Activated assignment versions already reference an immutable saved draft revision
+under migration 0027; later draft edits cannot change that version. Submissions
+and grading remain future work.
 
 ### Assessment
 

@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 
 from app.curriculum.execution import StageFailure
+from app.curriculum.evidence_units import plan_evidence_units
 from app.curriculum.local_provider import CurriculumProviderError, _json_bytes
 from app.curriculum.objectives import (
     BatchExtraction, CompactExtraction, NORMALIZATION_VERSION, extract_spec,
@@ -45,9 +46,7 @@ def extraction_batch(context):
 
 def proposal(batch):
     return {
-        "goals": [{"description": "Define a GET route.", "anchors": [
-            {"slice_id": batch.slices[0].id, "quote": "Define a GET route."},
-        ]}],
+        "goals": [{"description": "Define a GET route.", "unit_ids": [plan_evidence_units(batch).units[0].id]}],
         "insufficient": [{"slice_id": item.id, "reason": "No additional goal selected."}
                          for item in batch.slices[1:]],
     }
@@ -64,7 +63,8 @@ def test_compact_reply_gets_application_ids_and_complete_canonical_coverage(extr
     assert isinstance(accepted, BatchExtraction)
     assert [item.id for item in accepted.goals] == ["goal0"]
     assert accepted.model_dump(mode="json") == {
-        "goals": [{"id": "goal0", **wire["goals"][0]}],
+        "goals": [{"id": "goal0", "description": wire["goals"][0]["description"],
+                   "anchors": [{"slice_id": batch.slices[0].id, "quote": batch.slices[0].text}]}],
         "coverage": [
             {"slice_id": batch.slices[0].id, "status": "supported", "goal_ids": ["goal0"], "reason": None},
             *[{"slice_id": item["slice_id"], "status": "insufficient_evidence", "goal_ids": [],
@@ -80,15 +80,11 @@ def test_compact_reply_gets_application_ids_and_complete_canonical_coverage(extr
 def test_multiple_goals_and_shared_anchors_reconstruct_exact_coverage(extraction_batch):
     batch = extraction_batch
     first, second, third = batch.slices
+    units = {item.slice_id: item.id for item in plan_evidence_units(batch).units}
     wire = {
         "goals": [
-            {"description": "Declare a route and its response model.", "anchors": [
-                {"slice_id": second.id, "quote": "list[str]"},
-                {"slice_id": first.id, "quote": "Define a GET route."},
-            ]},
-            {"description": "Return a string list.", "anchors": [
-                {"slice_id": first.id, "quote": "Return a string list."},
-            ]},
+            {"description": "Declare a route and its response model.", "unit_ids": [units[second.id], units[first.id]]},
+            {"description": "Return a string list.", "unit_ids": [units[first.id]]},
         ],
         "insufficient": [{"slice_id": third.id, "reason": "No instruction."}],
     }
@@ -127,8 +123,8 @@ def test_every_slice_at_the_four_slice_bound_requires_its_own_explicit_insuffici
 
 
 @pytest.mark.parametrize("change", [
-    "missing", "duplicate", "foreign", "overlap", "missing-all", "foreign-anchor",
-    "invented-quote", "duplicate-anchor", "goal-id", "goal-foreign-field",
+    "missing", "duplicate", "foreign", "overlap", "missing-all", "foreign-unit",
+    "invented-quote", "duplicate-unit", "model-anchors", "goal-id", "goal-foreign-field",
     "top-level-scope", "insufficient-status", "insufficient-goal-ids", "null-reason",
 ])
 def test_incomplete_ambiguous_or_model_owned_bookkeeping_is_rejected(extraction_batch, change):
@@ -139,9 +135,10 @@ def test_incomplete_ambiguous_or_model_owned_bookkeeping_is_rejected(extraction_
     if change == "foreign": wire["insufficient"][-1]["slice_id"] = "s99999"
     if change == "overlap": wire["insufficient"][0]["slice_id"] = batch.slices[0].id
     if change == "missing-all": wire = {"goals": [], "insufficient": []}
-    if change == "foreign-anchor": wire["goals"][0]["anchors"][0]["slice_id"] = "s99999"
-    if change == "invented-quote": wire["goals"][0]["anchors"][0]["quote"] = "Unseen synthetic code."
-    if change == "duplicate-anchor": wire["goals"][0]["anchors"] *= 2
+    if change == "foreign-unit": wire["goals"][0]["unit_ids"] = ["u99999"]
+    if change == "invented-quote": wire["goals"][0]["quote"] = "Unseen synthetic code."
+    if change == "duplicate-unit": wire["goals"][0]["unit_ids"] *= 2
+    if change == "model-anchors": wire["goals"][0]["anchors"] = [{"slice_id": batch.slices[0].id, "quote": batch.slices[0].text}]
     if change == "goal-id": wire["goals"][0]["id"] = "goal0"
     if change == "goal-foreign-field": wire["goals"][0]["source_id"] = str(uuid4())
     if change == "top-level-scope": wire["tenant_id"] = "foreign-tenant"
@@ -155,10 +152,10 @@ def test_incomplete_ambiguous_or_model_owned_bookkeeping_is_rejected(extraction_
 def test_repeated_goal_is_rejected_even_when_anchor_order_changes(extraction_batch):
     batch = extraction_batch
     wire = proposal(batch)
-    wire["goals"][0]["anchors"].append({"slice_id": batch.slices[1].id, "quote": "list[str]"})
+    wire["goals"][0]["unit_ids"].append(plan_evidence_units(batch).units[1].id)
     wire["insufficient"] = wire["insufficient"][1:]
     repeated = deepcopy(wire["goals"][0])
-    repeated["anchors"].reverse()
+    repeated["unit_ids"].reverse()
     wire["goals"].append(repeated)
     with pytest.raises(ValueError):
         parse(batch, wire)
@@ -177,9 +174,6 @@ def test_compact_parser_rejects_duplicate_keys_and_nonstandard_json(extraction_b
 
 
 @pytest.mark.parametrize("field,valid,invalid", [
-    ("quote", "a" * 80, "a" * 81),
-    ("quote", "ş" * 40, "ş" * 40 + "a"),
-    ("quote", "😀" * 20, "😀" * 20 + "a"),
     ("description", "ş" * 90, "ş" * 90 + "a"),
     ("reason", "😀" * 45, "😀" * 45 + "a"),
 ])
@@ -189,10 +183,9 @@ def test_compact_parser_enforces_utf8_byte_bounds(context, field, valid, invalid
         wire = {"goals": [], "insufficient": [{"slice_id": batch.slices[0].id, "reason": valid}]}
         target = wire["insufficient"][0]
     else:
-        wire = {"goals": [{"description": "Define a route.", "anchors": [
-            {"slice_id": batch.slices[0].id, "quote": valid if field == "quote" else "ş"},
-        ]}], "insufficient": []}
-        target = wire["goals"][0]["anchors"][0] if field == "quote" else wire["goals"][0]
+        wire = {"goals": [{"description": "Define a route.", "unit_ids": [plan_evidence_units(batch).units[0].id]}],
+                "insufficient": []}
+        target = wire["goals"][0]
         target[field] = valid
     accepted = parse(batch, wire)
     assert validate_normalized_extraction(batch, accepted) == accepted
@@ -204,28 +197,26 @@ def test_compact_parser_enforces_utf8_byte_bounds(context, field, valid, invalid
 @pytest.mark.parametrize("field,bad", [
     ("description", " "), ("description", "Synthetic\x00goal"),
     ("reason", " "), ("reason", "Synthetic\x00reason"),
-    ("quote", " "), ("quote", "Synthetic\x00quote"),
 ])
 def test_compact_text_cannot_be_blank_or_contain_nul(context, field, bad):
     batch = batch_with_texts(Session(context), ["Synthetic quote"])
     if field == "reason":
         wire = {"goals": [], "insufficient": [{"slice_id": batch.slices[0].id, "reason": bad}]}
     else:
-        wire = {"goals": [{"description": "Synthetic goal", "anchors": [
-            {"slice_id": batch.slices[0].id, "quote": "Synthetic quote"},
-        ]}], "insufficient": []}
-        target = wire["goals"][0]["anchors"][0] if field == "quote" else wire["goals"][0]
+        wire = {"goals": [{"description": "Synthetic goal", "unit_ids": [plan_evidence_units(batch).units[0].id]}],
+                "insufficient": []}
+        target = wire["goals"][0]
         target[field] = bad
     with pytest.raises((ValueError, CurriculumProviderError)):
         parse(batch, wire)
 
 
-@pytest.mark.parametrize("change", ["description", "quote", "reason"])
+@pytest.mark.parametrize("change", ["description", "unit", "reason"])
 def test_conversion_revalidates_nested_data_after_a_model_object_is_mutated(extraction_batch, change):
     batch = extraction_batch
     value = CompactExtraction.model_validate(proposal(batch), strict=True)
     if change == "description": value.goals[0].description = "ş" * 91
-    if change == "quote": value.goals[0].anchors[0].quote = "Unseen synthetic code."
+    if change == "unit": value.goals[0].unit_ids[0] = "u99999"
     if change == "reason": value.insufficient[0].reason = " "
     with pytest.raises(ValueError):
         normalize_extraction(batch, value)
@@ -234,7 +225,7 @@ def test_conversion_revalidates_nested_data_after_a_model_object_is_mutated(extr
 def test_old_model_response_is_not_accepted_as_an_alternative_wire(extraction_batch):
     batch = extraction_batch
     canonical = parse(batch, proposal(batch))
-    # This canonical contract is still valid checkpoint data, not v4 model input.
+    # This canonical contract remains valid checkpoint data, not model input.
     assert BatchExtraction.model_validate_json(canonical.model_dump_json(), strict=True) == canonical
     with pytest.raises(ValueError):
         parse_extraction(batch, canonical.model_dump_json())
@@ -244,9 +235,9 @@ def test_native_schema_only_offers_actual_batch_ids_without_model_goal_identity(
     session = Session(context)
     batch = batch_with_texts(session, ["Define a route.", "Return a dictionary."])
     spec = extract_spec(batch, session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v4"
-    assert spec.schema_version == "tutorial-objectives-json-v4"
-    assert NORMALIZATION_VERSION == "compact-extraction-map-v1"
+    assert spec.prompt_version == "tutorial-objectives-units-v1"
+    assert spec.schema_version == "tutorial-objectives-units-json-v1"
+    assert NORMALIZATION_VERSION == "evidence-unit-extraction-map-v1"
     definitions = spec.output_schema["$defs"]
     assert set(spec.output_schema["properties"]) == {"goals", "insufficient"}
     prepared = session.calls.provider.prepare(spec)
@@ -254,9 +245,11 @@ def test_native_schema_only_offers_actual_batch_ids_without_model_goal_identity(
     # present goals before bookkeeping; declaration order alone is insufficient.
     assert list(json.loads(prepared.payload)["format"]["properties"]) == ["goals", "insufficient"]
     assert "id" not in definitions["ProposedGoal"]["properties"]
-    for name in ("GoalAnchor", "InsufficientSlice"):
-        assert definitions[name]["properties"]["slice_id"]["enum"] == [item.id for item in batch.slices]
-    assert "enum" not in CompactExtraction.model_json_schema()["$defs"]["GoalAnchor"]["properties"]["slice_id"]
+    assert "GoalAnchor" not in definitions
+    assert definitions["InsufficientSlice"]["properties"]["slice_id"]["enum"] == [item.id for item in batch.slices]
+    assert definitions["ProposedGoal"]["properties"]["unit_ids"]["items"]["enum"] == [
+        item.id for item in plan_evidence_units(batch).units]
+    assert "enum" not in CompactExtraction.model_json_schema()["$defs"]["ProposedGoal"]["properties"]["unit_ids"]["items"]
 
 
 def test_repeated_quote_across_sources_binds_only_the_named_slice_and_unicode_span(context):
@@ -276,8 +269,9 @@ def test_repeated_quote_across_sources_binds_only_the_named_slice_and_unicode_sp
     assert len(batches) == 1
     batch = batches[0]
     named = next(item for item in batch.slices if item.segment_id == target.segment_id and item.start_char == 900)
+    unit = next(item for item in plan_evidence_units(batch).units if item.slice_id == named.id)
     accepted = parse(batch, {
-        "goals": [{"description": "Define a route.", "anchors": [{"slice_id": named.id, "quote": quote}]}],
+        "goals": [{"description": "Define a route.", "unit_ids": [unit.id]}],
         "insufficient": [{"slice_id": item.id, "reason": "No additional goal selected."}
                          for item in batch.slices if item.id != named.id],
     })
@@ -311,7 +305,7 @@ def test_canonical_checkpoint_mapping_cannot_be_rewritten_with_a_valid_payload_h
     assert len(session.calls.requests) == before
 
 
-def test_v3_recipe_cannot_adopt_v4_mapping_even_with_a_valid_checkpoint_hash(context):
+def test_old_recipe_cannot_adopt_unit_mapping_even_with_a_valid_checkpoint_hash(context):
     session = Session(context)
     session.advance()
     previous_recipe = "a744f11e53dc3e5b226bbe5618dc82fb7b14901ab5c72a87c7e5d0db1629bf81"

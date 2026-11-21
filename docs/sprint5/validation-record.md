@@ -1314,14 +1314,85 @@ Validation:
   downloaded, inference made, application document captured, or real application data
   changed. No native correctness/latency claim follows from these pure tests.
 
+## Unit-selection wire, exact replay and worker recovery — 2026-11-21
+
+Started with clean `main` at `eadc0f6bc77f78a908dbc55eb53582afaf437dc2`, matching
+origin after fetch. Its exact
+[CI run 44904205553](https://github.com/emredemirbas/multimodal-rag/actions/runs/44904205553)
+was checked: frontend, backend-tests and backend-integration succeeded; images
+remained in progress. This implementation requires its own hosted result.
+
+Items 2–3 of [the redesign plan](local-generation-redesign.md) are implemented
+and software-validated. No native inference or public generation was enabled.
+
+- The new strict wire returns descriptions and 1–2 `unit_ids` per goal, with
+  explicit insufficiency for every unanchored parent slice. Request enums contain
+  only actual batch IDs. Ordered input units retain every source character once;
+  private source identities and offsets are not sent to the model. Old v4
+  quote/anchor responses, foreign/duplicate units, incomplete or contradictory
+  coverage and blank selected units fail deterministically.
+- The application maps selected IDs to entire original units, preserving the
+  canonical `BatchExtraction` shape, goal IDs/order and literal anchor checks.
+  Prompt/schema/mapping versions are `tutorial-objectives-units-v1`,
+  `tutorial-objectives-units-json-v1` and `evidence-unit-extraction-map-v1`.
+  There is no quote repair, prefix selection or source truncation.
+- Private accepted batches retain the strict selection, unit-plan digest,
+  complete ordered per-goal unit bindings and canonical extraction. Rebuilt plans
+  must match every selected identity/span/text, including different occurrences
+  with identical quote bytes. The initial plan hash pins both request and unit
+  digests; the recipe pins partition limits and private/wire/canonical schemas.
+  Rehashed altered payloads and old v4 progress fail before further provider I/O.
+  Existing graph structure, saved drafts, activated versions and database schema
+  stay unchanged; this private payload needs no migration.
+- Actual provider `prepare` bounds input/schema/request bytes before call receipts.
+  Unit-ID and escaping overhead cause earlier flushes within four slices/20 batches
+  or explicit rejection of an oversized context. Source text and resource limits
+  are preserved. Raw context, run, claim, checkpoint and selection types are
+  revalidated before serialization can conceal malformed values.
+- Existing scope, original actor, Celery/outbox, one-call-per-delivery, live lease,
+  all-or-nothing publication and dependency deletion boundaries remain. External
+  flags still fail before inference; the default processor registry stays empty.
+  Source/proposal/binding data remains private checkpoint content, not logs/usage.
+
+Validation:
+
+- **1,176 backend unit/API tests passed, 881 integration cases deselected**.
+  The focused extraction/profile/unit-selection suite separately passed **86**
+  cases; workflow/unit-workflow coverage includes **76** cases. These focused
+  counts are subsets of the complete unit suite, not additional totals.
+- **33 real PostgreSQL workflow/unit-selection tests passed**. Fresh repository/
+  provider adapters resume accepted extraction without repeating it. Altered unit
+  selection, plan, canonical quote, binding, same-text source occurrence or old
+  recipe fails before more provider I/O. Cancellation and source/context/project
+  deletion cannot revive work or retain a dependent result.
+- **172 existing PostgreSQL run/progress/delivery/execution/model-call tests passed**:
+  both scopes, membership/archive, lease/token expiry, call attribution, atomic
+  checkpoints/publication, transient retry and deletion/late-output fences.
+- **3 existing real Celery process-loss tests passed, no skips** using separate
+  temporary PostgreSQL/Redis. Tests SIGKILL a worker before publication or after
+  checkpoint commit; a replacement resumes the accepted graph extraction with
+  only selection/generation calls. Duplicate deliveries leave one draft/result.
+  All HTTP model replies are authored protocol fixtures, not native output.
+- Independent read-only code/security review found no actionable blocker.
+  `git diff --check` and all seven local links in nine changed Markdown files pass.
+  No frontend/product UI changed; README receives no internal delivery content.
+- Only this work's disposable containers were used, with cached images, random
+  loopback ports and tmpfs state. All test schemas and Redis keys were empty after
+  tests. Both containers were removed; before/after container IDs/states, unique
+  image IDs and volumes matched exactly. No image was built/downloaded and no
+  owner service, configuration, credentials or application data was changed.
+  Temporary Python dependencies came from the offline cache in a separate
+  environment, removed after verification.
+
 ## Continuation
 
 The owner has selected the changed local generation approach; do not ask the scope
-question again. Verify this commit's exact hosted CI, then continue item 2 in
-`local-generation-redesign.md`: strict unit-selection wire schema, authoritative
-ID-to-literal quote mapping, complete parent-slice insufficiency and recipe-pinned
-private checkpoint/replay integration. Check actual input/schema/request bytes
-through the provider boundary; preserve full source coverage and existing limits.
+question again. Items 1–3 in `local-generation-redesign.md` pass their software
+checks. Verify this commit's exact hosted CI, then begin item 4: freshly verify
+the isolated cached model digest/engine and resource availability before the one
+predeclared native extraction/draft pass. Its fixed samples, semantic expectations,
+three-extraction/nine-total-call cap, original deadlines and stop boundary remain.
+Valid unit IDs and authored protocol replies do not establish semantic correctness.
 Keep the default registry and public generation closed until the finite native
 extraction and full draft reviews pass. Refresh actual isolated model/engine pins;
 the running native endpoint is not the old container profile. No automatic model

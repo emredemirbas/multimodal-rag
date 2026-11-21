@@ -563,8 +563,8 @@ bounded objective/coverage extraction, selection, generation and one revision.
 Results and limits are in `validation-record.md`. README
 contains product guidance; operator details are in `../local-development.md`.
 The small predeclared native review is recorded in `native-output-review.md`.
-Compact requests and the v4 wire contract are implemented: the application owns
-goal IDs/coverage reconstruction and replay validates the normalization recipe.
+The preceding compact requests and v4 wire contract assigned application-owned
+goal IDs/coverage and pinned the normalization recipe for replay.
 The predeclared v4 native pass still failed: English timed out, Turkish returned
 nonliteral/contradictory evidence, and insufficient content produced a meta-goal
 plus contradictory insufficiency. Strict validation accepted no extraction/draft.
@@ -606,11 +606,17 @@ The owner confirmed on 2026-11-21: retain free local automatic generation in
 Sprint 5 and plan a different approach. The explicit continuation is
 [application-owned evidence units](local-generation-redesign.md), rather than
 another prompt-only retry or a silently narrower manual-assignment target.
-The pure lossless planner is the first implementation slice; next implement
-strict model unit-ID selection, source-derived quote mapping and versioned private
-checkpoint replay. The existing v4 runtime remains closed until that protocol is
-integrated/tested and its single predeclared native extraction/draft review passes.
-No native result is supplied by pure software tests. Verify actual hosted CI first.
+The pure lossless planner and strict model unit-ID wire are implemented. The
+application maps whole units to the unchanged canonical literal anchors. Private
+accepted batches retain selection, complete per-goal unit bindings and plan
+digests; replay checks exact occurrences even when different spans have equal
+text. Partition/schema/mapping pins reject old v4 checkpoints. Actual provider
+preparation bounds input/schema/request bytes with earlier lossless batch flushes.
+Unit, PostgreSQL recovery/fence and existing actual SIGKILL/replacement-worker
+regressions pass, completing redesign item 3. Next verify isolated runtime identity
+before item 4's single predeclared native extraction/draft review.
+Generation remains closed. No native result is supplied by software tests.
+Verify actual hosted CI first.
 Preserve existing lease/call/checkpoint fences and the empty default registry;
 no automatic model switch/download, resource/deadline increase, evaluator or later
 sprint follows. Full Sprint 5 and independent real-video/Alpha 2 approval stay open.

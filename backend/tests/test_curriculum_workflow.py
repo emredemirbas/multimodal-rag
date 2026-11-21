@@ -39,7 +39,7 @@ def authored_reply(body):
     if body["stage"] == "extract":
         item = body["slices"][0]
         return {"goals": [{"description": "Define an API route.",
-                            "anchors": [{"slice_id": item["id"], "quote": item["text"][:30]}]}],
+                            "unit_ids": [item["units"][0]["id"]]}],
                 "insufficient": [{"slice_id": value["id"], "reason": "No additional goal in this authored reply."}
                                  for value in body["slices"][1:]]}
     if body["stage"] == "select":
@@ -190,20 +190,26 @@ def test_extraction_rejects_invented_quotes_ids_and_incomplete_coverage(session,
         validate_extraction(batch, parse_value(BatchExtraction, json.dumps(result)))
 
 
-def test_native_schema_only_offers_supplied_slice_ids_without_model_coverage(session):
+def test_native_schema_only_offers_supplied_unit_and_insufficient_slice_ids(session):
     session.context.tutorial_snapshots[0].segments[0].text = "route " * 700
     batch = plan_batches(session.context)[0]
     spec = extract_spec(batch, session.context.request.learner)
-    assert spec.prompt_version == "tutorial-objectives-v4" and spec.schema_version == "tutorial-objectives-json-v4"
+    assert spec.prompt_version == "tutorial-objectives-units-v1"
+    assert spec.schema_version == "tutorial-objectives-units-json-v1"
     definitions = spec.output_schema["$defs"]
     expected = [item.id for item in batch.slices]
     assert len(expected) > 1
-    for name in ("GoalAnchor", "InsufficientSlice"):
-        assert definitions[name]["properties"]["slice_id"]["enum"] == expected
-    assert set(definitions["ProposedGoal"]["properties"]) == {"description", "anchors"}
+    body = json.loads(spec.user)
+    units = [unit["id"] for item in body["slices"] for unit in item["units"]]
+    assert definitions["ProposedGoal"]["properties"]["unit_ids"]["items"]["enum"] == units
+    assert definitions["InsufficientSlice"]["properties"]["slice_id"]["enum"] == expected
+    assert set(definitions["ProposedGoal"]["properties"]) == {"description", "unit_ids"}
     assert set(definitions["InsufficientSlice"]["properties"]) == {"slice_id", "reason"}
+    for item, original in zip(body["slices"], batch.slices, strict=True):
+        assert set(item) == {"id", "origin", "units"}
+        assert "".join(unit["text"] for unit in item["units"]) == original.text
     # Dynamic schema construction must not contaminate another source batch.
-    assert "enum" not in CompactExtraction.model_json_schema()["$defs"]["GoalAnchor"]["properties"]["slice_id"]
+    assert "enum" not in CompactExtraction.model_json_schema()["$defs"]["ProposedGoal"]["properties"]["unit_ids"]["items"]
 
 
 @pytest.mark.parametrize("status,ids,reason", [
@@ -244,13 +250,17 @@ def test_all_slices_are_extracted_once_and_omissions_remain_in_progress(session)
 
 def test_maximum_plan_with_revision_still_has_finite_checkpoint_and_call_bounds(session):
     segment = session.context.tutorial_snapshots[0].segments[0]
-    segment.text = "a" * (MAX_SLICE_BYTES * 4)
+    segment.text = "a" * MAX_SLICE_BYTES
     session.context.tutorial_snapshots[0].segments = []
-    for index in range(MAX_BATCHES):
+    # Schema/unit ID overhead can flush before four slices. Reach the existing
+    # batch ceiling using whole slices without assuming that all four still fit.
+    for index in range(MAX_BATCHES * 4):
         item = deepcopy(segment)
         item.segment_id = uuid4()
         item.start_ms, item.end_ms = index * 2000, index * 2000 + 1000
         session.context.tutorial_snapshots[0].segments.append(item)
+        if len(plan_batches(session.context)) == MAX_BATCHES:
+            break
     assert len(plan_batches(session.context)) == MAX_BATCHES
     session.calls.reply = lambda body: {"title": "Incomplete"} if body["stage"] == "generate" else authored_reply(body)
     assert session.finish().title == "A small authored API"

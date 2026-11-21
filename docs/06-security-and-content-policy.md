@@ -80,16 +80,24 @@ response bytes, reject duplicate/non-finite JSON and reject incomplete or late
 output. A completed JSON object is not evidence support or assignment-schema
 approval: the internal workflow parses its application contract and binds it
 against the authorized context before publication. Exact quotes must occur in
-their named source slice; every slice needs an explicit model coverage status.
+their named source slice; every slice needs a goal reference or explicit insufficiency.
 This verifies literal grounding/relationships, not semantic entailment. Unsupported
 output cannot waive deterministic validation; only one bounded draft revision is
 allowed. Public/default processor registration stays closed pending native review.
 LangGraph hosted tracing is explicitly disabled inside construction/invocation
 without changing owner environment variables; no library checkpoint store receives
 project text. Logs contain only safe identifiers and fixed rejection codes.
+The unit-selection wire exposes only batch-local evidence IDs and literal unit
+text. Those IDs grant no authority: the application derives entire quotes from
+the scoped immutable context and rejects unknown/duplicate/contradictory choices.
+Private checkpoints retain exact per-goal unit identities, spans and text with
+plan/recipe digests; replay revalidates those bindings, including distinct
+occurrences of identical text. This private source data follows existing complete
+dependency deletion and is never copied to logs or usage rows. Model-selected
+units still require semantic/native review; literal grounding alone cannot pass it.
 True external-topic/document permissions still fail before inference in the current
-internal graph. Step 5a adds an independent approved-capture API, not document
-binding or model permission. The owner confirmed opt-in external topics and
+internal graph. The independent approved-capture API and explicit draft-document
+binding do not grant model permission. The owner confirmed opt-in external topics and
 explicit approval for each official document. Its fixed catalog policy, exact
 fingerprint and retrieve-and-retain consent are saved per context/approving actor.
 Only that actor can issue the separate capture command. All DNS answers must be
